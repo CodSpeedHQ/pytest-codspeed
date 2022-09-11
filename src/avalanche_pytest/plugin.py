@@ -4,7 +4,7 @@ import pytest
 from avalanche.callgrind_wrapper import lib
 
 
-def pytest_addoption(parser: pytest.Parser):
+def pytest_addoption(parser: "pytest.Parser"):
     group = parser.getgroup("avalanche performance measurement")
     group.addoption(
         "--benchmark",
@@ -20,7 +20,7 @@ def pytest_addoption(parser: pytest.Parser):
     )
 
 
-def pytest_configure(config: pytest.Config):
+def pytest_configure(config: "pytest.Config"):
     config.addinivalue_line(
         "markers", "avalanche_benchmark: mark an entire test for avalanche benchmarking"
     )
@@ -30,12 +30,14 @@ def pytest_configure(config: pytest.Config):
 
 
 @pytest.fixture(scope="session")
-def _is_benchmark_enabled(request: pytest.FixtureRequest) -> bool:
+def _is_benchmark_enabled(request: "pytest.FixtureRequest") -> bool:
     return request.config.getoption("--benchmark")
 
 
 @pytest.fixture
-def callbench(request: pytest.FixtureRequest, _is_benchmark_enabled: bool) -> Callable:
+def callbench(
+    request: "pytest.FixtureRequest", _is_benchmark_enabled: bool
+) -> Callable:
     def run(func: Callable[..., Any], *args: Any):
         if _is_benchmark_enabled:
             lib.zero_stats()
