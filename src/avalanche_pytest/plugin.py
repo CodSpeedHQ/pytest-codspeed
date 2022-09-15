@@ -3,7 +3,7 @@ from typing import Any, Callable, List
 import pytest
 from avalanche.callgrind_wrapper import lib
 
-benchmark_count_key = pytest.StashKey[int]()
+_benchmark_count = 0
 
 
 @pytest.hookimpl()
@@ -48,7 +48,8 @@ def should_benchmark_item(item: "pytest.Item") -> bool:
 @pytest.hookimpl()
 def pytest_sessionstart(session: "pytest.Session"):
     if is_benchmark_enabled(session.config):
-        session.stash[benchmark_count_key] = 0
+        global _benchmark_count
+        _benchmark_count = 0
 
 
 @pytest.hookimpl(trylast=True)
@@ -72,7 +73,8 @@ def pytest_runtest_call(item: "pytest.Item"):
     if not is_benchmark_enabled(item.config) or not should_benchmark_item(item):
         item.runtest()
     else:
-        item.session.stash[benchmark_count_key] += 1
+        global _benchmark_count
+        _benchmark_count += 1
         if "benchmark" in getattr(item, "fixturenames", []):
             item.runtest()
         else:
@@ -89,7 +91,7 @@ def pytest_sessionfinish(session: "pytest.Session", exitstatus):
         reporter: pytest.TerminalReporter = session.config.pluginmanager.get_plugin(
             "terminalreporter"
         )
-        reporter.write_sep("=", f"{session.stash[benchmark_count_key]} benchmarked")
+        reporter.write_sep("=", f"{_benchmark_count} benchmarked")
 
 
 @pytest.fixture(scope="session")
