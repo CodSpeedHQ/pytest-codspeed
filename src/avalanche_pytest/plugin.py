@@ -29,7 +29,7 @@ def pytest_configure(config: "pytest.Config"):
         "markers", "avalanche_benchmark: mark an entire test for avalanche benchmarking"
     )
     config.addinivalue_line(
-        "markers", "abenchmark: mark an entire test for avalanche benchmarking"
+        "markers", "benchmark: mark an entire test for avalanche benchmarking"
     )
 
 
@@ -40,7 +40,7 @@ def is_benchmark_enabled(config: "pytest.Config") -> bool:
 def should_benchmark_item(item: "pytest.Item") -> bool:
     return (
         item.get_closest_marker("avalanche_benchmark") is not None
-        or item.get_closest_marker("abenchmark") is not None
+        or item.get_closest_marker("benchmark") is not None
         or "benchmark" in getattr(item, "fixturenames", [])
     )
 
