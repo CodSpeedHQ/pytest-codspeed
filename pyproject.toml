@@ -3,6 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project.urls]
+Homepage = "https://codspeed.io/"
 Documentation = "https://docs.codspeed.io/"
 Source = "https://github.com/CodSpeedHQ/pytest-codspeed"
 
