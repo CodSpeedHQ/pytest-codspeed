@@ -13,24 +13,25 @@ description = "Pytest plugin to create CodSpeed benchmarks"
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.7"
-authors = [{ name = "Arthur Pastel", email = "arthur.pastel@gmail.com" }]
-keywords = ["avalanche", "benchmark", "measurement", "performance", "pytest"]
+authors = [{ name = "Arthur Pastel", email = "arthur@codspeed.io" }]
+keywords = ["codspeed", "benchmark", "performance", "pytest"]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Framework :: Pytest",
     "Intended Audience :: Developers",
     "Intended Audience :: Information Technology",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
-    "Topic :: Software Development :: Build Tools",
+    "Programming Language :: Python :: 3.10",
     "Topic :: Software Development :: Testing",
     "Topic :: System :: Benchmark",
     "Topic :: Utilities",
     "Typing :: Typed",
 ]
-dependencies = ["cffi>=1.0.0", "pytest>=3.8"]
+dependencies = ["cffi ~= 1.15.1", "pytest>=3.8"]
 
 [project.optional-dependencies]
 dev = [
@@ -42,6 +43,7 @@ dev = [
     "pytest ~= 7.0",
     "pytest-cov ~= 4.0.0",
     "ruff ~= 0.0.100",
+    "pytest-benchmark>=3.4.1",
 ]
 
 [project.entry-points]

@@ -1,7 +1,9 @@
+import os
 from typing import Any, Callable, List
 
 import pytest
 
+from . import __version__
 from ._wrapper import get_lib
 
 lib = get_lib()
@@ -9,40 +11,46 @@ lib = get_lib()
 _benchmark_count = 0
 
 
-@pytest.hookimpl()
+@pytest.hookimpl(trylast=True)
+def pytest_report_header(config):
+    return f"codspeed: {__version__}"
+
+
+@pytest.hookimpl(trylast=True)
 def pytest_addoption(parser: "pytest.Parser"):
-    group = parser.getgroup("avalanche performance measurement")
+    group = parser.getgroup("CodSpeed benchmarking")
     group.addoption(
-        "--benchmark",
+        "--codspeed",
         action="store_true",
         default=False,
-        help="Enable avalanche benchmarks",
+        help="Enable codspeed (not required when using the CodSpeed action)",
     )
-    group.addoption(
-        "--only-benchmark",
-        action="store_true",
-        default=False,
-        help="Only run avalanche benchmarks",
-    )
+    if len(parser.getgroup("benchmark").options) == 0:
+        group.addoption(
+            "--benchmark-only",
+            action="store_true",
+            default=False,
+            help="Only run codspeed benchmarks",
+        )
 
 
 @pytest.hookimpl()
 def pytest_configure(config: "pytest.Config"):
     config.addinivalue_line(
-        "markers", "avalanche_benchmark: mark an entire test for avalanche benchmarking"
+        "markers", "codspeed_benchmark: mark an entire test for codspeed benchmarking"
     )
     config.addinivalue_line(
-        "markers", "benchmark: mark an entire test for avalanche benchmarking"
+        "markers", "benchmark: mark an entire test for codspeed benchmarking"
     )
 
 
 def is_benchmark_enabled(config: "pytest.Config") -> bool:
-    return config.getoption("--benchmark") or config.getoption("--only-benchmark")
+    return config.getoption("--codspeed") or os.environ.get("CODSPEED_ENV") is not None
 
 
 def should_benchmark_item(item: "pytest.Item") -> bool:
     return (
-        item.get_closest_marker("avalanche_benchmark") is not None
+        item.get_closest_marker("codspeed_benchmark") is not None
         or item.get_closest_marker("benchmark") is not None
         or "benchmark" in getattr(item, "fixturenames", [])
     )
@@ -59,7 +67,7 @@ def pytest_sessionstart(session: "pytest.Session"):
 def pytest_collection_modifyitems(
     session: "pytest.Session", config: "pytest.Config", items: "List[pytest.Item]"
 ):
-    if config.getoption("--only-benchmark"):
+    if config.getoption("--benchmark-only"):
         deselected = []
         selected = []
         for item in items:
@@ -101,7 +109,7 @@ def _is_benchmark_enabled(request: "pytest.FixtureRequest") -> bool:
 
 
 @pytest.fixture
-def callbench(
+def codspeed_benchmark(
     request: "pytest.FixtureRequest", _is_benchmark_enabled: bool
 ) -> Callable:
     def run(func: Callable[..., Any], *args: Any):
@@ -117,8 +125,8 @@ def callbench(
 
 
 @pytest.fixture
-def benchmark(callbench):
+def benchmark(codspeed_benchmark):
     """
     Compatibility with pytest-benchmark
     """
-    return callbench
+    return codspeed_benchmark

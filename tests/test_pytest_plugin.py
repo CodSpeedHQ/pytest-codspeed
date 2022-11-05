@@ -1,4 +1,35 @@
+import os
+
 import pytest
+
+
+def test_plugin_enabled_cli(pytester: pytest.Pytester) -> None:
+    pytester.makepyfile(
+        """
+        def test_some_addition_performance(benchmark):
+            @benchmark
+            def _():
+                return 1 + 1
+        """
+    )
+    result = pytester.runpytest("--codspeed")
+    result.stdout.fnmatch_lines(["*1 benchmarked*", "*1 passed*"])
+
+
+def test_plugin_enabled_env(pytester: pytest.Pytester) -> None:
+    pytester.makepyfile(
+        """
+        def test_some_addition_performance(benchmark):
+            @benchmark
+            def _():
+                return 1 + 1
+        """
+    )
+    os.environ["CODSPEED_ENV"] = "1"
+    pytester.runpytest()
+    result = pytester.runpytest()
+    result.stdout.fnmatch_lines(["*1 benchmarked*", "*1 passed*"])
+    del os.environ["CODSPEED_ENV"]
 
 
 def test_plugin_disabled(pytester: pytest.Pytester) -> None:
@@ -14,19 +45,6 @@ def test_plugin_disabled(pytester: pytest.Pytester) -> None:
     result.stdout.fnmatch_lines(["*1 passed*"])
 
 
-def test_plugin_enabled(pytester: pytest.Pytester) -> None:
-    pytester.makepyfile(
-        """
-        def test_some_addition_performance(benchmark):
-            @benchmark
-            def _():
-                return 1 + 1
-        """
-    )
-    result = pytester.runpytest("--benchmark")
-    result.stdout.fnmatch_lines(["*1 benchmarked*", "*1 passed*"])
-
-
 def test_plugin_enabled_nothing_to_benchmark(pytester: pytest.Pytester) -> None:
     pytester.makepyfile(
         """
@@ -34,7 +52,7 @@ def test_plugin_enabled_nothing_to_benchmark(pytester: pytest.Pytester) -> None:
             return 1 + 1
         """
     )
-    result = pytester.runpytest("--benchmark")
+    result = pytester.runpytest("--codspeed")
     result.stdout.fnmatch_lines(["*0 benchmarked*", "*1 passed*"])
 
 
@@ -43,7 +61,7 @@ def test_plugin_only_benchmark_collection(pytester: pytest.Pytester) -> None:
         """
         import pytest
 
-        @pytest.mark.avalanche_benchmark
+        @pytest.mark.codspeed_benchmark
         def test_some_addition_performance():
             return 1 + 1
 
@@ -60,7 +78,7 @@ def test_plugin_only_benchmark_collection(pytester: pytest.Pytester) -> None:
             assert True
         """
     )
-    collection_result = pytester.runpytest("--only-benchmark", "--collect-only")
+    collection_result = pytester.runpytest("--benchmark-only", "--collect-only")
     collection_result.stdout.fnmatch_lines(
         [
             "*<Function test_some_addition_performance>*",
