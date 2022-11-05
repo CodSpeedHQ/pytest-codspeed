@@ -1,3 +1,4 @@
+import os
 from typing import TYPE_CHECKING
 
 from cffi import FFI
@@ -5,10 +6,12 @@ from cffi import FFI
 if TYPE_CHECKING:
     from .wrapper import lib as _lib
 
+_wrapper_dir = os.path.dirname(os.path.abspath(__file__))
+
 
 def _get_ffi():
     ffi = FFI()
-    with open("src/pytest_codspeed/_wrapper/wrapper.h") as f:
+    with open(f"{_wrapper_dir}/wrapper.h") as f:
         ffi.cdef(f.read())
     ffi.set_source(
         "dist_callgrind_wrapper",
@@ -23,7 +26,7 @@ def get_lib() -> "_lib":
         ffi = _get_ffi()
         ffi.compile(
             target="dist_callgrind_wrapper.*",
-            tmpdir="src/pytest_codspeed/_wrapper",
+            tmpdir=_wrapper_dir,
         )
         from .dist_callgrind_wrapper import lib
 
