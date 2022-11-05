@@ -12,7 +12,7 @@ _benchmark_count = 0
 
 
 @pytest.hookimpl(trylast=True)
-def pytest_report_header(config):
+def pytest_report_header(config: "pytest.Config"):
     return f"codspeed: {__version__}"
 
 
@@ -25,13 +25,6 @@ def pytest_addoption(parser: "pytest.Parser"):
         default=False,
         help="Enable codspeed (not required when using the CodSpeed action)",
     )
-    if len(parser.getgroup("benchmark").options) == 0:
-        group.addoption(
-            "--benchmark-only",
-            action="store_true",
-            default=False,
-            help="Only run codspeed benchmarks",
-        )
 
 
 @pytest.hookimpl()
@@ -67,7 +60,7 @@ def pytest_sessionstart(session: "pytest.Session"):
 def pytest_collection_modifyitems(
     session: "pytest.Session", config: "pytest.Config", items: "List[pytest.Item]"
 ):
-    if config.getoption("--benchmark-only"):
+    if is_benchmark_enabled(session.config):
         deselected = []
         selected = []
         for item in items:

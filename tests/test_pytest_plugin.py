@@ -53,7 +53,7 @@ def test_plugin_enabled_nothing_to_benchmark(pytester: pytest.Pytester) -> None:
         """
     )
     result = pytester.runpytest("--codspeed")
-    result.stdout.fnmatch_lines(["*0 benchmarked*", "*1 passed*"])
+    result.stdout.fnmatch_lines(["*0 benchmarked*", "*1 deselected*"])
 
 
 def test_plugin_only_benchmark_collection(pytester: pytest.Pytester) -> None:
@@ -78,7 +78,7 @@ def test_plugin_only_benchmark_collection(pytester: pytest.Pytester) -> None:
             assert True
         """
     )
-    collection_result = pytester.runpytest("--benchmark-only", "--collect-only")
+    collection_result = pytester.runpytest("--codspeed", "--collect-only")
     collection_result.stdout.fnmatch_lines(
         [
             "*<Function test_some_addition_performance>*",

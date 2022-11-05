@@ -37,6 +37,8 @@ jobs:
       - name: Install valgrind
         run: sudo apt-get install valgrind -y
       - name: Install dependencies
-        run: pip install .[dev]
+        run: |
+          pip install .[dev]
+          pip uninstall pytest-benchmark -y
       - name: Run tests
         run: pytest
