@@ -1,7 +1,7 @@
 import os
 from typing import TYPE_CHECKING
 
-from cffi import FFI
+from cffi import FFI  # type: ignore
 
 if TYPE_CHECKING:
     from .wrapper import lib as _lib
@@ -28,7 +28,7 @@ def get_lib() -> "_lib":
             target="dist_callgrind_wrapper.*",
             tmpdir=_wrapper_dir,
         )
-        from .dist_callgrind_wrapper import lib
+        from .dist_callgrind_wrapper import lib  # type: ignore
 
         return lib
     except Exception as e:

@@ -91,9 +91,7 @@ def pytest_runtest_call(item: "pytest.Item"):
 @pytest.hookimpl()
 def pytest_sessionfinish(session: "pytest.Session", exitstatus):
     if is_benchmark_enabled(session.config):
-        reporter: pytest.TerminalReporter = session.config.pluginmanager.get_plugin(
-            "terminalreporter"
-        )
+        reporter = session.config.pluginmanager.get_plugin("terminalreporter")
         reporter.write_sep("=", f"{_benchmark_count} benchmarked")
 
 
