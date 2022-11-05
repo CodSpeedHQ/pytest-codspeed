@@ -1,6 +1,7 @@
 from typing import Any, Callable, List
 
 import pytest
+
 from ._wrapper import get_lib
 
 lib = get_lib()

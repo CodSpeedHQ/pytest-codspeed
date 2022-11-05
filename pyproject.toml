@@ -2,13 +2,17 @@
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[project.urls]
+Documentation = "https://docs.codspeed.io/"
+Source = "https://github.com/CodSpeedHQ/pytest-codspeed"
+
 [project]
 name = "pytest-codspeed"
 dynamic = ["version"]
 description = "Pytest plugin to create CodSpeed benchmarks"
 readme = "README.md"
-license = "MIT"
-requires-python = ">=3.8"
+license = { file = "LICENSE" }
+requires-python = ">=3.7"
 authors = [{ name = "Arthur Pastel", email = "arthur.pastel@gmail.com" }]
 keywords = ["avalanche", "benchmark", "measurement", "performance", "pytest"]
 classifiers = [
@@ -29,7 +33,17 @@ classifiers = [
 dependencies = ["cffi>=1.0.0", "pytest>=3.8"]
 
 [project.optional-dependencies]
-dev = ["black", "flake8", "hatchling", "mypy", "pytest", "pytest-cov"]
+dev = [
+    "hatchling ~= 1.11.1",
+    "black ~= 22.3.0",
+    "isort ~=5.8.0",
+    "flake8 ~= 5.0.4",
+    "mypy ~= 0.961",
+    "pytest ~= 7.0",
+    "pytest-sugar ~= 0.9.5",
+    "pytest-cov ~= 4.0.0",
+    "ruff ~= 0.0.100",
+]
 
 [project.entry-points]
 pytest11 = { codspeed = "pytest_codspeed.plugin" }
@@ -39,3 +53,26 @@ path = "src/pytest_codspeed/__init__.py"
 
 [tool.hatch.build.targets.sdist]
 include = ["/src"]
+
+[tool.ruff]
+line-length = 88
+
+[tool.isort]
+line_length = 88
+multi_line_output = 3
+include_trailing_comma = true
+use_parentheses = true
+force_grid_wrap = 0
+float_to_top = true
+
+[tool.coverage.run]
+branch = true
+[tool.coverage.report]
+include = ["src/*", "tests/*"]
+omit = ["**/conftest.py"]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "@pytest.mark.skip",
+    "@abstractmethod",
+]

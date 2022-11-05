@@ -1,5 +1,6 @@
-from cffi import FFI
 from typing import TYPE_CHECKING
+
+from cffi import FFI
 
 if TYPE_CHECKING:
     from .wrapper import lib as _lib
