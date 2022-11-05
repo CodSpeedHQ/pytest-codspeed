@@ -40,7 +40,6 @@ dev = [
     "flake8 ~= 5.0.4",
     "mypy ~= 0.961",
     "pytest ~= 7.0",
-    "pytest-sugar ~= 0.9.5",
     "pytest-cov ~= 4.0.0",
     "ruff ~= 0.0.100",
 ]
