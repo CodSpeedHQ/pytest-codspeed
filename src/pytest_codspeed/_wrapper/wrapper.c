@@ -1,21 +1,3 @@
-from cffi import FFI
-
-ffi = FFI()
-
-ffi.cdef(
-    """
-void start_instrumentation();
-void stop_instrumentation();
-void dump_stats();
-void dump_stats_at(char *s);
-void zero_stats();
-void toggle_collect();
-"""
-)
-
-ffi.set_source(
-    "callgrind_wrapper",
-    """
 #include <valgrind/callgrind.h>
 
 void start_instrumentation() {
@@ -41,5 +23,3 @@ void zero_stats() {
 void toggle_collect() {
     CALLGRIND_TOGGLE_COLLECT;
 }
-""",
-)

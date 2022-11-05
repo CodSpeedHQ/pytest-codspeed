@@ -47,7 +47,7 @@ def test_plugin_only_benchmark_collection(pytester: pytest.Pytester) -> None:
         def test_some_addition_performance():
             return 1 + 1
 
-        @pytest.mark.abenchmark
+        @pytest.mark.benchmark
         def test_some_addition_performance_shorthand():
             return 1 + 1
 

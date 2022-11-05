@@ -1,7 +1,9 @@
 from typing import Any, Callable, List
 
 import pytest
-from avalanche.callgrind_wrapper import lib
+from ._wrapper import get_lib
+
+lib = get_lib()
 
 _benchmark_count = 0
 
