@@ -31,7 +31,10 @@ def test_plugin_enabled_without_env(pytester: pytest.Pytester) -> None:
     result = pytester.runpytest("--codspeed")
     result.stdout.fnmatch_lines(
         [
-            "NOTICE: codspeed is enabled, but no performance measurement will be made*",
+            (
+                "*NOTICE: codspeed is enabled, but no "
+                "performance measurement will be made*"
+            ),
             "*1 benchmark tested*",
             "*1 passed*",
         ]

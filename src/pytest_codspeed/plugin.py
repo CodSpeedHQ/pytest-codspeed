@@ -61,8 +61,10 @@ def pytest_report_header(config: "pytest.Config"):
     plugin = get_plugin(config)
     if plugin.is_codspeed_enabled and not plugin.should_measure:
         out.append(
+            "\033[93m"
             "NOTICE: codspeed is enabled, but no performance measurement"
             " will be made since it's running in an unknown environment."
+            "\033[0m"
         )
     return "\n".join(out)
 
