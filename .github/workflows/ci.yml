@@ -22,9 +22,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        with-valgrind:
-          - false
-          - true
+        config:
+          - headless
+          - valgrind
         python-version:
           - "3.7"
           - "3.8"
@@ -37,7 +37,7 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: "${{ matrix.python-version }}"
-      - if: matrix.with-valgrind
+      - if: matrix.config == 'valgrind'
         name: Install valgrind
         run: sudo apt-get install valgrind -y
       - name: Install dependencies
