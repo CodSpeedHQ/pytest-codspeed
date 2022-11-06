@@ -1,7 +1,13 @@
 import os
+import shutil
 from contextlib import contextmanager
 
 import pytest
+
+VALGRIND_NOT_INSTALLED = shutil.which("valgrind") is None
+skip_without_valgrind = pytest.mark.skipif(
+    VALGRIND_NOT_INSTALLED, reason="valgrind not installed"
+)
 
 
 @contextmanager
@@ -32,6 +38,7 @@ def test_plugin_enabled_without_env(pytester: pytest.Pytester) -> None:
     )
 
 
+@skip_without_valgrind
 def test_plugin_enabled_by_env(pytester: pytest.Pytester) -> None:
     pytester.makepyfile(
         """
@@ -46,6 +53,7 @@ def test_plugin_enabled_by_env(pytester: pytest.Pytester) -> None:
     result.stdout.fnmatch_lines(["*1 benchmarked*", "*1 passed*"])
 
 
+@skip_without_valgrind
 def test_plugin_enabled_and_env(pytester: pytest.Pytester) -> None:
     pytester.makepyfile(
         """
@@ -73,6 +81,7 @@ def test_plugin_disabled(pytester: pytest.Pytester) -> None:
     result.stdout.fnmatch_lines(["*1 passed*"])
 
 
+@skip_without_valgrind
 def test_plugin_enabled_nothing_to_benchmark(pytester: pytest.Pytester) -> None:
     pytester.makepyfile(
         """
