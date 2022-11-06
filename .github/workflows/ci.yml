@@ -39,6 +39,5 @@ jobs:
       - name: Install dependencies
         run: |
           pip install .[dev]
-          pip uninstall pytest-benchmark -y
       - name: Run tests
         run: pytest

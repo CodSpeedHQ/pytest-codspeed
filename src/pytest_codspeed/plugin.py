@@ -1,19 +1,14 @@
 import os
-from typing import Any, Callable, List
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, Callable, List, Optional
 
 import pytest
 
 from . import __version__
 from ._wrapper import get_lib
 
-lib = get_lib()
-
-_benchmark_count = 0
-
-
-@pytest.hookimpl(trylast=True)
-def pytest_report_header(config: "pytest.Config"):
-    return f"codspeed: {__version__}"
+if TYPE_CHECKING:
+    from ._wrapper import LibType
 
 
 @pytest.hookimpl(trylast=True)
@@ -27,6 +22,21 @@ def pytest_addoption(parser: "pytest.Parser"):
     )
 
 
+@dataclass(unsafe_hash=True)
+class CodSpeedPlugin:
+    is_codspeed_enabled: bool
+    should_measure: bool
+    lib: Optional["LibType"] = None
+    benchmark_count: int = 0
+
+
+PLUGIN_NAME = "codspeed_plugin"
+
+
+def get_plugin(config: "pytest.Config") -> "CodSpeedPlugin":
+    return config.pluginmanager.get_plugin(PLUGIN_NAME)
+
+
 @pytest.hookimpl()
 def pytest_configure(config: "pytest.Config"):
     config.addinivalue_line(
@@ -35,10 +45,26 @@ def pytest_configure(config: "pytest.Config"):
     config.addinivalue_line(
         "markers", "benchmark: mark an entire test for codspeed benchmarking"
     )
+    plugin = CodSpeedPlugin(
+        is_codspeed_enabled=config.getoption("--codspeed")
+        or os.environ.get("CODSPEED_ENV") is not None,
+        should_measure=os.environ.get("CODSPEED_ENV") is not None,
+    )
+    if plugin.should_measure:
+        plugin.lib = get_lib()
+    config.pluginmanager.register(plugin, PLUGIN_NAME)
 
 
-def is_benchmark_enabled(config: "pytest.Config") -> bool:
-    return config.getoption("--codspeed") or os.environ.get("CODSPEED_ENV") is not None
+@pytest.hookimpl(trylast=True)
+def pytest_report_header(config: "pytest.Config"):
+    out = [f"codspeed: {__version__}"]
+    plugin = get_plugin(config)
+    if plugin.is_codspeed_enabled and not plugin.should_measure:
+        out.append(
+            "NOTICE: codspeed is enabled, but no performance measurement"
+            " will be made since it's running in an unknown environment."
+        )
+    return "\n".join(out)
 
 
 def should_benchmark_item(item: "pytest.Item") -> bool:
@@ -51,16 +77,17 @@ def should_benchmark_item(item: "pytest.Item") -> bool:
 
 @pytest.hookimpl()
 def pytest_sessionstart(session: "pytest.Session"):
-    if is_benchmark_enabled(session.config):
-        global _benchmark_count
-        _benchmark_count = 0
+    plugin = get_plugin(session.config)
+    if plugin.is_codspeed_enabled:
+        plugin.benchmark_count = 0
 
 
 @pytest.hookimpl(trylast=True)
 def pytest_collection_modifyitems(
     session: "pytest.Session", config: "pytest.Config", items: "List[pytest.Item]"
 ):
-    if is_benchmark_enabled(session.config):
+    plugin = get_plugin(config)
+    if plugin.is_codspeed_enabled:
         deselected = []
         selected = []
         for item in items:
@@ -74,45 +101,51 @@ def pytest_collection_modifyitems(
 
 @pytest.hookimpl()
 def pytest_runtest_call(item: "pytest.Item"):
-    if not is_benchmark_enabled(item.config) or not should_benchmark_item(item):
+    plugin = get_plugin(item.config)
+    if not plugin.is_codspeed_enabled or not should_benchmark_item(item):
         item.runtest()
     else:
-        global _benchmark_count
-        _benchmark_count += 1
+        plugin.benchmark_count += 1
         if "benchmark" in getattr(item, "fixturenames", []):
+            # This is a benchmark fixture, so the measurement is done by the fixture
+            item.runtest()
+        elif not plugin.should_measure:
             item.runtest()
         else:
-            lib.zero_stats()
-            lib.start_instrumentation()
+            assert plugin.lib is not None
+            plugin.lib.zero_stats()
+            plugin.lib.start_instrumentation()
             item.runtest()
-            lib.stop_instrumentation()
-            lib.dump_stats_at(f"{item.nodeid}".encode("ascii"))
+            plugin.lib.stop_instrumentation()
+            plugin.lib.dump_stats_at(f"{item.nodeid}".encode("ascii"))
 
 
 @pytest.hookimpl()
 def pytest_sessionfinish(session: "pytest.Session", exitstatus):
-    if is_benchmark_enabled(session.config):
+    plugin = get_plugin(session.config)
+    if plugin.is_codspeed_enabled:
         reporter = session.config.pluginmanager.get_plugin("terminalreporter")
-        reporter.write_sep("=", f"{_benchmark_count} benchmarked")
-
-
-@pytest.fixture(scope="session")
-def _is_benchmark_enabled(request: "pytest.FixtureRequest") -> bool:
-    return is_benchmark_enabled(request.config)
+        count_suffix = "benchmarked" if plugin.should_measure else "benchmark tested"
+        reporter.write_sep(
+            "=",
+            f"{plugin.benchmark_count} {count_suffix}",
+        )
 
 
 @pytest.fixture
-def codspeed_benchmark(
-    request: "pytest.FixtureRequest", _is_benchmark_enabled: bool
-) -> Callable:
+def codspeed_benchmark(request: "pytest.FixtureRequest") -> Callable:
+    plugin = get_plugin(request.config)
+
     def run(func: Callable[..., Any], *args: Any):
-        if _is_benchmark_enabled:
-            lib.zero_stats()
-            lib.start_instrumentation()
-        func(*args)
-        if _is_benchmark_enabled:
-            lib.stop_instrumentation()
-            lib.dump_stats_at(f"{request.node.nodeid}".encode("ascii"))
+        if plugin.is_codspeed_enabled and plugin.should_measure:
+            assert plugin.lib is not None
+            plugin.lib.zero_stats()
+            plugin.lib.start_instrumentation()
+            func(*args)
+            plugin.lib.stop_instrumentation()
+            plugin.lib.dump_stats_at(f"{request.node.nodeid}".encode("ascii"))
+        else:
+            func(*args)
 
     return run
 

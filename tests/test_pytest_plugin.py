@@ -1,9 +1,19 @@
 import os
+from contextlib import contextmanager
 
 import pytest
 
 
-def test_plugin_enabled_cli(pytester: pytest.Pytester) -> None:
+@contextmanager
+def codspeed_env():
+    os.environ["CODSPEED_ENV"] = "1"
+    try:
+        yield
+    finally:
+        del os.environ["CODSPEED_ENV"]
+
+
+def test_plugin_enabled_without_env(pytester: pytest.Pytester) -> None:
     pytester.makepyfile(
         """
         def test_some_addition_performance(benchmark):
@@ -13,10 +23,16 @@ def test_plugin_enabled_cli(pytester: pytest.Pytester) -> None:
         """
     )
     result = pytester.runpytest("--codspeed")
-    result.stdout.fnmatch_lines(["*1 benchmarked*", "*1 passed*"])
+    result.stdout.fnmatch_lines(
+        [
+            "NOTICE: codspeed is enabled, but no performance measurement will be made*",
+            "*1 benchmark tested*",
+            "*1 passed*",
+        ]
+    )
 
 
-def test_plugin_enabled_env(pytester: pytest.Pytester) -> None:
+def test_plugin_enabled_by_env(pytester: pytest.Pytester) -> None:
     pytester.makepyfile(
         """
         def test_some_addition_performance(benchmark):
@@ -25,11 +41,23 @@ def test_plugin_enabled_env(pytester: pytest.Pytester) -> None:
                 return 1 + 1
         """
     )
-    os.environ["CODSPEED_ENV"] = "1"
-    pytester.runpytest()
-    result = pytester.runpytest()
+    with codspeed_env():
+        result = pytester.runpytest()
     result.stdout.fnmatch_lines(["*1 benchmarked*", "*1 passed*"])
-    del os.environ["CODSPEED_ENV"]
+
+
+def test_plugin_enabled_and_env(pytester: pytest.Pytester) -> None:
+    pytester.makepyfile(
+        """
+        def test_some_addition_performance(benchmark):
+            @benchmark
+            def _():
+                return 1 + 1
+        """
+    )
+    with codspeed_env():
+        result = pytester.runpytest("--codspeed")
+    result.stdout.fnmatch_lines(["*1 benchmarked*", "*1 passed*"])
 
 
 def test_plugin_disabled(pytester: pytest.Pytester) -> None:
@@ -52,7 +80,8 @@ def test_plugin_enabled_nothing_to_benchmark(pytester: pytest.Pytester) -> None:
             return 1 + 1
         """
     )
-    result = pytester.runpytest("--codspeed")
+    with codspeed_env():
+        result = pytester.runpytest("--codspeed")
     result.stdout.fnmatch_lines(["*0 benchmarked*", "*1 deselected*"])
 
 

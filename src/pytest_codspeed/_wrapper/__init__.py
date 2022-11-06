@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 from cffi import FFI  # type: ignore
 
 if TYPE_CHECKING:
-    from .wrapper import lib as _lib
+    from .wrapper import lib as LibType
 
 _wrapper_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -21,7 +21,7 @@ def _get_ffi():
     return ffi
 
 
-def get_lib() -> "_lib":
+def get_lib() -> "LibType":
     try:
         ffi = _get_ffi()
         ffi.compile(
