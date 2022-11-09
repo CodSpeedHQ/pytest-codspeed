@@ -46,6 +46,7 @@ dev = [
     "pytest-cov ~= 4.0.0",
     "ruff ~= 0.0.100",
 ]
+compatibility = ["pytest-benchmarks ~= 3.4.1"]
 
 [project.entry-points]
 pytest11 = { codspeed = "pytest_codspeed.plugin" }

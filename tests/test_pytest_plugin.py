@@ -1,4 +1,3 @@
-import os
 import shutil
 from contextlib import contextmanager
 
@@ -10,13 +9,17 @@ skip_without_valgrind = pytest.mark.skipif(
 )
 
 
-@contextmanager
-def codspeed_env():
-    os.environ["CODSPEED_ENV"] = "1"
-    try:
-        yield
-    finally:
-        del os.environ["CODSPEED_ENV"]
+@pytest.fixture(scope="function")
+def codspeed_env(monkeypatch):
+    @contextmanager
+    def ctx_manager():
+        monkeypatch.setenv("CODSPEED_ENV", "1")
+        try:
+            yield
+        finally:
+            monkeypatch.delenv("CODSPEED_ENV", raising=False)
+
+    return ctx_manager
 
 
 def test_plugin_enabled_without_env(pytester: pytest.Pytester) -> None:
@@ -42,7 +45,7 @@ def test_plugin_enabled_without_env(pytester: pytest.Pytester) -> None:
 
 
 @skip_without_valgrind
-def test_plugin_enabled_by_env(pytester: pytest.Pytester) -> None:
+def test_plugin_enabled_by_env(pytester: pytest.Pytester, codspeed_env) -> None:
     pytester.makepyfile(
         """
         def test_some_addition_performance(benchmark):
@@ -57,7 +60,7 @@ def test_plugin_enabled_by_env(pytester: pytest.Pytester) -> None:
 
 
 @skip_without_valgrind
-def test_plugin_enabled_and_env(pytester: pytest.Pytester) -> None:
+def test_plugin_enabled_and_env(pytester: pytest.Pytester, codspeed_env) -> None:
     pytester.makepyfile(
         """
         def test_some_addition_performance(benchmark):
@@ -85,7 +88,9 @@ def test_plugin_disabled(pytester: pytest.Pytester) -> None:
 
 
 @skip_without_valgrind
-def test_plugin_enabled_nothing_to_benchmark(pytester: pytest.Pytester) -> None:
+def test_plugin_enabled_nothing_to_benchmark(
+    pytester: pytest.Pytester, codspeed_env
+) -> None:
     pytester.makepyfile(
         """
         def test_some_addition_performance():
