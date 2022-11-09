@@ -125,7 +125,7 @@ def test_plugin_only_benchmark_collection(pytester: pytest.Pytester) -> None:
         """
     )
     collection_result = pytester.runpytest("--codspeed", "--collect-only")
-    collection_result.stdout.fnmatch_lines(
+    collection_result.stdout.fnmatch_lines_random(
         [
             "*<Function test_some_addition_performance>*",
             "*<Function test_some_addition_performance_shorthand>*",
