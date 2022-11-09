@@ -24,6 +24,7 @@ jobs:
       matrix:
         config:
           - headless
+          - pytest-benchmark
           - valgrind
         python-version:
           - "3.7"
@@ -38,10 +39,13 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: "${{ matrix.python-version }}"
-      - if: matrix.config == 'valgrind'
+      - if: matrix.config == 'valgrind' || matrix.config == 'pytest-benchmark'
         name: Install valgrind
         run: sudo apt-get install valgrind -y
       - name: Install dependencies
         run: pip install .[dev]
+      - if: matrix.config == 'pytest-benchmark'
+        name: Install pytest-benchmark to test compatibility
+        run: pip install pytest-benchmark~=4.0.0 py
       - name: Run tests
         run: pytest
