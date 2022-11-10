@@ -1,12 +1,7 @@
-import shutil
 from contextlib import contextmanager
 
 import pytest
-
-VALGRIND_NOT_INSTALLED = shutil.which("valgrind") is None
-skip_without_valgrind = pytest.mark.skipif(
-    VALGRIND_NOT_INSTALLED, reason="valgrind not installed"
-)
+from conftest import skip_without_valgrind
 
 
 @pytest.fixture(scope="function")
