@@ -8,12 +8,13 @@ if [ $# -ne 1 ]; then
 fi
 
 hatch version $1
-git add src/__init__.py
+NEW_VERSION=$(hatch version)
+git add src/pytest_codspeed/__init__.py
 # Fail if there are any unstaged changes left
 git diff --exit-code
-git commit -am "Release v$1 🚀"
-git tag v$1 -m "Release v$1 🚀"
+git commit -am "Release v$NEW_VERSION 🚀"
+git tag v$NEW_VERSION -m "Release v$NEW_VERSION 🚀"
 git push --follow-tags
 hatch build
 hatch publish
-gh release create v$1 -t "v$1" -d
+gh release create v$NEW_VERSION --title "v$NEW_VERSION" --generate-notes -d
