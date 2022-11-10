@@ -7,6 +7,8 @@
 </a>
 <img src="https://img.shields.io/badge/python-3.7%20|%203.8%20|%203.9%20|%203.10%20|%203.11-informational.svg" alt="python-3.7-3.8-3.9-3.10-3.11">
 
+Pytest plugin to create CodSpeed benchmarks
+
 </div>
 
 ## Requirements
