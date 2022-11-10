@@ -77,9 +77,9 @@ If you want to run only the benchmarks tests locally, you can use the `--codspee
 pytest tests/ --codspeed
 ```
 
-> **Note:** Running `pytest-codspeed` locally will not produce any performance reporting. It's only useful for making sure that your benchmarks are working as expected. If you want to get performance reporting, you should run the benchmarks in the CI.
+> **Note:** Running `pytest-codspeed` locally will not produce any performance reporting. It's only useful for making sure that your benchmarks are working as expected. If you want to get performance reporting, you should run the benchmarks in your CI.
 
-#### In the CI
+#### In your CI
 
 You can use the [CodSpeedHQ/action](https://github.com/CodSpeedHQ/action) to run the benchmarks in Github Actions and upload the results to CodSpeed.
 
