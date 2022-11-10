@@ -53,4 +53,4 @@ jobs:
         name: Install pytest-benchmark to test compatibility
         run: pip install pytest-benchmark~=4.0.0 py
       - name: Run tests
-        run: pytest
+        run: pytest -vs
