@@ -1,7 +1,7 @@
 from contextlib import contextmanager
 
 import pytest
-from conftest import skip_without_valgrind
+from conftest import skip_without_pytest_benchmark, skip_without_valgrind
 
 
 @pytest.fixture(scope="function")
@@ -127,4 +127,29 @@ def test_plugin_only_benchmark_collection(pytester: pytest.Pytester) -> None:
             "*<Function test_some_wrapped_benchmark>*",
             "*3/4 tests collected (1 deselected)*",
         ],
+    )
+
+
+@skip_without_pytest_benchmark
+def test_pytest_benchmark_compatibility(pytester: pytest.Pytester) -> None:
+    pytester.makepyfile(
+        """
+        def test_some_wrapped_benchmark(benchmark):
+            @benchmark
+            def _():
+                hello = "hello"
+        """
+    )
+    result = pytester.runpytest("--benchmark-only")
+    result.stdout.fnmatch_lines_random(
+        [
+            "*benchmark: 1 tests*",
+            "*Name*",
+            "*test_some_wrapped_benchmark*",
+            "*Legend:*",
+            "*Outliers:*",
+            "*OPS: Operations Per Second*",
+            "*Outliers:*",
+            "*1 passed*",
+        ]
     )
