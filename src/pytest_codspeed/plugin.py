@@ -1,3 +1,4 @@
+import gc
 import os
 import pkgutil
 from dataclasses import dataclass, field
@@ -140,6 +141,20 @@ def pytest_collection_modifyitems(
         items[:] = selected
 
 
+def _run_with_instrumentation(lib: "LibType", fn: Callable[[], Any], nodeId: str):
+    is_gc_enabled = gc.isenabled()
+    if is_gc_enabled:
+        gc.collect()
+        gc.disable()
+    lib.zero_stats()
+    lib.start_instrumentation()
+    fn()
+    lib.stop_instrumentation()
+    lib.dump_stats_at(f"{nodeId}".encode("ascii"))
+    if is_gc_enabled:
+        gc.enable()
+
+
 @pytest.hookimpl(trylast=True)
 def pytest_runtest_call(item: "pytest.Item"):
     plugin = get_plugin(item.config)
@@ -155,11 +170,7 @@ def pytest_runtest_call(item: "pytest.Item"):
             item.runtest()
         else:
             assert plugin.lib is not None
-            plugin.lib.zero_stats()
-            plugin.lib.start_instrumentation()
-            item.runtest()
-            plugin.lib.stop_instrumentation()
-            plugin.lib.dump_stats_at(f"{item.nodeid}".encode("ascii"))
+            _run_with_instrumentation(plugin.lib, item.runtest, item.nodeid)
 
 
 @pytest.hookimpl()
@@ -181,11 +192,9 @@ def codspeed_benchmark(request: "pytest.FixtureRequest") -> Callable:
     def run(func: Callable[..., Any], *args: Any):
         if plugin.is_codspeed_enabled and plugin.should_measure:
             assert plugin.lib is not None
-            plugin.lib.zero_stats()
-            plugin.lib.start_instrumentation()
-            func(*args)
-            plugin.lib.stop_instrumentation()
-            plugin.lib.dump_stats_at(f"{request.node.nodeid}".encode("ascii"))
+            _run_with_instrumentation(
+                plugin.lib, lambda: func(*args), request.node.nodeid
+            )
         else:
             func(*args)
 
