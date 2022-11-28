@@ -191,12 +191,14 @@ def pytest_sessionfinish(session: "pytest.Session", exitstatus):
 def codspeed_benchmark(request: "pytest.FixtureRequest") -> Callable:
     plugin = get_plugin(request.config)
 
-    def run(func: Callable[..., Any], *args: Any):
+    def run(func: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
         if plugin.is_codspeed_enabled and plugin.should_measure:
             assert plugin.lib is not None
-            _run_with_instrumentation(plugin.lib, request.node.nodeid, func, *args)
+            _run_with_instrumentation(
+                plugin.lib, request.node.nodeid, func, *args, **kwargs
+            )
         else:
-            func(*args)
+            func(*args, **kwargs)
 
     return run
 

@@ -39,6 +39,19 @@ def test_plugin_enabled_without_env(pytester: pytest.Pytester) -> None:
     )
 
 
+def test_plugin_enabled_with_kwargs(pytester: pytest.Pytester, codspeed_env) -> None:
+    pytester.makepyfile(
+        """
+        def test_arg_kwarg_addition(benchmark):
+            def fn(arg, kwarg=None):
+                assert arg + kwarg == 40
+            benchmark(fn, 25, kwarg=15)
+        """
+    )
+    result = pytester.runpytest("--codspeed")
+    result.stdout.fnmatch_lines(["*1 benchmark tested*"])
+
+
 @skip_without_valgrind
 def test_plugin_enabled_by_env(pytester: pytest.Pytester, codspeed_env) -> None:
     pytester.makepyfile(
