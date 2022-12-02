@@ -56,6 +56,8 @@ def pytest_configure(config: "pytest.Config"):
     )
     should_measure = os.environ.get("CODSPEED_ENV") is not None
     lib = get_lib() if should_measure else None
+    if lib is not None:
+        lib.dump_stats_at(f"Metadata: pytest-codspeed {__version__}".encode("ascii"))
     disabled_plugins: List[str] = []
     # Disable pytest-benchmark if codspeed is enabled
     if is_codspeed_enabled and IS_PYTEST_BENCHMARK_INSTALLED:
