@@ -28,12 +28,17 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Software Development :: Testing",
     "Topic :: System :: Benchmark",
     "Topic :: Utilities",
     "Typing :: Typed",
 ]
-dependencies = ["cffi ~= 1.15.1", "pytest>=3.8"]
+dependencies = [
+    "cffi ~= 1.15.1",
+    "pytest>=3.8",
+    "setuptools ~= 67.8.0; python_version >= '3.12'", # FIXME: remove when cffi supports directly python 3.12
+]
 
 [project.optional-dependencies]
 dev = [
@@ -54,6 +59,9 @@ path = "src/pytest_codspeed/__init__.py"
 
 [tool.hatch.build.targets.sdist]
 include = ["/src"]
+
+[tool.mypy]
+python_version = "3.12"
 
 [tool.ruff]
 line-length = 88

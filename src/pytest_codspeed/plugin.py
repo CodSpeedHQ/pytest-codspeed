@@ -1,6 +1,7 @@
 import gc
 import os
 import pkgutil
+import sys
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Callable, List, Optional, Tuple
 
@@ -14,6 +15,7 @@ if TYPE_CHECKING:
     from ._wrapper import LibType
 
 IS_PYTEST_BENCHMARK_INSTALLED = pkgutil.find_loader("pytest_benchmark") is not None
+SUPPORTS_PERF_TRAMPOLINE = sys.version_info >= (3, 12)
 
 
 @pytest.hookimpl(trylast=True)
@@ -124,6 +126,8 @@ def pytest_sessionstart(session: "pytest.Session"):
     plugin = get_plugin(session.config)
     if plugin.is_codspeed_enabled:
         plugin.benchmark_count = 0
+        if plugin.should_measure and SUPPORTS_PERF_TRAMPOLINE:
+            sys.activate_stack_trampoline("perf")  # type: ignore
 
 
 @pytest.hookimpl(trylast=True)
