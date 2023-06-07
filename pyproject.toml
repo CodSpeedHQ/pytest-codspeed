@@ -41,18 +41,16 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = [
-    "hatchling ~= 1.11.1",
-    "black ~= 22.3.0",
-    "mypy ~= 0.961",
-    "ruff ~= 0.0.275",
-    "pytest ~= 7.0",
-    "pytest-cov ~= 4.0.0",
-]
-compatibility = ["pytest-benchmarks ~= 3.4.1"]
+lint = ["black ~= 22.3.0", "isort ~=5.8.0", "mypy ~= 0.961", "ruff ~= 0.0.275"]
+compat = ["pytest-benchmark ~= 4.0.0"]
+test = ["pytest ~= 7.0", "pytest-cov ~= 4.0.0"]
 
 [project.entry-points]
 pytest11 = { codspeed = "pytest_codspeed.plugin" }
+
+[tool.hatch.envs.default]
+python = "3.12"
+features = ["lint", "test", "compat"]
 
 [tool.hatch.version]
 path = "src/pytest_codspeed/__init__.py"
