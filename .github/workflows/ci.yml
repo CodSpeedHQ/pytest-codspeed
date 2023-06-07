@@ -37,6 +37,7 @@ jobs:
           - "3.9"
           - "3.10"
           - "3.11"
+          - "3.12.0-beta.1"
 
     steps:
       - uses: actions/checkout@v2
@@ -51,7 +52,7 @@ jobs:
         run: pip install .[dev]
       - if: matrix.config == 'pytest-benchmark'
         name: Install pytest-benchmark to test compatibility
-        run: pip install pytest-benchmark~=4.0.0 py
+        run: pip install pytest-benchmark~=4.0.0
       - name: Run tests
         run: pytest -vs
 
@@ -62,7 +63,7 @@ jobs:
       - name: Set up Python 3.12
         uses: actions/setup-python@v2
         with:
-          python-version: "3.11"
+          python-version: "3.12.0-beta.1"
       - name: Install local version of pytest-codspeed
         run: pip install .
 
