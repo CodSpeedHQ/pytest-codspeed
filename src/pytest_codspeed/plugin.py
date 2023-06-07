@@ -96,7 +96,10 @@ def pytest_plugin_registered(plugin, manager: "pytest.PytestPluginManager"):
 
 @pytest.hookimpl(trylast=True)
 def pytest_report_header(config: "pytest.Config"):
-    out = [f"codspeed: {__version__}"]
+    out = [
+        f"codspeed: {__version__} "
+        f"(callgraph: {'enabled' if SUPPORTS_PERF_TRAMPOLINE  else 'not supported'})"
+    ]
     plugin = get_plugin(config)
     if plugin.is_codspeed_enabled and not plugin.should_measure:
         out.append(

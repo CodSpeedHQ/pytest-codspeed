@@ -81,7 +81,7 @@ force_grid_wrap = 0
 float_to_top = true
 
 [tool.pytest.ini_options]
-addopts = "--ignore=tests/benchmarks"
+addopts = "--ignore=tests/benchmarks --ignore=tests/examples"
 filterwarnings = ["ignore::DeprecationWarning:pytest_benchmark.utils.*:"]
 
 [tool.coverage.run]

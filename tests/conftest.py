@@ -30,3 +30,7 @@ IS_PERF_TRAMPOLINE_SUPPORTED = sys.version_info >= (3, 12)
 skip_without_perf_trampoline = pytest.mark.skipif(
     not IS_PERF_TRAMPOLINE_SUPPORTED, reason="perf trampoline is not supported"
 )
+
+skip_with_perf_trampoline = pytest.mark.skipif(
+    IS_PERF_TRAMPOLINE_SUPPORTED, reason="perf trampoline is supported"
+)

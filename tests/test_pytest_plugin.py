@@ -3,6 +3,7 @@ from contextlib import contextmanager
 
 import pytest
 from conftest import (
+    skip_with_perf_trampoline,
     skip_without_perf_trampoline,
     skip_without_pytest_benchmark,
     skip_without_valgrind,
@@ -58,15 +59,30 @@ def test_plugin_enabled_with_kwargs(pytester: pytest.Pytester, codspeed_env) -> 
 
 
 @skip_without_valgrind
+@skip_without_perf_trampoline
+def test_bench_enabled_header_with_perf(
+    pytester: pytest.Pytester, codspeed_env
+) -> None:
+    pytester.copy_example("tests/examples/test_addition_fixture.py")
+    with codspeed_env():
+        result = pytester.runpytest()
+    result.stdout.fnmatch_lines(["codspeed: * (callgraph: enabled)"])
+
+
+@skip_without_valgrind
+@skip_with_perf_trampoline
+def test_bench_enabled_header_without_perf(
+    pytester: pytest.Pytester, codspeed_env
+) -> None:
+    pytester.copy_example("tests/examples/test_addition_fixture.py")
+    with codspeed_env():
+        result = pytester.runpytest()
+    result.stdout.fnmatch_lines(["codspeed: * (callgraph: not supported)"])
+
+
+@skip_without_valgrind
 def test_plugin_enabled_by_env(pytester: pytest.Pytester, codspeed_env) -> None:
-    pytester.makepyfile(
-        """
-        def test_some_addition_performance(benchmark):
-            @benchmark
-            def _():
-                return 1 + 1
-        """
-    )
+    pytester.copy_example("tests/examples/test_addition_fixture.py")
     with codspeed_env():
         result = pytester.runpytest()
     result.stdout.fnmatch_lines(["*1 benchmarked*", "*1 passed*"])
