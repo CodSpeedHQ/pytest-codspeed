@@ -75,6 +75,7 @@ float_to_top = true
 
 [tool.pytest.ini_options]
 addopts = "--ignore=tests/benchmarks"
+filterwarnings = ["ignore::DeprecationWarning:pytest_benchmark.utils.*:"]
 
 [tool.coverage.run]
 branch = true
