@@ -82,6 +82,67 @@ def test_plugin_enabled_and_env(pytester: pytest.Pytester, codspeed_env) -> None
     result.stdout.fnmatch_lines(["*1 benchmarked*", "*1 passed*"])
 
 
+@skip_without_valgrind
+def test_plugin_enabled_and_env_bench_run_once(
+    pytester: pytest.Pytester, codspeed_env
+) -> None:
+    pytester.makepyfile(
+        """
+        import pytest
+
+        @pytest.mark.benchmark
+        def test_noisy_bench_marked():
+            print() # make sure noise is on its own line
+            print("I'm noisy marked!!!")
+            print()
+
+        def test_noisy_bench_fxt(benchmark):
+            @benchmark
+            def _():
+                print() # make sure noise is on its own line
+                print("I'm noisy fixtured!!!")
+                print()
+        """
+    )
+    with codspeed_env():
+        run_result = pytester.runpytest("--codspeed", "-s")
+        print(run_result.stdout.str())
+        assert run_result.outlines.count("I'm noisy marked!!!") == 1
+        assert run_result.outlines.count("I'm noisy fixtured!!!") == 1
+
+
+@skip_without_valgrind
+def test_plugin_enabled_and_env_bench_hierachy_called(
+    pytester: pytest.Pytester, codspeed_env
+) -> None:
+    pytester.makepyfile(
+        """
+        import pytest
+
+        class TestGroup:
+            def setup_method(self):
+                print(); print("Setup called")
+
+            def teardown(self):
+                print(); print("Teardown called")
+
+            @pytest.mark.benchmark
+            def test_child(self):
+                print(); print("Test called")
+
+        """
+    )
+    with codspeed_env():
+        result = pytester.runpytest("--codspeed", "-s")
+        result.stdout.fnmatch_lines(
+            [
+                "Setup called",
+                "Test called",
+                "Teardown called",
+            ]
+        )
+
+
 def test_plugin_disabled(pytester: pytest.Pytester) -> None:
     pytester.makepyfile(
         """

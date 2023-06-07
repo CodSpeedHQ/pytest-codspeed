@@ -3,7 +3,7 @@ import os
 import pkgutil
 import sys
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Callable, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, List, Optional, Tuple, Union
 
 import pytest
 from _pytest.fixtures import FixtureManager
@@ -113,12 +113,20 @@ def pytest_report_header(config: "pytest.Config"):
     return "\n".join(out)
 
 
-def should_benchmark_item(item: "pytest.Item") -> bool:
+def has_benchmark_fixture(item: "pytest.Item") -> bool:
+    item_fixtures = getattr(item, "fixturenames", [])
+    return "benchmark" in item_fixtures or "codspeed_benchmark" in item_fixtures
+
+
+def has_benchmark_marker(item: "pytest.Item") -> bool:
     return (
         item.get_closest_marker("codspeed_benchmark") is not None
         or item.get_closest_marker("benchmark") is not None
-        or "benchmark" in getattr(item, "fixturenames", [])
     )
+
+
+def should_benchmark_item(item: "pytest.Item") -> bool:
+    return has_benchmark_fixture(item) or has_benchmark_marker(item)
 
 
 @pytest.hookimpl()
@@ -154,43 +162,65 @@ def _run_with_instrumentation(
     if is_gc_enabled:
         gc.collect()
         gc.disable()
+
+    def __codspeed_root_frame__():
+        fn(*args, **kwargs)
+
     lib.zero_stats()
     lib.start_instrumentation()
-    fn(*args, **kwargs)
+    __codspeed_root_frame__()
     lib.stop_instrumentation()
     lib.dump_stats_at(f"{nodeId}".encode("ascii"))
     if is_gc_enabled:
         gc.enable()
 
 
-@pytest.hookimpl(trylast=True)
-def pytest_runtest_call(item: "pytest.Item"):
+@pytest.hookimpl(tryfirst=True)
+def pytest_runtest_protocol(item: "pytest.Item", nextitem: Union["pytest.Item", None]):
     plugin = get_plugin(item.config)
-
     if not plugin.is_codspeed_enabled or not should_benchmark_item(item):
-        return  # Avoid running the test multiple times when codspeed is disabled
-    else:
-        plugin.benchmark_count += 1
-        if "benchmark" in getattr(item, "fixturenames", []):
-            # This is a benchmark fixture, so the measurement is done by the fixture
-            item.runtest()
-        elif not plugin.should_measure:
-            item.runtest()
-        else:
-            assert plugin.lib is not None
-            _run_with_instrumentation(plugin.lib, item.nodeid, item.runtest)
-
-
-@pytest.hookimpl()
-def pytest_sessionfinish(session: "pytest.Session", exitstatus):
-    plugin = get_plugin(session.config)
-    if plugin.is_codspeed_enabled:
-        reporter = session.config.pluginmanager.get_plugin("terminalreporter")
-        count_suffix = "benchmarked" if plugin.should_measure else "benchmark tested"
-        reporter.write_sep(
-            "=",
-            f"{plugin.benchmark_count} {count_suffix}",
+        return (
+            None  # Defer to the default test protocol since no benchmarking is needed
         )
+
+    if has_benchmark_fixture(item):
+        return None  # Instrumentation is handled by the fixture
+
+    plugin.benchmark_count += 1
+    if not plugin.should_measure:
+        return None  # Benchmark counted but will be run in the default protocol
+
+    # Setup phase
+    reports = []
+    ihook = item.ihook
+    ihook.pytest_runtest_logstart(nodeid=item.nodeid, location=item.location)
+    setup_call = pytest.CallInfo.from_call(
+        lambda: ihook.pytest_runtest_setup(item=item, nextitem=nextitem), "setup"
+    )
+    setup_report = ihook.pytest_runtest_makereport(item=item, call=setup_call)
+    ihook.pytest_runtest_logreport(report=setup_report)
+    reports.append(setup_report)
+    # Run phase
+    if setup_report.passed and not item.config.getoption("setuponly"):
+        assert plugin.lib is not None
+        runtest_call = pytest.CallInfo.from_call(
+            lambda: _run_with_instrumentation(plugin.lib, item.nodeid, item.runtest),
+            "call",
+        )
+        runtest_report = ihook.pytest_runtest_makereport(item=item, call=runtest_call)
+        ihook.pytest_runtest_logreport(report=runtest_report)
+        reports.append(runtest_report)
+
+    # Teardown phase
+    teardown_call = pytest.CallInfo.from_call(
+        lambda: ihook.pytest_runtest_teardown(item=item, nextitem=nextitem), "teardown"
+    )
+    teardown_report = ihook.pytest_runtest_makereport(item=item, call=teardown_call)
+    ihook.pytest_runtest_logreport(report=teardown_report)
+    reports.append(teardown_report)
+    ihook.pytest_runtest_logfinish(nodeid=item.nodeid, location=item.location)
+
+    return reports  # Deny further protocol hooks execution
 
 
 @pytest.fixture(scope="function")
@@ -198,6 +228,7 @@ def codspeed_benchmark(request: "pytest.FixtureRequest") -> Callable:
     plugin = get_plugin(request.config)
 
     def run(func: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+        plugin.benchmark_count += 1
         if plugin.is_codspeed_enabled and plugin.should_measure:
             assert plugin.lib is not None
             _run_with_instrumentation(
@@ -217,3 +248,15 @@ if not IS_PYTEST_BENCHMARK_INSTALLED:
         Compatibility with pytest-benchmark
         """
         return codspeed_benchmark
+
+
+@pytest.hookimpl()
+def pytest_sessionfinish(session: "pytest.Session", exitstatus):
+    plugin = get_plugin(session.config)
+    if plugin.is_codspeed_enabled:
+        reporter = session.config.pluginmanager.get_plugin("terminalreporter")
+        count_suffix = "benchmarked" if plugin.should_measure else "benchmark tested"
+        reporter.write_sep(
+            "=",
+            f"{plugin.benchmark_count} {count_suffix}",
+        )
