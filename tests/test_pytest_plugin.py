@@ -202,6 +202,15 @@ def test_plugin_only_benchmark_collection(pytester: pytest.Pytester) -> None:
             "*3/4 tests collected (1 deselected)*",
         ],
     )
+    collection_result = pytester.runpytest(
+        "--codspeed", "--collect-only", "-k", "test_some_wrapped_benchmark"
+    )
+    collection_result.stdout.fnmatch_lines_random(
+        [
+            "*<Function test_some_wrapped_benchmark>*",
+            "*1/4 tests collected (3 deselected)*",
+        ],
+    )
 
 
 @skip_without_pytest_benchmark
