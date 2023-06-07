@@ -90,14 +90,7 @@ def test_plugin_enabled_by_env(pytester: pytest.Pytester, codspeed_env) -> None:
 
 @skip_without_valgrind
 def test_plugin_enabled_and_env(pytester: pytest.Pytester, codspeed_env) -> None:
-    pytester.makepyfile(
-        """
-        def test_some_addition_performance(benchmark):
-            @benchmark
-            def _():
-                return 1 + 1
-        """
-    )
+    pytester.copy_example("tests/examples/test_addition_fixture.py")
     with codspeed_env():
         result = pytester.runpytest("--codspeed")
     result.stdout.fnmatch_lines(["*1 benchmarked*", "*1 passed*"])
@@ -165,14 +158,7 @@ def test_plugin_enabled_and_env_bench_hierachy_called(
 
 
 def test_plugin_disabled(pytester: pytest.Pytester) -> None:
-    pytester.makepyfile(
-        """
-        def test_some_addition_performance(benchmark):
-            @benchmark
-            def _():
-                return 1 + 1
-        """
-    )
+    pytester.copy_example("tests/examples/test_addition_fixture.py")
     result = pytester.runpytest()
     result.stdout.fnmatch_lines(["*1 passed*"])
 
