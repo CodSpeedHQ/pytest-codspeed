@@ -25,3 +25,8 @@ skip_without_valgrind = pytest.mark.skipif(
 
 if IS_VALGRIND_INSTALLED:
     print("NOTICE: Testing with valgrind compatibility", file=sys.stderr, flush=True)
+
+IS_PERF_TRAMPOLINE_SUPPORTED = sys.version_info >= (3, 12)
+skip_without_perf_trampoline = pytest.mark.skipif(
+    not IS_PERF_TRAMPOLINE_SUPPORTED, reason="perf trampoline is not supported"
+)

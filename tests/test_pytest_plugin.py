@@ -1,7 +1,12 @@
+import os
 from contextlib import contextmanager
 
 import pytest
-from conftest import skip_without_pytest_benchmark, skip_without_valgrind
+from conftest import (
+    skip_without_perf_trampoline,
+    skip_without_pytest_benchmark,
+    skip_without_valgrind,
+)
 
 
 @pytest.fixture(scope="function")
@@ -236,3 +241,45 @@ def test_pytest_benchmark_compatibility(pytester: pytest.Pytester) -> None:
             "*1 passed*",
         ]
     )
+
+
+@skip_without_valgrind
+@skip_without_perf_trampoline
+def test_perf_maps_generation(pytester: pytest.Pytester, codspeed_env) -> None:
+    pytester.makepyfile(
+        """
+        import pytest
+
+        @pytest.mark.benchmark
+        def test_some_addition_marked():
+            return 1 + 1
+
+        def test_some_addition_fixtured(benchmark):
+            @benchmark
+            def fixtured_child():
+                return 1 + 1
+        """
+    )
+    with codspeed_env():
+        result = pytester.runpytest("--codspeed")
+    result.stdout.fnmatch_lines(["*2 benchmarked*", "*2 passed*"])
+    current_pid = os.getpid()
+    perf_filepath = f"/tmp/perf-{current_pid}.map"
+    print(perf_filepath)
+
+    with open(perf_filepath, "r") as perf_file:
+        lines = perf_file.readlines()
+        assert any(
+            "py::_run_with_instrumentation.<locals>.__codspeed_root_frame__" in line
+            for line in lines
+        ), "No root frame found in perf map"
+        assert any(
+            "py::test_some_addition_marked" in line for line in lines
+        ), "No marked test frame found in perf map"
+        assert any(
+            "py::test_some_addition_fixtured" in line for line in lines
+        ), "No fixtured test frame found in perf map"
+        assert any(
+            "py::test_some_addition_fixtured.<locals>.fixtured_child" in line
+            for line in lines
+        ), "No fixtured child test frame found in perf map"
