@@ -249,6 +249,21 @@ def test_pytest_benchmark_compatibility(pytester: pytest.Pytester) -> None:
     )
 
 
+def test_pytest_benchmark_extra_info(pytester: pytest.Pytester) -> None:
+    """https://pytest-benchmark.readthedocs.io/en/latest/usage.html#extra-info"""
+    pytester.makepyfile(
+        """
+        import time
+
+        def test_my_stuff(benchmark):
+            benchmark.extra_info['foo'] = 'bar'
+            benchmark(time.sleep, 0.02)
+        """
+    )
+    result = pytester.runpytest("--codspeed")
+    assert result.ret == 0, "the run should have succeeded"
+
+
 @skip_without_valgrind
 @skip_without_perf_trampoline
 def test_perf_maps_generation(pytester: pytest.Pytester, codspeed_env) -> None:

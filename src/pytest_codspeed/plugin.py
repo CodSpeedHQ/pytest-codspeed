@@ -3,7 +3,7 @@ import os
 import pkgutil
 import sys
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Callable, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
 
 import pytest
 from _pytest.fixtures import FixtureManager
@@ -230,21 +230,27 @@ def pytest_runtest_protocol(item: "pytest.Item", nextitem: Union["pytest.Item", 
     return reports  # Deny further protocol hooks execution
 
 
-@pytest.fixture(scope="function")
-def codspeed_benchmark(request: "pytest.FixtureRequest") -> Callable:
-    plugin = get_plugin(request.config)
+class BenchmarkFixture:
+    def __init__(self, request: "pytest.FixtureRequest"):
+        self.extra_info: Dict = {}
 
-    def run(func: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+        self._request = request
+
+    def __call__(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+        plugin = get_plugin(self._request.config)
         plugin.benchmark_count += 1
         if plugin.is_codspeed_enabled and plugin.should_measure:
             assert plugin.lib is not None
             _run_with_instrumentation(
-                plugin.lib, request.node.nodeid, func, *args, **kwargs
+                plugin.lib, self._request.node.nodeid, func, *args, **kwargs
             )
         else:
             func(*args, **kwargs)
 
-    return run
+
+@pytest.fixture(scope="function")
+def codspeed_benchmark(request: "pytest.FixtureRequest") -> Callable:
+    return BenchmarkFixture(request)
 
 
 if not IS_PYTEST_BENCHMARK_INSTALLED:
