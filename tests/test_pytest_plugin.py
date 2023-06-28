@@ -3,6 +3,7 @@ from contextlib import contextmanager
 
 import pytest
 from conftest import (
+    IS_PERF_TRAMPOLINE_SUPPORTED,
     skip_with_perf_trampoline,
     skip_without_perf_trampoline,
     skip_without_pytest_benchmark,
@@ -118,11 +119,14 @@ def test_plugin_enabled_and_env_bench_run_once(
                 print()
         """
     )
+    EXPECTED_OUTPUT_COUNT = 2 if IS_PERF_TRAMPOLINE_SUPPORTED else 1
     with codspeed_env():
         run_result = pytester.runpytest("--codspeed", "-s")
         print(run_result.stdout.str())
-        assert run_result.outlines.count("I'm noisy marked!!!") == 1
-        assert run_result.outlines.count("I'm noisy fixtured!!!") == 1
+        assert run_result.outlines.count("I'm noisy marked!!!") == EXPECTED_OUTPUT_COUNT
+        assert (
+            run_result.outlines.count("I'm noisy fixtured!!!") == EXPECTED_OUTPUT_COUNT
+        )
 
 
 @skip_without_valgrind

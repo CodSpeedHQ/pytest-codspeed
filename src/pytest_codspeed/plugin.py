@@ -169,6 +169,10 @@ def _run_with_instrumentation(
     def __codspeed_root_frame__():
         fn(*args, **kwargs)
 
+    if SUPPORTS_PERF_TRAMPOLINE:
+        # Warmup CPython performance map cache
+        __codspeed_root_frame__()
+
     lib.zero_stats()
     lib.start_instrumentation()
     __codspeed_root_frame__()
