@@ -12,15 +12,11 @@ repos:
     rev: 22.3.0
     hooks:
       - id: black
-  - repo: https://github.com/timothycrosley/isort.git
-    rev: "5.8.0"
-    hooks:
-      - id: isort
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v0.961
     hooks:
       - id: mypy
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.0.100
+    rev: v0.0.275
     hooks:
       - id: ruff

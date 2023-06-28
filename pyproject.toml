@@ -39,12 +39,10 @@ dependencies = ["cffi ~= 1.15.1", "pytest>=3.8"]
 dev = [
     "hatchling ~= 1.11.1",
     "black ~= 22.3.0",
-    "isort ~=5.8.0",
-    "flake8 ~= 5.0.4",
     "mypy ~= 0.961",
+    "ruff ~= 0.0.275",
     "pytest ~= 7.0",
     "pytest-cov ~= 4.0.0",
-    "ruff ~= 0.0.100",
 ]
 compatibility = ["pytest-benchmarks ~= 3.4.1"]
 
@@ -59,6 +57,7 @@ include = ["/src"]
 
 [tool.ruff]
 line-length = 88
+select = ["E", "F", "I", "C"]
 
 [tool.isort]
 line_length = 88
