@@ -264,7 +264,6 @@ def test_pytest_benchmark_extra_info(pytester: pytest.Pytester) -> None:
     assert result.ret == 0, "the run should have succeeded"
 
 
-
 def test_pytest_benchmark_return_value(pytester: pytest.Pytester) -> None:
     pytester.makepyfile(
         """
