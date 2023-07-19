@@ -166,8 +166,11 @@ def _run_with_instrumentation(
         gc.collect()
         gc.disable()
 
+    result = None
+
     def __codspeed_root_frame__():
-        fn(*args, **kwargs)
+        nonlocal result
+        result = fn(*args, **kwargs)
 
     if SUPPORTS_PERF_TRAMPOLINE:
         # Warmup CPython performance map cache
@@ -180,6 +183,8 @@ def _run_with_instrumentation(
     lib.dump_stats_at(f"{nodeId}".encode("ascii"))
     if is_gc_enabled:
         gc.enable()
+
+    return result
 
 
 @pytest.hookimpl(tryfirst=True)
@@ -241,11 +246,11 @@ class BenchmarkFixture:
         plugin.benchmark_count += 1
         if plugin.is_codspeed_enabled and plugin.should_measure:
             assert plugin.lib is not None
-            _run_with_instrumentation(
+            return _run_with_instrumentation(
                 plugin.lib, self._request.node.nodeid, func, *args, **kwargs
             )
         else:
-            func(*args, **kwargs)
+            return func(*args, **kwargs)
 
 
 @pytest.fixture(scope="function")

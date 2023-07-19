@@ -264,6 +264,21 @@ def test_pytest_benchmark_extra_info(pytester: pytest.Pytester) -> None:
     assert result.ret == 0, "the run should have succeeded"
 
 
+def test_pytest_benchmark_return_value(pytester: pytest.Pytester) -> None:
+    pytester.makepyfile(
+        """
+        def calculate_something():
+            return 1 + 1
+
+        def test_my_stuff(benchmark):
+            value = benchmark(calculate_something)
+            assert value == 2
+        """
+    )
+    result = pytester.runpytest("--codspeed")
+    assert result.ret == 0, "the run should have succeeded"
+
+
 @skip_without_valgrind
 @skip_without_perf_trampoline
 def test_perf_maps_generation(pytester: pytest.Pytester, codspeed_env) -> None:
