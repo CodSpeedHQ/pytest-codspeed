@@ -15,6 +15,3 @@ git diff --exit-code
 git commit -am "Release v$NEW_VERSION 🚀"
 git tag v$NEW_VERSION -m "Release v$NEW_VERSION 🚀"
 git push --follow-tags
-hatch build
-hatch publish
-gh release create v$NEW_VERSION --title "v$NEW_VERSION" --generate-notes -d
