@@ -3,7 +3,17 @@ import os
 import pkgutil
 import sys
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 import pytest
 from _pytest.fixtures import FixtureManager
@@ -235,13 +245,18 @@ def pytest_runtest_protocol(item: "pytest.Item", nextitem: Union["pytest.Item", 
     return reports  # Deny further protocol hooks execution
 
 
+T = TypeVar("T")
+
+
 class BenchmarkFixture:
+    """The fixture that can be used to benchmark a function."""
+
     def __init__(self, request: "pytest.FixtureRequest"):
         self.extra_info: Dict = {}
 
         self._request = request
 
-    def __call__(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+    def __call__(self, func: Callable[..., T], *args: Any, **kwargs: Any) -> T:
         plugin = get_plugin(self._request.config)
         plugin.benchmark_count += 1
         if plugin.is_codspeed_enabled and plugin.should_measure:
