@@ -37,7 +37,7 @@ classifiers = [
 dependencies = [
     "cffi ~= 1.15.1",
     "pytest>=3.8",
-    "setuptools ~= 67.8.0; python_version >= '3.12'", # FIXME: remove when cffi supports directly python 3.12
+    "setuptools ~= 67.8.0; python_full_version >= '3.12.0b1'", # FIXME: remove when cffi supports directly python 3.12
 ]
 
 [project.optional-dependencies]
@@ -49,7 +49,7 @@ test = ["pytest ~= 7.0", "pytest-cov ~= 4.0.0"]
 pytest11 = { codspeed = "pytest_codspeed.plugin" }
 
 [tool.hatch.envs.default]
-python = "3.12"
+python = "3.11"
 features = ["lint", "test", "compat"]
 
 [tool.hatch.envs.test]
