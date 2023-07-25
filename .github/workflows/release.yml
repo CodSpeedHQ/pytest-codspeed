@@ -27,7 +27,7 @@ jobs:
       - name: Build the library
         run: hatch build
 
-      - name: Publish package distributions to TestPyPI
+      - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
 
       - name: Create a draft release
