@@ -18,6 +18,8 @@ from typing import (
 import pytest
 from _pytest.fixtures import FixtureManager
 
+from pytest_codspeed.utils import get_git_relative_uri
+
 from . import __version__
 from ._wrapper import get_lib
 
@@ -169,7 +171,12 @@ def pytest_collection_modifyitems(
 
 
 def _run_with_instrumentation(
-    lib: "LibType", nodeId: str, fn: Callable[..., Any], *args, **kwargs
+    lib: "LibType",
+    nodeId: str,
+    config: "pytest.Config",
+    fn: Callable[..., Any],
+    *args,
+    **kwargs,
 ):
     is_gc_enabled = gc.isenabled()
     if is_gc_enabled:
@@ -185,12 +192,12 @@ def _run_with_instrumentation(
     if SUPPORTS_PERF_TRAMPOLINE:
         # Warmup CPython performance map cache
         __codspeed_root_frame__()
-
     lib.zero_stats()
     lib.start_instrumentation()
     __codspeed_root_frame__()
     lib.stop_instrumentation()
-    lib.dump_stats_at(f"{nodeId}".encode("ascii"))
+    uri = get_git_relative_uri(nodeId, config.rootpath)
+    lib.dump_stats_at(uri.encode("ascii"))
     if is_gc_enabled:
         gc.enable()
 
@@ -226,7 +233,9 @@ def pytest_runtest_protocol(item: "pytest.Item", nextitem: Union["pytest.Item", 
     if setup_report.passed and not item.config.getoption("setuponly"):
         assert plugin.lib is not None
         runtest_call = pytest.CallInfo.from_call(
-            lambda: _run_with_instrumentation(plugin.lib, item.nodeid, item.runtest),
+            lambda: _run_with_instrumentation(
+                plugin.lib, item.nodeid, item.config, item.runtest
+            ),
             "call",
         )
         runtest_report = ihook.pytest_runtest_makereport(item=item, call=runtest_call)
@@ -257,12 +266,13 @@ class BenchmarkFixture:
         self._request = request
 
     def __call__(self, func: Callable[..., T], *args: Any, **kwargs: Any) -> T:
-        plugin = get_plugin(self._request.config)
+        config = self._request.config
+        plugin = get_plugin(config)
         plugin.benchmark_count += 1
         if plugin.is_codspeed_enabled and plugin.should_measure:
             assert plugin.lib is not None
             return _run_with_instrumentation(
-                plugin.lib, self._request.node.nodeid, func, *args, **kwargs
+                plugin.lib, self._request.node.nodeid, config, func, *args, **kwargs
             )
         else:
             return func(*args, **kwargs)
