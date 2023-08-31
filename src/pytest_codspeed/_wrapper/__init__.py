@@ -2,6 +2,7 @@ import os
 from typing import TYPE_CHECKING
 
 from cffi import FFI  # type: ignore
+from filelock import FileLock
 
 if TYPE_CHECKING:
     from .wrapper import lib as LibType
@@ -24,10 +25,12 @@ def _get_ffi():
 def get_lib() -> "LibType":
     try:
         ffi = _get_ffi()
-        ffi.compile(
-            target="dist_callgrind_wrapper.*",
-            tmpdir=_wrapper_dir,
-        )
+        build_lock = FileLock(f"{_wrapper_dir}/build.lock")
+        with build_lock:
+            ffi.compile(
+                target="dist_callgrind_wrapper.*",
+                tmpdir=_wrapper_dir,
+            )
         from .dist_callgrind_wrapper import lib  # type: ignore
 
         return lib
