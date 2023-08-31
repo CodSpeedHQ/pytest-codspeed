@@ -49,9 +49,9 @@ jobs:
         name: Install valgrind
         run: sudo apt-get install valgrind -y
       - name: Install dependencies
-        run: pip install .[dev]
-      - if: matrix.config == 'pytest-benchmark'
-        name: Install pytest-benchmark to test compatibility
-        run: pip install pytest-benchmark~=4.0.0
+        run: pip install .[dev,compat]
+      - if: matrix.config != 'pytest-benchmark'
+        name: Uninstall pytest-benchmark
+        run: pip uninstall -y pytest-benchmark
       - name: Run tests
         run: pytest -vs

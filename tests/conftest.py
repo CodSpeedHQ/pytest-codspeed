@@ -10,6 +10,9 @@ IS_PYTEST_BENCHMARK_INSTALLED = importlib.util.find_spec("pytest_benchmark") is 
 skip_without_pytest_benchmark = pytest.mark.skipif(
     not IS_PYTEST_BENCHMARK_INSTALLED, reason="pytest_benchmark not installed"
 )
+skip_with_pytest_benchmark = pytest.mark.skipif(
+    IS_PYTEST_BENCHMARK_INSTALLED, reason="pytest_benchmark installed"
+)
 if IS_PYTEST_BENCHMARK_INSTALLED:
     pytest_plugins.append("pytest_benchmark")
     print(

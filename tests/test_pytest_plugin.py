@@ -5,6 +5,7 @@ import pytest
 from conftest import (
     IS_PERF_TRAMPOLINE_SUPPORTED,
     skip_with_perf_trampoline,
+    skip_with_pytest_benchmark,
     skip_without_perf_trampoline,
     skip_without_pytest_benchmark,
     skip_without_valgrind,
@@ -319,3 +320,29 @@ def test_perf_maps_generation(pytester: pytest.Pytester, codspeed_env) -> None:
             "py::test_some_addition_fixtured.<locals>.fixtured_child" in line
             for line in lines
         ), "No fixtured child test frame found in perf map"
+
+
+@skip_without_valgrind
+@skip_with_pytest_benchmark
+def test_pytest_xdist_concurrency_compatibility(
+    pytester: pytest.Pytester, codspeed_env
+) -> None:
+    pytester.makepyfile(
+        """
+        import time, pytest
+
+        def do_something():
+            time.sleep(1)
+
+        @pytest.mark.parametrize("i", range(256))
+        def test_my_stuff(benchmark, i):
+            benchmark(do_something)
+        """
+    )
+    # Run the test multiple times to reduce the chance of a false positive
+    ITERATIONS = 5
+    for i in range(ITERATIONS):
+        with codspeed_env():
+            result = pytester.runpytest("--codspeed", "-n", "128")
+        assert result.ret == 0, "the run should have succeeded"
+        assert result.stdout.fnmatch_lines(["*256 passed*"])
