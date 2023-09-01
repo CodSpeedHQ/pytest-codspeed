@@ -345,4 +345,4 @@ def test_pytest_xdist_concurrency_compatibility(
         with codspeed_env():
             result = pytester.runpytest("--codspeed", "-n", "128")
         assert result.ret == 0, "the run should have succeeded"
-        assert result.stdout.fnmatch_lines(["*256 passed*"])
+        result.stdout.fnmatch_lines(["*256 passed*"])
