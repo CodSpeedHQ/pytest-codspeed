@@ -4,6 +4,7 @@ on:
     branches: [master]
   pull_request:
     branches: [master]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.ref }}
@@ -13,9 +14,9 @@ jobs:
   static-analysis:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Set up Python 3.11
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: "3.11"
       - uses: pre-commit/action@v3.0.0
@@ -37,12 +38,12 @@ jobs:
           - "3.9"
           - "3.10"
           - "3.11"
-          - "3.12.0-beta.1"
+          - "3.12"
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: "Set up Python ${{ matrix.python-version }}"
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: "${{ matrix.python-version }}"
       - if: matrix.config == 'valgrind' || matrix.config == 'pytest-benchmark'
