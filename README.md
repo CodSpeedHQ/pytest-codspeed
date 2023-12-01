@@ -107,7 +107,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
       - name: Run benchmarks
-        uses: CodSpeedHQ/action@v1
+        uses: CodSpeedHQ/action@v2
         with:
           token: ${{ secrets.CODSPEED_TOKEN }}
           run: pytest tests/ --codspeed
