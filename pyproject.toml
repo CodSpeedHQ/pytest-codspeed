@@ -38,7 +38,7 @@ dependencies = [
     "cffi >= 1.15.1",
     "pytest>=3.8",
     "filelock >= 3.12.2",
-    "setuptools ~= 67.8.0; python_full_version >= '3.12.0b1'", # FIXME: remove when cffi supports directly python 3.12
+    "setuptools; python_full_version >= '3.12.0b1'", # FIXME: remove when cffi supports directly python 3.12
 ]
 
 [project.optional-dependencies]
