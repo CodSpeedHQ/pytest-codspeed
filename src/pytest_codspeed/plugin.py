@@ -1,19 +1,11 @@
+from __future__ import annotations
+
 import gc
 import os
 import pkgutil
 import sys
 from dataclasses import dataclass, field
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    TypeVar,
-    Union,
-)
+from typing import TYPE_CHECKING, TypeVar
 
 import pytest
 from _pytest.fixtures import FixtureManager
@@ -24,6 +16,8 @@ from . import __version__
 from ._wrapper import get_lib
 
 if TYPE_CHECKING:
+    from typing import Any, Callable
+
     from ._wrapper import LibType
 
 IS_PYTEST_BENCHMARK_INSTALLED = pkgutil.find_loader("pytest_benchmark") is not None
@@ -31,7 +25,7 @@ SUPPORTS_PERF_TRAMPOLINE = sys.version_info >= (3, 12)
 
 
 @pytest.hookimpl(trylast=True)
-def pytest_addoption(parser: "pytest.Parser"):
+def pytest_addoption(parser: pytest.Parser):
     group = parser.getgroup("CodSpeed benchmarking")
     group.addoption(
         "--codspeed",
@@ -45,20 +39,20 @@ def pytest_addoption(parser: "pytest.Parser"):
 class CodSpeedPlugin:
     is_codspeed_enabled: bool
     should_measure: bool
-    lib: Optional["LibType"]
-    disabled_plugins: Tuple[str, ...]
+    lib: LibType | None
+    disabled_plugins: tuple[str, ...]
     benchmark_count: int = field(default=0, hash=False, compare=False)
 
 
 PLUGIN_NAME = "codspeed_plugin"
 
 
-def get_plugin(config: "pytest.Config") -> "CodSpeedPlugin":
+def get_plugin(config: pytest.Config) -> CodSpeedPlugin:
     return config.pluginmanager.get_plugin(PLUGIN_NAME)
 
 
 @pytest.hookimpl(tryfirst=True)
-def pytest_configure(config: "pytest.Config"):
+def pytest_configure(config: pytest.Config):
     config.addinivalue_line(
         "markers", "codspeed_benchmark: mark an entire test for codspeed benchmarking"
     )
@@ -72,7 +66,7 @@ def pytest_configure(config: "pytest.Config"):
     lib = get_lib() if should_measure else None
     if lib is not None:
         lib.dump_stats_at(f"Metadata: pytest-codspeed {__version__}".encode("ascii"))
-    disabled_plugins: List[str] = []
+    disabled_plugins: list[str] = []
     # Disable pytest-benchmark if codspeed is enabled
     if is_codspeed_enabled and IS_PYTEST_BENCHMARK_INSTALLED:
         object.__setattr__(config.option, "benchmark_disable", True)
@@ -88,7 +82,7 @@ def pytest_configure(config: "pytest.Config"):
     config.pluginmanager.register(plugin, PLUGIN_NAME)
 
 
-def pytest_plugin_registered(plugin, manager: "pytest.PytestPluginManager"):
+def pytest_plugin_registered(plugin, manager: pytest.PytestPluginManager):
     """Patch the benchmark fixture to use the codspeed one if codspeed is enabled"""
     if IS_PYTEST_BENCHMARK_INSTALLED and isinstance(plugin, FixtureManager):
         fixture_manager = plugin
@@ -107,7 +101,7 @@ def pytest_plugin_registered(plugin, manager: "pytest.PytestPluginManager"):
 
 
 @pytest.hookimpl(trylast=True)
-def pytest_report_header(config: "pytest.Config"):
+def pytest_report_header(config: pytest.Config):
     out = [
         f"codspeed: {__version__} "
         f"(callgraph: {'enabled' if SUPPORTS_PERF_TRAMPOLINE  else 'not supported'})"
@@ -128,24 +122,24 @@ def pytest_report_header(config: "pytest.Config"):
     return "\n".join(out)
 
 
-def has_benchmark_fixture(item: "pytest.Item") -> bool:
+def has_benchmark_fixture(item: pytest.Item) -> bool:
     item_fixtures = getattr(item, "fixturenames", [])
     return "benchmark" in item_fixtures or "codspeed_benchmark" in item_fixtures
 
 
-def has_benchmark_marker(item: "pytest.Item") -> bool:
+def has_benchmark_marker(item: pytest.Item) -> bool:
     return (
         item.get_closest_marker("codspeed_benchmark") is not None
         or item.get_closest_marker("benchmark") is not None
     )
 
 
-def should_benchmark_item(item: "pytest.Item") -> bool:
+def should_benchmark_item(item: pytest.Item) -> bool:
     return has_benchmark_fixture(item) or has_benchmark_marker(item)
 
 
 @pytest.hookimpl()
-def pytest_sessionstart(session: "pytest.Session"):
+def pytest_sessionstart(session: pytest.Session):
     plugin = get_plugin(session.config)
     if plugin.is_codspeed_enabled:
         plugin.benchmark_count = 0
@@ -155,7 +149,7 @@ def pytest_sessionstart(session: "pytest.Session"):
 
 @pytest.hookimpl(trylast=True)
 def pytest_collection_modifyitems(
-    session: "pytest.Session", config: "pytest.Config", items: "List[pytest.Item]"
+    session: pytest.Session, config: pytest.Config, items: list[pytest.Item]
 ):
     plugin = get_plugin(config)
     if plugin.is_codspeed_enabled:
@@ -171,9 +165,9 @@ def pytest_collection_modifyitems(
 
 
 def _run_with_instrumentation(
-    lib: "LibType",
+    lib: LibType,
     nodeId: str,
-    config: "pytest.Config",
+    config: pytest.Config,
     fn: Callable[..., Any],
     *args,
     **kwargs,
@@ -205,7 +199,7 @@ def _run_with_instrumentation(
 
 
 @pytest.hookimpl(tryfirst=True)
-def pytest_runtest_protocol(item: "pytest.Item", nextitem: Union["pytest.Item", None]):
+def pytest_runtest_protocol(item: pytest.Item, nextitem: pytest.Item | None):
     plugin = get_plugin(item.config)
     if not plugin.is_codspeed_enabled or not should_benchmark_item(item):
         return (
@@ -260,8 +254,8 @@ T = TypeVar("T")
 class BenchmarkFixture:
     """The fixture that can be used to benchmark a function."""
 
-    def __init__(self, request: "pytest.FixtureRequest"):
-        self.extra_info: Dict = {}
+    def __init__(self, request: pytest.FixtureRequest):
+        self.extra_info: dict = {}
 
         self._request = request
 
@@ -279,14 +273,14 @@ class BenchmarkFixture:
 
 
 @pytest.fixture(scope="function")
-def codspeed_benchmark(request: "pytest.FixtureRequest") -> Callable:
+def codspeed_benchmark(request: pytest.FixtureRequest) -> Callable:
     return BenchmarkFixture(request)
 
 
 if not IS_PYTEST_BENCHMARK_INSTALLED:
 
     @pytest.fixture(scope="function")
-    def benchmark(codspeed_benchmark, request: "pytest.FixtureRequest"):
+    def benchmark(codspeed_benchmark, request: pytest.FixtureRequest):
         """
         Compatibility with pytest-benchmark
         """
@@ -294,7 +288,7 @@ if not IS_PYTEST_BENCHMARK_INSTALLED:
 
 
 @pytest.hookimpl()
-def pytest_sessionfinish(session: "pytest.Session", exitstatus):
+def pytest_sessionfinish(session: pytest.Session, exitstatus):
     plugin = get_plugin(session.config)
     if plugin.is_codspeed_enabled:
         reporter = session.config.pluginmanager.get_plugin("terminalreporter")
