@@ -346,3 +346,50 @@ def test_pytest_xdist_concurrency_compatibility(
             result = pytester.runpytest("--codspeed", "-n", "128")
         assert result.ret == 0, "the run should have succeeded"
         result.stdout.fnmatch_lines(["*256 passed*"])
+
+
+def test_print(pytester: pytest.Pytester, codspeed_env) -> None:
+    """Test print statements are captured by pytest (i.e., not printed to terminal in
+    the middle of the progress bar) and only displayed after test run (on failures)."""
+    pytester.makepyfile(
+        """
+        import pytest, sys
+
+        @pytest.mark.benchmark
+        def test_print():
+            print("print to stdout")
+            print("print to stderr", file=sys.stderr)
+        """
+    )
+    with codspeed_env():
+        result = pytester.runpytest("--codspeed")
+    assert result.ret == 0, "the run should have succeeded"
+    result.stdout.fnmatch_lines(["*1 benchmarked*"])
+    result.stdout.no_fnmatch_line("*print to stdout*")
+    result.stderr.no_fnmatch_line("*print to stderr*")
+
+
+def test_capsys(pytester: pytest.Pytester, codspeed_env) -> None:
+    """Test print statements are captured by capsys (i.e., not printed to terminal in
+    the middle of the progress bar) and can be inspected within test."""
+    pytester.makepyfile(
+        """
+        import pytest, sys
+
+        @pytest.mark.benchmark
+        def test_capsys(capsys):
+            print("print to stdout")
+            print("print to stderr", file=sys.stderr)
+
+            stdout, stderr = capsys.readouterr()
+
+            assert stdout == "print to stdout\\n"
+            assert stderr == "print to stderr\\n"
+        """
+    )
+    with codspeed_env():
+        result = pytester.runpytest("--codspeed")
+    assert result.ret == 0, "the run should have succeeded"
+    result.stdout.fnmatch_lines(["*1 benchmarked*"])
+    result.stdout.no_fnmatch_line("*print to stdout*")
+    result.stderr.no_fnmatch_line("*print to stderr*")
