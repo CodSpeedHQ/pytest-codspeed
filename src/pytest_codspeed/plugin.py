@@ -228,7 +228,10 @@ def pytest_runtest_protocol(item: pytest.Item, nextitem: pytest.Item | None):
         assert plugin.lib is not None
         runtest_call = pytest.CallInfo.from_call(
             lambda: _run_with_instrumentation(
-                plugin.lib, item.nodeid, item.config, item.runtest
+                plugin.lib,
+                item.nodeid,
+                item.config,
+                lambda: ihook.pytest_runtest_call(item=item),
             ),
             "call",
         )
