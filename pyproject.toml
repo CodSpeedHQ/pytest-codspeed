@@ -36,9 +36,11 @@ classifiers = [
 ]
 dependencies = [
     "cffi >= 1.15.1",
+    # cffi doesn't automatically install setuptools with python 3.12+
+    # cf https://github.com/python-cffi/cffi/releases/tag/v1.16.0
+    "setuptools; python_full_version >= '3.12'",
     "pytest>=3.8",
     "filelock >= 3.12.2",
-    "setuptools; python_full_version >= '3.12.0b1'", # FIXME: remove when cffi supports directly python 3.12
 ]
 
 [project.optional-dependencies]
