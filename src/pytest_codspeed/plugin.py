@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import contextlib
+import functools
 import gc
 import os
 import pkgutil
@@ -9,6 +11,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 from _pytest.fixtures import FixtureManager
+from _pytest.runner import runtestprotocol
 
 from pytest_codspeed.utils import get_git_relative_uri
 
@@ -16,11 +19,12 @@ from . import __version__
 from ._wrapper import get_lib
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, TypeVar
+    from typing import Any, Callable, Iterator, ParamSpec, TypeVar
 
     from ._wrapper import LibType
 
     T = TypeVar("T")
+    P = ParamSpec("P")
 
 IS_PYTEST_BENCHMARK_INSTALLED = pkgutil.find_loader("pytest_benchmark") is not None
 SUPPORTS_PERF_TRAMPOLINE = sys.version_info >= (3, 12)
@@ -170,88 +174,121 @@ def pytest_collection_modifyitems(
         items[:] = selected
 
 
-def _run_with_instrumentation(
-    lib: LibType,
-    nodeId: str,
-    config: pytest.Config,
-    fn: Callable[..., Any],
-    *args,
-    **kwargs,
-):
+@contextlib.contextmanager
+def collect_garbage() -> Iterator[None]:
     is_gc_enabled = gc.isenabled()
     if is_gc_enabled:
         gc.collect()
         gc.disable()
 
-    result = None
+    try:
+        yield
+    finally:
+        # Re-enable garbage collection if it was enabled previously
+        if is_gc_enabled:
+            gc.enable()
 
-    def __codspeed_root_frame__():
-        nonlocal result
-        result = fn(*args, **kwargs)
 
+@contextlib.contextmanager
+def prime_cache(
+    item: pytest.Item | Callable[P, T],
+    *args: Any,
+    **kwargs: Any,
+) -> Iterator[None]:
     if SUPPORTS_PERF_TRAMPOLINE:
-        # Warmup CPython performance map cache
-        __codspeed_root_frame__()
-    lib.zero_stats()
-    lib.start_instrumentation()
-    __codspeed_root_frame__()
-    lib.stop_instrumentation()
-    uri = get_git_relative_uri(nodeId, config.rootpath)
-    lib.dump_stats_at(uri.encode("ascii"))
-    if is_gc_enabled:
-        gc.enable()
+        if isinstance(item, pytest.Item):
+            runtestprotocol(item, *args, **kwargs)
 
-    return result
+            # Clear item's cached results
+            _remove_cached_results_from_fixtures(item)
+            _remove_setup_state_from_session(item)
+        else:
+            item(*args, **kwargs)
+
+    yield
+
+
+def _remove_cached_results_from_fixtures(item: pytest.Item) -> None:
+    """Borrowed from pytest_rerunfailures._remove_cached_results_from_failed_fixtures"""
+    fixtureinfo = getattr(item, "_fixtureinfo", None)
+    name2fixturedefs = getattr(fixtureinfo, "name2fixturedefs", {})
+    for fixture_defs in name2fixturedefs.values():
+        for fixture_def in fixture_defs:
+            setattr(fixture_def, "cached_result", None)
+
+
+def _remove_setup_state_from_session(item: pytest.Item) -> None:
+    """Borrowed from pytest_rerunfailures._remove_failed_setup_state_from_session"""
+    item.session._setupstate.stack = {}
+
+
+@contextlib.contextmanager
+def add_instrumentation(
+    lib: LibType,
+    item: pytest.Item,
+    inner_func: Callable[P, T] | None = None,
+) -> Iterator[Callable[P, T]]:
+    # Store original test function so we can restore it after instrumentation
+    orig_obj: Callable[P, T] = item.obj
+
+    # The test function to be run
+    runtest: Callable[P, T] = inner_func or orig_obj
+
+    # Wrap the test function with instrumentation
+    @functools.wraps(runtest)
+    def __codspeed_root_frame__(*args: P.args, **kwargs: P.kwargs) -> T:
+        lib.zero_stats()
+        lib.start_instrumentation()
+
+        try:
+            return runtest(*args, **kwargs)
+        finally:
+            lib.stop_instrumentation()
+            uri = get_git_relative_uri(item.nodeid, item.config.rootpath)
+            lib.dump_stats_at(uri.encode("ascii"))
+
+    if not inner_func:
+        item.obj = __codspeed_root_frame__
+
+    try:
+        yield __codspeed_root_frame__
+    finally:
+        # Restore unadorned function
+        if not inner_func:
+            item.obj = orig_obj
 
 
 @pytest.hookimpl(tryfirst=True)
-def pytest_runtest_protocol(item: pytest.Item, nextitem: pytest.Item | None):
+def pytest_runtest_protocol(
+    item: pytest.Item,
+    nextitem: pytest.Item | None,
+) -> bool | None:
     plugin = get_plugin(item.config)
     if not plugin.is_codspeed_enabled or not should_benchmark_item(item):
-        return (
-            None  # Defer to the default test protocol since no benchmarking is needed
-        )
+        return None  # Defer to default test protocol since no benchmarking is needed
 
     if has_benchmark_fixture(item):
         return None  # Instrumentation is handled by the fixture
 
     plugin.benchmark_count += 1
-    if not plugin.should_measure:
+    if plugin.lib is None or not plugin.should_measure:
         return None  # Benchmark counted but will be run in the default protocol
 
-    # Setup phase
-    reports = []
     ihook = item.ihook
     ihook.pytest_runtest_logstart(nodeid=item.nodeid, location=item.location)
-    setup_call = pytest.CallInfo.from_call(
-        lambda: ihook.pytest_runtest_setup(item=item, nextitem=nextitem), "setup"
-    )
-    setup_report = ihook.pytest_runtest_makereport(item=item, call=setup_call)
-    ihook.pytest_runtest_logreport(report=setup_report)
-    reports.append(setup_report)
-    # Run phase
-    if setup_report.passed and not item.config.getoption("setuponly"):
-        assert plugin.lib is not None
-        runtest_call = pytest.CallInfo.from_call(
-            lambda: _run_with_instrumentation(
-                plugin.lib, item.nodeid, item.config, item.runtest
-            ),
-            "call",
-        )
-        runtest_report = ihook.pytest_runtest_makereport(item=item, call=runtest_call)
-        ihook.pytest_runtest_logreport(report=runtest_report)
-        reports.append(runtest_report)
 
-    # Teardown phase
-    teardown_call = pytest.CallInfo.from_call(
-        lambda: ihook.pytest_runtest_teardown(item=item, nextitem=nextitem), "teardown"
-    )
-    teardown_report = ihook.pytest_runtest_makereport(item=item, call=teardown_call)
-    ihook.pytest_runtest_logreport(report=teardown_report)
-    reports.append(teardown_report)
+    # Run the test
+    with (
+        collect_garbage(),
+        # Run test (setup, call, and teardown) w/o logging, enabling logging will
+        # increment passed/xfailed/failed counts resulting in inaccurate reporting
+        prime_cache(item, log=False, nextitem=nextitem),
+        add_instrumentation(plugin.lib, item),
+    ):
+        runtestprotocol(item, log=True, nextitem=nextitem)  # Run test w/ logging
+
     ihook.pytest_runtest_logfinish(nodeid=item.nodeid, location=item.location)
-
-    return reports  # Deny further protocol hooks execution
+    return True
 
 
 class BenchmarkFixture:
@@ -262,15 +299,22 @@ class BenchmarkFixture:
 
         self._request = request
 
-    def __call__(self, func: Callable[..., T], *args: Any, **kwargs: Any) -> T:
-        config = self._request.config
-        plugin = get_plugin(config)
+    def __call__(self, func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
+        item = self._request._pyfuncitem
+        plugin = get_plugin(item.config)
         plugin.benchmark_count += 1
-        if plugin.is_codspeed_enabled and plugin.should_measure:
-            assert plugin.lib is not None
-            return _run_with_instrumentation(
-                plugin.lib, self._request.node.nodeid, config, func, *args, **kwargs
-            )
+        if (
+            plugin.is_codspeed_enabled
+            and plugin.lib is not None
+            and plugin.should_measure
+        ):
+            with (
+                collect_garbage(),
+                # Run test without instrumentation
+                prime_cache(func, *args, **kwargs),
+                add_instrumentation(plugin.lib, item, func) as wrapped,
+            ):
+                return wrapped(*args, **kwargs)  # Run test with instrumentation
         else:
             return func(*args, **kwargs)
 
