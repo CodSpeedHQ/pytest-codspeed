@@ -14,7 +14,7 @@ jobs:
       - name: Set up Python 3.12
         uses: actions/setup-python@v2
         with:
-          python-version: "3.12.0-beta.3"
+          python-version: "3.12"
       - name: Install local version of pytest-codspeed
         run: pip install .
       - name: Run benchmarks
