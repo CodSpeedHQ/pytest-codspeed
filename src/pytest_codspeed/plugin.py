@@ -6,7 +6,7 @@ import os
 import pkgutil
 import sys
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, ParamSpec, TypeVar
+from typing import TYPE_CHECKING
 
 import pytest
 from _pytest.fixtures import FixtureManager
@@ -17,9 +17,12 @@ from . import __version__
 from ._wrapper import get_lib
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Iterator
+    from typing import Any, Callable, Iterator, ParamSpec, TypeVar
 
     from ._wrapper import LibType
+
+    T = TypeVar("T")
+    P = ParamSpec("P")
 
 IS_PYTEST_BENCHMARK_INSTALLED = pkgutil.find_loader("pytest_benchmark") is not None
 SUPPORTS_PERF_TRAMPOLINE = sys.version_info >= (3, 12)
@@ -163,10 +166,6 @@ def pytest_collection_modifyitems(
                 deselected.append(item)
         config.hook.pytest_deselected(items=deselected)
         items[:] = selected
-
-
-T = TypeVar("T")
-P = ParamSpec("P")
 
 
 def wrap_pyfunc_with_instrumentation(
