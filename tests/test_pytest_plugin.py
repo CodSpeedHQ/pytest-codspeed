@@ -350,6 +350,7 @@ def test_pytest_xdist_concurrency_compatibility(
         result.stdout.fnmatch_lines(["*256 passed*"])
 
 
+@skip_without_valgrind
 def test_print(pytester: pytest.Pytester, codspeed_env) -> None:
     """Test print statements are captured by pytest (i.e., not printed to terminal in
     the middle of the progress bar) and only displayed after test run (on failures)."""
@@ -371,6 +372,7 @@ def test_print(pytester: pytest.Pytester, codspeed_env) -> None:
     result.stderr.no_fnmatch_line("*print to stderr*")
 
 
+@skip_without_valgrind
 def test_capsys(pytester: pytest.Pytester, codspeed_env) -> None:
     """Test print statements are captured by capsys (i.e., not printed to terminal in
     the middle of the progress bar) and can be inspected within test."""
