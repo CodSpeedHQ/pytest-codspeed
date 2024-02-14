@@ -172,10 +172,13 @@ def wrap_pyfunc_with_instrumentation(
     lib: LibType,
     nodeid: str,
     config: pytest.Config,
-    fn: Callable[P, T],
+    testfunction: Callable[P, T],
 ) -> Callable[P, T]:
-    @functools.wraps(fn)
+    @functools.wraps(testfunction)
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+        def __codspeed_root_frame__():
+            return testfunction(*args, **kwargs)
+
         is_gc_enabled = gc.isenabled()
         if is_gc_enabled:
             gc.collect()
@@ -183,12 +186,12 @@ def wrap_pyfunc_with_instrumentation(
         try:
             if SUPPORTS_PERF_TRAMPOLINE:
                 # Warmup CPython performance map cache
-                fn(*args, **kwargs)
+                __codspeed_root_frame__()
 
             lib.zero_stats()
             lib.start_instrumentation()
             try:
-                return fn(*args, **kwargs)
+                return __codspeed_root_frame__()
             finally:
                 lib.stop_instrumentation()
                 uri = get_git_relative_uri(nodeid, config.rootpath)

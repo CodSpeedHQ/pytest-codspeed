@@ -306,8 +306,10 @@ def test_perf_maps_generation(pytester: pytest.Pytester, codspeed_env) -> None:
 
     with open(perf_filepath) as perf_file:
         lines = perf_file.readlines()
+
         assert any(
-            "py::_run_with_instrumentation.<locals>.__codspeed_root_frame__" in line
+            "py::wrap_pyfunc_with_instrumentation.<locals>.wrapper.<locals>.__codspeed_root_frame__"
+            in line
             for line in lines
         ), "No root frame found in perf map"
         assert any(
