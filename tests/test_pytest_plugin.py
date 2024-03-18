@@ -142,7 +142,7 @@ def test_plugin_enabled_and_env_bench_hierachy_called(
             def setup_method(self):
                 print(); print("Setup called")
 
-            def teardown(self):
+            def teardown_method(self):
                 print(); print("Teardown called")
 
             @pytest.mark.benchmark
