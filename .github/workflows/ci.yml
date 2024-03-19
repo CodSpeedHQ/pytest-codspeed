@@ -45,7 +45,6 @@ jobs:
             python-version: "3.7"
             pytest-version: "<8.1.1"
 
-
     steps:
       - uses: actions/checkout@v4
       - name: "Set up Python ${{ matrix.python-version }}"
@@ -62,3 +61,11 @@ jobs:
         run: pip uninstall -y pytest-benchmark
       - name: Run tests
         run: pytest -vs
+
+  all-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "All CI checks passed."
+    needs:
+      - static-analysis
+      - tests
