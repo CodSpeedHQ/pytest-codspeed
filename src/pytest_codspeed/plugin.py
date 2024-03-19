@@ -103,9 +103,9 @@ def pytest_plugin_registered(plugin, manager: "pytest.PytestPluginManager"):
             )
             assert codspeed_benchmark_fixtures is not None
             # Archive the pytest-benchmark fixture
-            fixture_manager._arg2fixturedefs[
-                "__benchmark"
-            ] = fixture_manager._arg2fixturedefs["benchmark"]
+            fixture_manager._arg2fixturedefs["__benchmark"] = (
+                fixture_manager._arg2fixturedefs["benchmark"]
+            )
             # Replace the pytest-benchmark fixture with the codspeed one
             fixture_manager._arg2fixturedefs["benchmark"] = codspeed_benchmark_fixtures
 
