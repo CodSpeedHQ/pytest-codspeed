@@ -304,7 +304,7 @@ def test_perf_maps_generation(pytester: pytest.Pytester, codspeed_env) -> None:
     perf_filepath = f"/tmp/perf-{current_pid}.map"
     print(perf_filepath)
 
-    with open(perf_filepath, "r") as perf_file:
+    with open(perf_filepath) as perf_file:
         lines = perf_file.readlines()
         assert any(
             "py::_run_with_instrumentation.<locals>.__codspeed_root_frame__" in line

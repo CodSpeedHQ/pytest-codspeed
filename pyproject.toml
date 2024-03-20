@@ -72,9 +72,11 @@ include = ["/src"]
 python_version = "3.12"
 
 [tool.ruff]
-line-length = 88
+target-version = "py37"
+
 [tool.ruff.lint]
-select = ["E", "F", "I", "C"]
+select = ["E", "F", "I", "C", "TCH", "FA", "UP"]
+flake8-type-checking = {exempt-modules = [], strict = true}
 
 [tool.isort]
 line_length = 88
