@@ -26,6 +26,7 @@ if TYPE_CHECKING:
 
 IS_PYTEST_BENCHMARK_INSTALLED = pkgutil.find_loader("pytest_benchmark") is not None
 SUPPORTS_PERF_TRAMPOLINE = sys.version_info >= (3, 12)
+BEFORE_PYTEST_8_1_1 = pytest.version_tuple < (8, 1, 1)
 
 
 @pytest.hookimpl(trylast=True)
@@ -93,15 +94,18 @@ def pytest_plugin_registered(plugin, manager: pytest.PytestPluginManager):
         codspeed_plugin: CodSpeedPlugin = manager.get_plugin(PLUGIN_NAME)
         if codspeed_plugin.is_codspeed_enabled:
             codspeed_benchmark_fixtures = plugin.getfixturedefs(
-                "codspeed_benchmark", ""
+                "codspeed_benchmark",
+                fixture_manager.session.nodeid
+                if BEFORE_PYTEST_8_1_1
+                else fixture_manager.session,
             )
             assert codspeed_benchmark_fixtures is not None
-            fixture_manager._arg2fixturedefs[
-                "__benchmark"
-            ] = fixture_manager._arg2fixturedefs["benchmark"]
-            fixture_manager._arg2fixturedefs["benchmark"] = list(
-                codspeed_benchmark_fixtures
+            # Archive the pytest-benchmark fixture
+            fixture_manager._arg2fixturedefs["__benchmark"] = (
+                fixture_manager._arg2fixturedefs["benchmark"]
             )
+            # Replace the pytest-benchmark fixture with the codspeed one
+            fixture_manager._arg2fixturedefs["benchmark"] = codspeed_benchmark_fixtures
 
 
 @pytest.hookimpl(trylast=True)

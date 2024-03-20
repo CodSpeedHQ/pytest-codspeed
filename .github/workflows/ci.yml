@@ -4,6 +4,7 @@ on:
     branches: [master]
   pull_request:
     branches: [master]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.ref }}
@@ -13,9 +14,9 @@ jobs:
   static-analysis:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Set up Python 3.11
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
       - uses: pre-commit/action@v3.0.0
@@ -32,26 +33,39 @@ jobs:
           - pytest-benchmark
           - valgrind
         python-version:
-          - "3.7"
           - "3.8"
           - "3.9"
           - "3.10"
           - "3.11"
-          - "3.12.0-beta.1"
+          - "3.12"
+        pytest-version:
+          - ">=8.1.1"
+        include:
+          - config: pytest-benchmark
+            python-version: "3.7"
+            pytest-version: "<8.1.1"
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: "Set up Python ${{ matrix.python-version }}"
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: "${{ matrix.python-version }}"
       - if: matrix.config == 'valgrind' || matrix.config == 'pytest-benchmark'
         name: Install valgrind
         run: sudo apt-get install valgrind -y
-      - name: Install dependencies
-        run: pip install .[dev,compat]
+      - name: Install dependencies with pytest${{ matrix.pytest-version }}
+        run: pip install .[dev,compat] "pytest${{ matrix.pytest-version }}"
       - if: matrix.config != 'pytest-benchmark'
         name: Uninstall pytest-benchmark
         run: pip uninstall -y pytest-benchmark
       - name: Run tests
         run: pytest -vs
+
+  all-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "All CI checks passed."
+    needs:
+      - static-analysis
+      - tests
