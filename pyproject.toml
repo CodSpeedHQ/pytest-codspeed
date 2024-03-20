@@ -73,7 +73,6 @@ python_version = "3.12"
 
 [tool.ruff]
 target-version = "py37"
-line-length = 88
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "C", "TCH", "FA", "UP"]
