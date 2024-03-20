@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 from typing import TYPE_CHECKING
 
@@ -22,7 +24,7 @@ def _get_ffi():
     return ffi
 
 
-def get_lib() -> "LibType":
+def get_lib() -> LibType:
     try:
         ffi = _get_ffi()
         build_lock = FileLock(f"{_wrapper_dir}/build.lock")
