@@ -348,6 +348,7 @@ def test_pytest_xdist_concurrency_compatibility(
         result.stdout.fnmatch_lines(["*256 passed*"])
 
 
+@skip_without_valgrind
 def test_benchmark_marker_tmp_path(pytester: pytest.Pytester, codspeed_env) -> None:
     pytester.makepyfile(
         """
@@ -363,6 +364,7 @@ def test_benchmark_marker_tmp_path(pytester: pytest.Pytester, codspeed_env) -> N
     assert result.ret == 0, "the run should have succeeded"
 
 
+@skip_without_valgrind
 def test_benchmark_fixture_tmp_path(pytester: pytest.Pytester, codspeed_env) -> None:
     pytester.makepyfile(
         """
@@ -379,6 +381,7 @@ def test_benchmark_fixture_tmp_path(pytester: pytest.Pytester, codspeed_env) -> 
     assert result.ret == 0, "the run should have succeeded"
 
 
+@skip_without_valgrind
 def test_benchmark_fixture_warmup(pytester: pytest.Pytester, codspeed_env) -> None:
     pytester.makepyfile(
         """
