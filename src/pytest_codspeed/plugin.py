@@ -278,14 +278,13 @@ def pytest_runtest_protocol(
     ihook.pytest_runtest_logstart(nodeid=item.nodeid, location=item.location)
 
     # Run the test
-    with (
-        collect_garbage(),
+    with collect_garbage():
         # Run test (setup, call, and teardown) w/o logging, enabling logging will
         # increment passed/xfailed/failed counts resulting in inaccurate reporting
-        prime_cache(item, log=False, nextitem=nextitem),
-        add_instrumentation(plugin.lib, item),
-    ):
-        runtestprotocol(item, log=True, nextitem=nextitem)  # Run test w/ logging
+        with prime_cache(item, log=False, nextitem=nextitem):
+            with add_instrumentation(plugin.lib, item):
+                # Run test (setup, call, and teardown) w/ logging
+                runtestprotocol(item, log=True, nextitem=nextitem)
 
     ihook.pytest_runtest_logfinish(nodeid=item.nodeid, location=item.location)
     return True
@@ -308,13 +307,12 @@ class BenchmarkFixture:
             and plugin.lib is not None
             and plugin.should_measure
         ):
-            with (
-                collect_garbage(),
-                # Run test without instrumentation
-                prime_cache(func, *args, **kwargs),
-                add_instrumentation(plugin.lib, item, func) as wrapped,
-            ):
-                return wrapped(*args, **kwargs)  # Run test with instrumentation
+            with collect_garbage():
+                # Run test (local) w/o instrumentation
+                with prime_cache(func, *args, **kwargs):
+                    with add_instrumentation(plugin.lib, item, func) as wrapped:
+                        # Run test (local) w/ instrumentation
+                        return wrapped(*args, **kwargs)
         else:
             return func(*args, **kwargs)
 
