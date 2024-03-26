@@ -346,3 +346,53 @@ def test_pytest_xdist_concurrency_compatibility(
             result = pytester.runpytest("--codspeed", "-n", "128")
         assert result.ret == 0, "the run should have succeeded"
         result.stdout.fnmatch_lines(["*256 passed*"])
+
+
+def test_benchmark_marker_tmp_path(pytester: pytest.Pytester, codspeed_env) -> None:
+    pytester.makepyfile(
+        """
+        import pytest
+
+        @pytest.mark.benchmark
+        def test_tmp_path(tmp_path):
+            (tmp_path / "random").mkdir()
+        """
+    )
+    with codspeed_env():
+        result = pytester.runpytest("--codspeed")
+    assert result.ret == 0, "the run should have succeeded"
+
+
+def test_benchmark_fixture_tmp_path(pytester: pytest.Pytester, codspeed_env) -> None:
+    pytester.makepyfile(
+        """
+        import pytest
+
+        def test_tmp_path(benchmark, tmp_path):
+            @benchmark
+            def _():
+                (tmp_path / "random").mkdir()
+        """
+    )
+    with codspeed_env():
+        result = pytester.runpytest("--codspeed")
+    assert result.ret == 0, "the run should have succeeded"
+
+
+def test_benchmark_fixture_warmup(pytester: pytest.Pytester, codspeed_env) -> None:
+    pytester.makepyfile(
+        """
+        def test_bench(benchmark):
+            called_once = False
+            @benchmark
+            def _():
+                nonlocal called_once
+                if not called_once:
+                    called_once = True
+                else:
+                    raise Exception("called twice")
+        """
+    )
+    with codspeed_env():
+        result = pytester.runpytest("--codspeed")
+    assert result.ret == 0, "the run should have succeeded"
