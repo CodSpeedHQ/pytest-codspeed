@@ -422,37 +422,45 @@ def test_benchmark_fixture_tmp_path(pytester: pytest.Pytester, codspeed_env) -> 
         """
         import pytest
 
-        def test_tmp_path(benchmark, tmp_path):
+        def test_tmp_path_strict(benchmark, tmp_path):
             @benchmark
             def _():
                 (tmp_path / "random").mkdir()
+
+        def test_tmp_path_exist_ok(benchmark, tmp_path):
+            @benchmark
+            def _():
+                (tmp_path / "random").mkdir(exist_ok=True)
         """
     )
     with codspeed_env():
         result = pytester.runpytest("--codspeed")
-    assert result.ret == 1, "the run should have failed"
-    result.stdout.fnmatch_lines(["*1 benchmarked*"])
-    result.stdout.fnmatch_lines(["*1 failed*"])
+    result.stdout.fnmatch_lines(["*2 benchmarked*"])
+    if IS_PERF_TRAMPOLINE_SUPPORTED:
+        assert result.ret == 1, "the run should have failed"
+        result.stdout.fnmatch_lines(["*1 passed*"])
+        result.stdout.fnmatch_lines(["*1 failed*"])
+    else:
+        assert result.ret == 0, "the run should have succeeded"
+        result.stdout.fnmatch_lines(["*2 passed*"])
 
 
 @skip_without_valgrind
 @skip_with_pytest_benchmark
 def test_benchmark_fixture_warmup(pytester: pytest.Pytester, codspeed_env) -> None:
     pytester.makepyfile(
-        """
+        f"""
         def test_bench(benchmark):
-            called_once = False
+            count = 0
             @benchmark
             def _():
-                nonlocal called_once
-                if not called_once:
-                    called_once = True
-                else:
-                    raise Exception("called twice")
+                nonlocal count
+                count += 1
+            assert count == {2 if IS_PERF_TRAMPOLINE_SUPPORTED else 1}
         """
     )
     with codspeed_env():
         result = pytester.runpytest("--codspeed")
-    assert result.ret == 1, "the run should have failed"
+    assert result.ret == 0, "the run should have succeeded"
     result.stdout.fnmatch_lines(["*1 benchmarked*"])
-    result.stdout.fnmatch_lines(["*1 failed*"])
+    result.stdout.fnmatch_lines(["*1 passed*"])
