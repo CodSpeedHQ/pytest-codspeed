@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 import gc
 import os
 import pkgutil
@@ -16,11 +17,12 @@ from . import __version__
 from ._wrapper import get_lib
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, TypeVar
+    from typing import Any, Callable, ParamSpec, TypeVar
 
     from ._wrapper import LibType
 
     T = TypeVar("T")
+    P = ParamSpec("P")
 
 IS_PYTEST_BENCHMARK_INSTALLED = pkgutil.find_loader("pytest_benchmark") is not None
 SUPPORTS_PERF_TRAMPOLINE = sys.version_info >= (3, 12)
@@ -172,86 +174,67 @@ def pytest_collection_modifyitems(
 
 def _run_with_instrumentation(
     lib: LibType,
-    nodeId: str,
+    nodeid: str,
     config: pytest.Config,
-    fn: Callable[..., Any],
-    *args,
-    **kwargs,
-):
+    fn: Callable[P, T],
+    *args: P.args,
+    **kwargs: P.kwargs,
+) -> T:
     is_gc_enabled = gc.isenabled()
     if is_gc_enabled:
         gc.collect()
         gc.disable()
 
-    result = None
-
     def __codspeed_root_frame__():
-        nonlocal result
-        result = fn(*args, **kwargs)
+        return fn(*args, **kwargs)
 
     if SUPPORTS_PERF_TRAMPOLINE:
         # Warmup CPython performance map cache
         __codspeed_root_frame__()
     lib.zero_stats()
     lib.start_instrumentation()
-    __codspeed_root_frame__()
-    lib.stop_instrumentation()
-    uri = get_git_relative_uri(nodeId, config.rootpath)
-    lib.dump_stats_at(uri.encode("ascii"))
-    if is_gc_enabled:
-        gc.enable()
+    try:
+        return __codspeed_root_frame__()
+    finally:
+        lib.stop_instrumentation()
+        uri = get_git_relative_uri(nodeid, config.rootpath)
+        lib.dump_stats_at(uri.encode("ascii"))
+        if is_gc_enabled:
+            gc.enable()
 
-    return result
+
+def wrap_runtest(
+    lib: LibType,
+    nodeid: str,
+    config: pytest.Config,
+    fn: Callable[P, T],
+) -> Callable[P, T]:
+    @functools.wraps(fn)
+    def wrapped(*args: P.args, **kwargs: P.kwargs) -> T:
+        return _run_with_instrumentation(lib, nodeid, config, fn, *args, **kwargs)
+
+    return wrapped
 
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_runtest_protocol(item: pytest.Item, nextitem: pytest.Item | None):
     plugin = get_plugin(item.config)
     if not plugin.is_codspeed_enabled or not should_benchmark_item(item):
-        return (
-            None  # Defer to the default test protocol since no benchmarking is needed
-        )
+        # Defer to the default test protocol since no benchmarking is needed
+        return None
 
     if has_benchmark_fixture(item):
-        return None  # Instrumentation is handled by the fixture
+        # Instrumentation is handled by the fixture
+        return None
 
     plugin.benchmark_count += 1
-    if not plugin.should_measure:
-        return None  # Benchmark counted but will be run in the default protocol
+    if not plugin.should_measure or not plugin.lib:
+        # Benchmark counted but will be run in the default protocol
+        return None
 
-    # Setup phase
-    reports = []
-    ihook = item.ihook
-    ihook.pytest_runtest_logstart(nodeid=item.nodeid, location=item.location)
-    setup_call = pytest.CallInfo.from_call(
-        lambda: ihook.pytest_runtest_setup(item=item, nextitem=nextitem), "setup"
-    )
-    setup_report = ihook.pytest_runtest_makereport(item=item, call=setup_call)
-    ihook.pytest_runtest_logreport(report=setup_report)
-    reports.append(setup_report)
-    # Run phase
-    if setup_report.passed and not item.config.getoption("setuponly"):
-        assert plugin.lib is not None
-        runtest_call = pytest.CallInfo.from_call(
-            lambda: _run_with_instrumentation(
-                plugin.lib, item.nodeid, item.config, item.runtest
-            ),
-            "call",
-        )
-        runtest_report = ihook.pytest_runtest_makereport(item=item, call=runtest_call)
-        ihook.pytest_runtest_logreport(report=runtest_report)
-        reports.append(runtest_report)
-
-    # Teardown phase
-    teardown_call = pytest.CallInfo.from_call(
-        lambda: ihook.pytest_runtest_teardown(item=item, nextitem=nextitem), "teardown"
-    )
-    teardown_report = ihook.pytest_runtest_makereport(item=item, call=teardown_call)
-    ihook.pytest_runtest_logreport(report=teardown_report)
-    reports.append(teardown_report)
-    ihook.pytest_runtest_logfinish(nodeid=item.nodeid, location=item.location)
-
-    return reports  # Deny further protocol hooks execution
+    # Wrap runtest and defer to default protocol
+    item.runtest = wrap_runtest(plugin.lib, item.nodeid, item.config, item.runtest)
+    return None
 
 
 class BenchmarkFixture:

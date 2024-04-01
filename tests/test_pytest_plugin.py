@@ -8,6 +8,7 @@ from conftest import (
     skip_with_pytest_benchmark,
     skip_without_perf_trampoline,
     skip_without_pytest_benchmark,
+    skip_without_pytest_xdist,
     skip_without_valgrind,
 )
 
@@ -289,12 +290,12 @@ def test_perf_maps_generation(pytester: pytest.Pytester, codspeed_env) -> None:
 
         @pytest.mark.benchmark
         def test_some_addition_marked():
-            return 1 + 1
+            assert 1 + 1
 
         def test_some_addition_fixtured(benchmark):
             @benchmark
             def fixtured_child():
-                return 1 + 1
+                assert 1 + 1
         """
     )
     with codspeed_env():
@@ -324,6 +325,7 @@ def test_perf_maps_generation(pytester: pytest.Pytester, codspeed_env) -> None:
 
 @skip_without_valgrind
 @skip_with_pytest_benchmark
+@skip_without_pytest_xdist
 def test_pytest_xdist_concurrency_compatibility(
     pytester: pytest.Pytester, codspeed_env
 ) -> None:
@@ -346,3 +348,52 @@ def test_pytest_xdist_concurrency_compatibility(
             result = pytester.runpytest("--codspeed", "-n", "128")
         assert result.ret == 0, "the run should have succeeded"
         result.stdout.fnmatch_lines(["*256 passed*"])
+
+
+@skip_without_valgrind
+def test_print(pytester: pytest.Pytester, codspeed_env) -> None:
+    """Test print statements are captured by pytest (i.e., not printed to terminal in
+    the middle of the progress bar) and only displayed after test run (on failures)."""
+    pytester.makepyfile(
+        """
+        import pytest, sys
+
+        @pytest.mark.benchmark
+        def test_print():
+            print("print to stdout")
+            print("print to stderr", file=sys.stderr)
+        """
+    )
+    with codspeed_env():
+        result = pytester.runpytest("--codspeed")
+    assert result.ret == 0, "the run should have succeeded"
+    result.stdout.fnmatch_lines(["*1 benchmarked*"])
+    result.stdout.no_fnmatch_line("*print to stdout*")
+    result.stderr.no_fnmatch_line("*print to stderr*")
+
+
+@skip_without_valgrind
+def test_capsys(pytester: pytest.Pytester, codspeed_env) -> None:
+    """Test print statements are captured by capsys (i.e., not printed to terminal in
+    the middle of the progress bar) and can be inspected within test."""
+    pytester.makepyfile(
+        """
+        import pytest, sys
+
+        @pytest.mark.benchmark
+        def test_capsys(capsys):
+            print("print to stdout")
+            print("print to stderr", file=sys.stderr)
+
+            stdout, stderr = capsys.readouterr()
+
+            assert stdout == "print to stdout\\n"
+            assert stderr == "print to stderr\\n"
+        """
+    )
+    with codspeed_env():
+        result = pytester.runpytest("--codspeed")
+    assert result.ret == 0, "the run should have succeeded"
+    result.stdout.fnmatch_lines(["*1 benchmarked*"])
+    result.stdout.no_fnmatch_line("*print to stdout*")
+    result.stderr.no_fnmatch_line("*print to stderr*")
