@@ -188,17 +188,22 @@ def _run_with_instrumentation(
     def __codspeed_root_frame__() -> T:
         return fn(*args, **kwargs)
 
-    if SUPPORTS_PERF_TRAMPOLINE:
-        # Warmup CPython performance map cache
-        __codspeed_root_frame__()
-    lib.zero_stats()
-    lib.start_instrumentation()
     try:
-        return __codspeed_root_frame__()
+        if SUPPORTS_PERF_TRAMPOLINE:
+            # Warmup CPython performance map cache
+            __codspeed_root_frame__()
+
+        lib.zero_stats()
+        lib.start_instrumentation()
+        try:
+            return __codspeed_root_frame__()
+        finally:
+            # Ensure instrumentation is stopped even if the test failed
+            lib.stop_instrumentation()
+            uri = get_git_relative_uri(nodeid, config.rootpath)
+            lib.dump_stats_at(uri.encode("ascii"))
     finally:
-        lib.stop_instrumentation()
-        uri = get_git_relative_uri(nodeid, config.rootpath)
-        lib.dump_stats_at(uri.encode("ascii"))
+        # Ensure GC is re-enabled even if the test failed
         if is_gc_enabled:
             gc.enable()
 
