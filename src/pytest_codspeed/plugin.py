@@ -185,7 +185,7 @@ def _run_with_instrumentation(
         gc.collect()
         gc.disable()
 
-    def __codspeed_root_frame__():
+    def __codspeed_root_frame__() -> T:
         return fn(*args, **kwargs)
 
     if SUPPORTS_PERF_TRAMPOLINE:
