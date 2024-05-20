@@ -16,7 +16,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install custom version of pyperformance
-        run: pip install "git+https://github.com/mdboom/pyperformance@codspeed#egg=pyperformance
+        run: pip install "git+https://github.com/mdboom/pyperformance@codspeed#egg=pyperformance"
       - name: Run benchmarks
         uses: CodSpeedHQ/action@main
         with:
