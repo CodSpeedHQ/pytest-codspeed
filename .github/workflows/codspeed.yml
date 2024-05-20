@@ -20,4 +20,4 @@ jobs:
       - name: Run benchmarks
         uses: CodSpeedHQ/action@main
         with:
-          run: pyperformance run --benchmarks deltablue --fast
+          run: pyperformance run --fast
