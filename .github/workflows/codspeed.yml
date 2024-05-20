@@ -15,9 +15,9 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: "3.12"
-      - name: Install local version of pytest-codspeed
-        run: pip install .
+      - name: Install custom version of pyperformance
+        run: pip install "git+https://github.com/mdboom/pyperformance@codspeed#egg=pyperformance
       - name: Run benchmarks
         uses: CodSpeedHQ/action@main
         with:
-          run: pytest tests/benchmarks/ --codspeed
+          run: pyperformance run --benchmarks deltablue
