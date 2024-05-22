@@ -20,4 +20,4 @@ jobs:
       - name: Run benchmarks
         uses: CodSpeedHQ/action@main
         with:
-          run: pyperformance run --fast
+          run: pyperformance run --fast --loops 0 --warmups 0
