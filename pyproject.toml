@@ -13,7 +13,7 @@ dynamic = ["version"]
 description = "Pytest plugin to create CodSpeed benchmarks"
 readme = "README.md"
 license = { file = "LICENSE" }
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 authors = [{ name = "Arthur Pastel", email = "arthur@codspeed.io" }]
 keywords = ["codspeed", "benchmark", "performance", "pytest"]
 classifiers = [
@@ -23,19 +23,19 @@ classifiers = [
     "Intended Audience :: Information Technology",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Testing",
     "Topic :: System :: Benchmark",
     "Topic :: Utilities",
     "Typing :: Typed",
 ]
 dependencies = [
-    "cffi >= 1.15.1",
+    "cffi >= 1.17.1",
     # cffi doesn't automatically install setuptools with python 3.12+
     # cf https://github.com/python-cffi/cffi/releases/tag/v1.16.0
     "setuptools; python_full_version >= '3.12.0'",
@@ -59,7 +59,7 @@ features = ["lint", "test", "compat"]
 features = ["test"]
 
 [[tool.hatch.envs.test.matrix]]
-python = ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12"]
+python = ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
 features = ["compat", "test"]
 
 [tool.hatch.version]
@@ -76,7 +76,7 @@ target-version = "py37"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "C", "TCH", "FA", "UP"]
-flake8-type-checking = {exempt-modules = [], strict = true}
+flake8-type-checking = { exempt-modules = [], strict = true }
 
 [tool.isort]
 line_length = 88
