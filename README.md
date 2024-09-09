@@ -3,7 +3,7 @@
 
 [![CI](https://github.com/CodSpeedHQ/pytest-codspeed/actions/workflows/ci.yml/badge.svg)](https://github.com/CodSpeedHQ/pytest-codspeed/actions/workflows/ci.yml)
 [![PyPi Version](https://img.shields.io/pypi/v/pytest-codspeed?color=%2334D058&label=pypi)](https://pypi.org/project/pytest-codspeed)
-![Python Version](https://img.shields.io/badge/python-3.7%20|%203.8%20|%203.9%20|%203.10%20|%203.11%20|%203.12-informational.svg)
+![Python Version](https://img.shields.io/badge/python-3.8%20|%203.9%20|%203.10%20|%203.11%20|%203.12%20|%203.13-informational.svg)
 [![Discord](https://img.shields.io/badge/chat%20on-discord-7289da.svg)](https://discord.com/invite/MxpaCfKSqF)
 [![CodSpeed Badge](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://codspeed.io/CodSpeedHQ/pytest-codspeed)
 
@@ -13,7 +13,7 @@ Pytest plugin to create CodSpeed benchmarks
 
 ## Requirements
 
-**Python**: 3.7 and later
+**Python**: 3.8 and later
 
 **pytest**: any recent version
 
@@ -100,14 +100,14 @@ jobs:
   benchmarks:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: "3.9"
+          python-version: "3.12"
       - name: Install dependencies
         run: pip install -r requirements.txt
       - name: Run benchmarks
-        uses: CodSpeedHQ/action@v2
+        uses: CodSpeedHQ/action@v3
         with:
           token: ${{ secrets.CODSPEED_TOKEN }}
           run: pytest tests/ --codspeed
