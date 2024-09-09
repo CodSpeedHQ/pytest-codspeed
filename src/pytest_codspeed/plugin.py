@@ -233,7 +233,7 @@ def pytest_runtest_protocol(item: pytest.Item, nextitem: pytest.Item | None):
         return None
 
     plugin.benchmark_count += 1
-    if not plugin.should_measure or not plugin.lib:
+    if not plugin.should_measure:
         # Benchmark counted but will be run in the default protocol
         return None
 
