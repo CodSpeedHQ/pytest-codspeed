@@ -13,7 +13,7 @@ Pytest plugin to create CodSpeed benchmarks
 
 ## Requirements
 
-**Python**: 3.7 and later
+**Python**: 3.8 and later
 
 **pytest**: any recent version
 
