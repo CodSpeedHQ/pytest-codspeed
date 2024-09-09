@@ -238,6 +238,7 @@ def pytest_runtest_protocol(item: pytest.Item, nextitem: pytest.Item | None):
         return None
 
     # Wrap runtest and defer to default protocol
+    assert plugin.lib is not None
     item.runtest = wrap_runtest(plugin.lib, item.nodeid, item.config, item.runtest)
     return None
 
