@@ -37,3 +37,10 @@ skip_without_perf_trampoline = pytest.mark.skipif(
 skip_with_perf_trampoline = pytest.mark.skipif(
     IS_PERF_TRAMPOLINE_SUPPORTED, reason="perf trampoline is supported"
 )
+
+# The name for the pytest-xdist plugin is just "xdist"
+IS_PYTEST_XDIST_INSTALLED = importlib.util.find_spec("xdist") is not None
+skip_without_pytest_xdist = pytest.mark.skipif(
+    not IS_PYTEST_XDIST_INSTALLED,
+    reason="pytest_xdist not installed",
+)
