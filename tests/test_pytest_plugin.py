@@ -69,7 +69,9 @@ def test_bench_enabled_header_with_perf(
     pytester.copy_example("tests/examples/test_addition_fixture.py")
     with codspeed_env():
         result = pytester.runpytest()
-    result.stdout.fnmatch_lines(["codspeed: * (callgraph: enabled)"])
+    result.stdout.fnmatch_lines(
+        ["codspeed: * (mode: instrumentation, callgraph: enabled)"]
+    )
 
 
 @skip_without_valgrind
@@ -80,7 +82,9 @@ def test_bench_enabled_header_without_perf(
     pytester.copy_example("tests/examples/test_addition_fixture.py")
     with codspeed_env():
         result = pytester.runpytest()
-    result.stdout.fnmatch_lines(["codspeed: * (callgraph: not supported)"])
+    result.stdout.fnmatch_lines(
+        ["codspeed: * (mode: instrumentation, callgraph: not supported)"]
+    )
 
 
 @skip_without_valgrind
@@ -308,7 +312,8 @@ def test_perf_maps_generation(pytester: pytest.Pytester, codspeed_env) -> None:
     with open(perf_filepath) as perf_file:
         lines = perf_file.readlines()
         assert any(
-            "py::_run_with_instrumentation.<locals>.__codspeed_root_frame__" in line
+            "py::InstrumentationInstrument.measure.<locals>.__codspeed_root_frame__"
+            in line
             for line in lines
         ), "No root frame found in perf map"
         assert any(

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pathlib import Path
 
 
@@ -15,11 +17,11 @@ def get_git_relative_path(abs_path: Path) -> Path:
     return abs_path
 
 
-def get_git_relative_uri(uri: str, pytest_rootdir: Path) -> str:
-    """Get the benchmark uri relative to the git root dir.
+def get_git_relative_uri_and_name(nodeid: str, pytest_rootdir: Path) -> tuple[str, str]:
+    """Get the benchmark uri relative to the git root dir and the benchmark name.
 
     Args:
-        uri (str): the benchmark uri, for example:
+        nodeid (str): the pytest nodeid, for example:
           testing/test_excinfo.py::TestFormattedExcinfo::test_repr_source
         pytest_rootdir (str): the pytest root dir, for example:
           /home/user/gitrepo/folder
@@ -29,7 +31,7 @@ def get_git_relative_uri(uri: str, pytest_rootdir: Path) -> str:
           folder/testing/test_excinfo.py::TestFormattedExcinfo::test_repr_source
 
     """
-    file_path, function_path = uri.split("::", 1)
+    file_path, bench_name = nodeid.split("::", 1)
     absolute_file_path = pytest_rootdir / Path(file_path)
     relative_git_path = get_git_relative_path(absolute_file_path)
-    return f"{str(relative_git_path)}::{function_path}"
+    return (f"{str(relative_git_path)}::{bench_name}", bench_name)
