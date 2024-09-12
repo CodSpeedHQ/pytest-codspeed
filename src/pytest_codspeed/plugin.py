@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import functools
 import gc
+import importlib.util
 import os
-import pkgutil
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
@@ -19,14 +19,15 @@ from pytest_codspeed.utils import get_git_relative_uri_and_name
 from . import __version__
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, ParamSpec, TypeVar
+    from typing import Callable, ParamSpec, TypeVar
 
     from pytest_codspeed.instruments import Instrument
 
     T = TypeVar("T")
     P = ParamSpec("P")
 
-IS_PYTEST_BENCHMARK_INSTALLED = pkgutil.find_loader("pytest_benchmark") is not None
+IS_PYTEST_BENCHMARK_INSTALLED = importlib.util.find_spec("pytest_benchmark") is not None
+IS_PYTEST_SPEED_INSTALLED = importlib.util.find_spec("pytest_speed") is not None
 BEFORE_PYTEST_8_1_1 = pytest.version_tuple < (8, 1, 1)
 
 
@@ -71,11 +72,17 @@ def pytest_configure(config: pytest.Config):
     mode = CodSpeedMeasurementMode.Instrumentation
     instrument = get_instrument_from_mode(mode)
     disabled_plugins: list[str] = []
-    # Disable pytest-benchmark if codspeed is enabled
-    if is_codspeed_enabled and IS_PYTEST_BENCHMARK_INSTALLED:
-        object.__setattr__(config.option, "benchmark_disable", True)
-        config.pluginmanager.set_blocked("pytest-benchmark")
-        disabled_plugins.append("pytest-benchmark")
+    if is_codspeed_enabled:
+        if IS_PYTEST_BENCHMARK_INSTALLED:
+            # Disable pytest-benchmark
+            object.__setattr__(config.option, "benchmark_disable", True)
+            config.pluginmanager.set_blocked("pytest_benchmark")
+            config.pluginmanager.set_blocked("pytest-benchmark")
+            disabled_plugins.append("pytest-benchmark")
+        if IS_PYTEST_SPEED_INSTALLED:
+            # Disable pytest-speed
+            config.pluginmanager.set_blocked("speed")
+            disabled_plugins.append("pytest-speed")
 
     plugin = CodSpeedPlugin(
         disabled_plugins=tuple(disabled_plugins),
@@ -88,8 +95,13 @@ def pytest_configure(config: pytest.Config):
 
 @pytest.hookimpl()
 def pytest_plugin_registered(plugin, manager: pytest.PytestPluginManager):
-    """Patch the benchmark fixture to use the codspeed one if codspeed is enabled"""
-    if IS_PYTEST_BENCHMARK_INSTALLED and isinstance(plugin, FixtureManager):
+    """
+    Patch the benchmark fixture to use the codspeed one if codspeed is enabled and an
+    alternative benchmark fixture is available
+    """
+    if (IS_PYTEST_BENCHMARK_INSTALLED or IS_PYTEST_SPEED_INSTALLED) and isinstance(
+        plugin, FixtureManager
+    ):
         fixture_manager = plugin
         codspeed_plugin: CodSpeedPlugin = manager.get_plugin(PLUGIN_NAME)
         if codspeed_plugin.is_codspeed_enabled:
@@ -100,11 +112,11 @@ def pytest_plugin_registered(plugin, manager: pytest.PytestPluginManager):
                 else fixture_manager.session,
             )
             assert codspeed_benchmark_fixtures is not None
-            # Archive the pytest-benchmark fixture
+            # Archive the alternative benchmark fixture
             fixture_manager._arg2fixturedefs["__benchmark"] = (
                 fixture_manager._arg2fixturedefs["benchmark"]
             )
-            # Replace the pytest-benchmark fixture with the codspeed one
+            # Replace the alternative fixture with the codspeed one
             fixture_manager._arg2fixturedefs["benchmark"] = codspeed_benchmark_fixtures
 
 
@@ -220,7 +232,7 @@ class BenchmarkFixture:
 
         self._request = request
 
-    def __call__(self, func: Callable[..., T], *args: Any, **kwargs: Any) -> T:
+    def __call__(self, func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
         config = self._request.config
         plugin = get_plugin(config)
         if plugin.is_codspeed_enabled:
