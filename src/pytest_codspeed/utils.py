@@ -1,6 +1,11 @@
 from __future__ import annotations
 
+import importlib
+import os
+import sysconfig
 from pathlib import Path
+
+from pytest_codspeed import __version__
 
 
 def get_git_relative_path(abs_path: Path) -> Path:
@@ -35,3 +40,19 @@ def get_git_relative_uri_and_name(nodeid: str, pytest_rootdir: Path) -> tuple[st
     absolute_file_path = pytest_rootdir / Path(file_path)
     relative_git_path = get_git_relative_path(absolute_file_path)
     return (f"{str(relative_git_path)}::{bench_name}", bench_name)
+
+
+def get_environment_metadata() -> dict[str, dict]:
+    return {
+        "creator": {
+            "name": "pytest-codspeed",
+            "version": __version__,
+            "pid": os.getpid(),
+        },
+        "python": {
+            "sysconfig": sysconfig.get_config_vars(),
+            "dependencies": {
+                d.name: d.version for d in importlib.metadata.distributions()
+            },
+        },
+    }

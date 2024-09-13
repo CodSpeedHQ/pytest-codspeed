@@ -3,8 +3,11 @@ from __future__ import annotations
 import functools
 import gc
 import importlib.util
+import json
 import os
 from dataclasses import dataclass, field
+from pathlib import Path
+from time import time
 from typing import TYPE_CHECKING
 
 import pytest
@@ -14,7 +17,10 @@ from pytest_codspeed.instruments import (
     CodSpeedMeasurementMode,
     get_instrument_from_mode,
 )
-from pytest_codspeed.utils import get_git_relative_uri_and_name
+from pytest_codspeed.utils import (
+    get_environment_metadata,
+    get_git_relative_uri_and_name,
+)
 
 from . import __version__
 
@@ -40,6 +46,12 @@ def pytest_addoption(parser: pytest.Parser):
         default=False,
         help="Enable codspeed (not required when using the CodSpeed action)",
     )
+    group.addoption(
+        "--codspeed-mode",
+        action="store",
+        choices=[mode.value for mode in CodSpeedMeasurementMode],
+        help="The measurement tool to use for measuring performance",
+    )
 
 
 @dataclass(unsafe_hash=True)
@@ -48,6 +60,7 @@ class CodSpeedPlugin:
     mode: CodSpeedMeasurementMode
     instrument: Instrument
     disabled_plugins: tuple[str, ...]
+    result_path: Path | None
     benchmark_count: int = field(default=0, hash=False, compare=False)
 
 
@@ -69,7 +82,15 @@ def pytest_configure(config: pytest.Config):
     is_codspeed_enabled = (
         config.getoption("--codspeed") or os.environ.get("CODSPEED_ENV") is not None
     )
-    mode = CodSpeedMeasurementMode.Instrumentation
+
+    if os.environ.get("CODSPEED_ENV") == "github":
+        default_mode = CodSpeedMeasurementMode.Instrumentation.value
+    else:
+        default_mode = CodSpeedMeasurementMode.WallTime.value
+
+    mode = CodSpeedMeasurementMode(
+        config.getoption("--codspeed-mode", None) or default_mode
+    )
     instrument = get_instrument_from_mode(mode)
     disabled_plugins: list[str] = []
     if is_codspeed_enabled:
@@ -84,11 +105,18 @@ def pytest_configure(config: pytest.Config):
             config.pluginmanager.set_blocked("speed")
             disabled_plugins.append("pytest-speed")
 
+    profile_folder = os.environ.get("CODSPEED_PROFILE_FOLDER")
+    if profile_folder:
+        result_path = Path(profile_folder) / "walltime" / f"{os.getpid()}.json"
+    else:
+        result_path = config.rootpath / f".codspeed/results_{time() * 1000:.0f}.json"
+
     plugin = CodSpeedPlugin(
         disabled_plugins=tuple(disabled_plugins),
         is_codspeed_enabled=is_codspeed_enabled,
         mode=mode,
         instrument=instrument(),
+        result_path=result_path,
     )
     config.pluginmanager.register(plugin, PLUGIN_NAME)
 
@@ -222,6 +250,10 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus):
     plugin = get_plugin(session.config)
     if plugin.is_codspeed_enabled:
         plugin.instrument.report(session)
+        if plugin.result_path is not None:
+            data = {**get_environment_metadata(), **plugin.instrument.get_result_dict()}
+            plugin.result_path.parent.mkdir(parents=True, exist_ok=True)
+            plugin.result_path.write_text(json.dumps(data, indent=2))
 
 
 class BenchmarkFixture:

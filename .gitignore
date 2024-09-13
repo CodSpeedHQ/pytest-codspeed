@@ -162,3 +162,5 @@ cython_debug/
 .venvubuntu
 .python-version
 *.o
+
+.codspeed

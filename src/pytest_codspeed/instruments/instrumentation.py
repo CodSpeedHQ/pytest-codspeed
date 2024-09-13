@@ -6,10 +6,10 @@ from typing import TYPE_CHECKING
 
 from pytest_codspeed import __version__
 from pytest_codspeed._wrapper import get_lib
-from pytest_codspeed.instruments import Instrument
+from pytest_codspeed.instruments import CodSpeedMeasurementMode, Instrument
 
 if TYPE_CHECKING:
-    from typing import Callable
+    from typing import Any, Callable
 
     from pytest import Session
 
@@ -19,6 +19,8 @@ SUPPORTS_PERF_TRAMPOLINE = sys.version_info >= (3, 12)
 
 
 class InstrumentationInstrument(Instrument):
+    instrument = CodSpeedMeasurementMode.Instrumentation
+
     def __init__(self):
         self.benchmark_count = 0
         self.should_measure = os.environ.get("CODSPEED_ENV") is not None
@@ -82,3 +84,9 @@ class InstrumentationInstrument(Instrument):
             "=",
             f"{self.benchmark_count} {count_suffix}",
         )
+
+    def get_result_dict(self) -> dict[str, Any]:
+        return {
+            "instrument": {"type": self.instrument.value},
+            # bench results will be dumped by valgrind
+        }

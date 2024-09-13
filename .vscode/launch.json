@@ -1,0 +1,12 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug walltime benchmarks",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["--codspeed", "--codspeed-mode", "walltime", "tests/benchmarks"]
+    }
+  ]
+}
