@@ -37,6 +37,7 @@ class BenchmarkStats:
     median_ns: float
 
     rounds: int
+    outlier_rounds: int
     iter_per_round: int
     warmup_iters: int
 
@@ -44,13 +45,16 @@ class BenchmarkStats:
     def from_list(
         cls, times: list[float], *, rounds: int, iter_per_round: int, warmup_iters: int
     ) -> BenchmarkStats:
+        stdev_ns = stdev(times)
+        mean_ns = mean(times)
         return cls(
             min_ns=min(times),
             max_ns=max(times),
-            stdev_ns=stdev(times),
-            mean_ns=mean(times),
+            stdev_ns=stdev_ns,
+            mean_ns=mean_ns,
             median_ns=median(times),
             rounds=rounds,
+            outlier_rounds=sum(1 for t in times if abs(t - mean_ns) > stdev_ns),
             iter_per_round=iter_per_round,
             warmup_iters=warmup_iters,
         )
@@ -157,14 +161,15 @@ class WallTimeInstrument(Instrument):
             "Rel. StdDev",
             justify="right",
         )
-        table.add_column("Iter per round", justify="right", style="blue")
+        table.add_column("Outlier ratio", justify="right", style="blue")
 
         for bench in self.benchmarks:
+            rsd = bench.stats.stdev_ns / bench.stats.mean_ns
             table.add_row(
                 bench.name,
                 f"{bench.stats.min_ns/bench.stats.iter_per_round:.2f}ns",
-                f"{(bench.stats.stdev_ns / bench.stats.iter_per_round):.1f}ns",
-                f"{bench.stats.rounds * bench.stats.iter_per_round:,}",
+                f"{rsd*100:.1f}%",
+                f"{(bench.stats.outlier_rounds / bench.stats.rounds)*100:.1f}%",
             )
 
         console = Console()
