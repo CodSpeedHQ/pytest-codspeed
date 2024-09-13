@@ -42,15 +42,17 @@ class Instrument(metaclass=ABCMeta):
 
 
 class CodSpeedMeasurementMode(str, Enum):
-    Instrumentation = "instrumentation"
+    CPUInstrumentation = "cpu_instrumentation"
     WallTime = "walltime"
 
 
 def get_instrument_from_mode(mode: CodSpeedMeasurementMode) -> type[Instrument]:
-    from pytest_codspeed.instruments.instrumentation import InstrumentationInstrument
+    from pytest_codspeed.instruments.cpu_instrumentation import (
+        CPUInstrumentationInstrument,
+    )
     from pytest_codspeed.instruments.walltime import WallTimeInstrument
 
-    if mode == CodSpeedMeasurementMode.Instrumentation:
-        return InstrumentationInstrument
+    if mode == CodSpeedMeasurementMode.CPUInstrumentation:
+        return CPUInstrumentationInstrument
     else:
         return WallTimeInstrument

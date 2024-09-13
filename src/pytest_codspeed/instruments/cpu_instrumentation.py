@@ -18,8 +18,8 @@ if TYPE_CHECKING:
 SUPPORTS_PERF_TRAMPOLINE = sys.version_info >= (3, 12)
 
 
-class InstrumentationInstrument(Instrument):
-    instrument = CodSpeedMeasurementMode.Instrumentation
+class CPUInstrumentationInstrument(Instrument):
+    instrument = CodSpeedMeasurementMode.CPUInstrumentation
 
     def __init__(self):
         self.benchmark_count = 0
