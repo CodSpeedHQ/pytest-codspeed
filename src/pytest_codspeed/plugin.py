@@ -83,8 +83,11 @@ def pytest_configure(config: pytest.Config):
         config.getoption("--codspeed") or os.environ.get("CODSPEED_ENV") is not None
     )
 
-    if os.environ.get("CODSPEED_ENV") == "github":
-        default_mode = CodSpeedMeasurementMode.CPUInstrumentation.value
+    if os.environ.get("CODSPEED_ENV") is not None:
+        if os.environ.get("CODSPEED_RUNNER_MODE") == "walltime":
+            default_mode = CodSpeedMeasurementMode.WallTime.value
+        else:
+            default_mode = CodSpeedMeasurementMode.CPUInstrumentation.value
     else:
         default_mode = CodSpeedMeasurementMode.WallTime.value
 
