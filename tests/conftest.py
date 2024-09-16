@@ -1,8 +1,16 @@
+from __future__ import annotations
+
 import importlib.util
 import shutil
 import sys
+from contextlib import contextmanager
+from typing import TYPE_CHECKING
 
 import pytest
+from pytest_codspeed.instruments import MeasurementMode
+
+if TYPE_CHECKING:
+    from _pytest.pytester import RunResult
 
 pytest_plugins = ["pytester"]
 
@@ -44,3 +52,33 @@ skip_without_pytest_xdist = pytest.mark.skipif(
     not IS_PYTEST_XDIST_INSTALLED,
     reason="pytest_xdist not installed",
 )
+
+
+@pytest.fixture(scope="function")
+def codspeed_env(monkeypatch):
+    @contextmanager
+    def ctx_manager():
+        monkeypatch.setenv("CODSPEED_ENV", "1")
+        try:
+            yield
+        finally:
+            monkeypatch.delenv("CODSPEED_ENV", raising=False)
+
+    return ctx_manager
+
+
+def run_pytest_codspeed_with_mode(
+    pytester: pytest.Pytester, mode: MeasurementMode, *args, **kwargs
+) -> RunResult:
+    csargs = [
+        "--codspeed",
+        f"--codspeed-mode={mode.value}",
+    ]
+    if mode == MeasurementMode.WallTime:
+        # Run only 1 round to speed up the test times
+        csargs.extend(["--codspeed-warmup-time=0", "--codspeed-max-rounds=1"])
+    return pytester.runpytest(
+        *csargs,
+        *args,
+        **kwargs,
+    )

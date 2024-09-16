@@ -6,22 +6,25 @@ from typing import TYPE_CHECKING
 
 from pytest_codspeed import __version__
 from pytest_codspeed._wrapper import get_lib
-from pytest_codspeed.instruments import CodSpeedMeasurementMode, Instrument
+from pytest_codspeed.instruments import Instrument, MeasurementMode
 
 if TYPE_CHECKING:
     from typing import Any, Callable
 
     from pytest import Session
 
+    from pytest_codspeed._wrapper import LibType
     from pytest_codspeed.instruments import P, T
+    from pytest_codspeed.plugin import CodSpeedConfig
 
 SUPPORTS_PERF_TRAMPOLINE = sys.version_info >= (3, 12)
 
 
 class CPUInstrumentationInstrument(Instrument):
-    instrument = CodSpeedMeasurementMode.CPUInstrumentation
+    instrument = MeasurementMode.CPUInstrumentation
+    lib: LibType | None
 
-    def __init__(self):
+    def __init__(self, config: CodSpeedConfig) -> None:
         self.benchmark_count = 0
         self.should_measure = os.environ.get("CODSPEED_ENV") is not None
         if self.should_measure:
@@ -30,7 +33,7 @@ class CPUInstrumentationInstrument(Instrument):
                 f"Metadata: pytest-codspeed {__version__}".encode("ascii")
             )
             if SUPPORTS_PERF_TRAMPOLINE:
-                sys.activate_stack_trampoline("perf")
+                sys.activate_stack_trampoline("perf")  # type: ignore
         else:
             self.lib = None
 

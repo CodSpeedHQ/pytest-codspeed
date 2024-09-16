@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 from rich.console import Console
 from rich.table import Table
 
-from pytest_codspeed.instruments import CodSpeedMeasurementMode, Instrument
+from pytest_codspeed.instruments import Instrument, MeasurementMode
 
 if TYPE_CHECKING:
     from typing import Any, Callable
@@ -17,15 +17,31 @@ if TYPE_CHECKING:
     from pytest import Session
 
     from pytest_codspeed.instruments import P, T
+    from pytest_codspeed.plugin import CodSpeedConfig
 
+DEFAULT_WARMUP_TIME_NS = 1_000_000_000
+DEFAULT_MAX_TIME_NS = 3_000_000_000
 TIMER_RESOLUTION_NS = get_clock_info("perf_counter").resolution * 1e9
+DEFAULT_MIN_ROUND_TIME_NS = TIMER_RESOLUTION_NS * 100
 
 
 @dataclass
 class BenchmarkConfig:
-    warmup_time_ns: int = 1_000_000_000
-    min_round_time_ns: float = TIMER_RESOLUTION_NS * 100
-    max_time_ns: int = 1_000_000_000
+    warmup_time_ns: int
+    min_round_time_ns: float
+    max_time_ns: int
+    max_rounds: int | None
+
+    @classmethod
+    def from_codspeed_config(cls, config: CodSpeedConfig) -> BenchmarkConfig:
+        return cls(
+            warmup_time_ns=config.warmup_time_ns
+            if config.warmup_time_ns is not None
+            else DEFAULT_WARMUP_TIME_NS,
+            min_round_time_ns=DEFAULT_MIN_ROUND_TIME_NS,
+            max_time_ns=DEFAULT_MAX_TIME_NS,
+            max_rounds=config.max_rounds or None,
+        )
 
 
 @dataclass
@@ -45,7 +61,7 @@ class BenchmarkStats:
     def from_list(
         cls, times: list[float], *, rounds: int, iter_per_round: int, warmup_iters: int
     ) -> BenchmarkStats:
-        stdev_ns = stdev(times)
+        stdev_ns = stdev(times) if len(times) > 1 else 0
         mean_ns = mean(times)
         return cls(
             min_ns=min(times),
@@ -95,8 +111,11 @@ def run_benchmark(
         if warmup_mean_ns <= config.min_round_time_ns
         else 1
     )
-    round_time_ns = warmup_mean_ns * iter_per_round
-    rounds = int(config.max_time_ns / round_time_ns)
+    if config.max_rounds is None:
+        round_time_ns = warmup_mean_ns * iter_per_round
+        rounds = int(config.max_time_ns / round_time_ns)
+    else:
+        rounds = config.max_rounds
 
     # Benchmark
     iter_range = range(iter_per_round)
@@ -120,9 +139,10 @@ def run_benchmark(
 
 
 class WallTimeInstrument(Instrument):
-    instrument = CodSpeedMeasurementMode.WallTime
+    instrument = MeasurementMode.WallTime
 
-    def __init__(self):
+    def __init__(self, config: CodSpeedConfig) -> None:
+        self.config = config
         self.benchmarks: list[Benchmark] = []
 
     def get_instrument_config_str_and_warns(self) -> tuple[str, list[str]]:
@@ -142,7 +162,7 @@ class WallTimeInstrument(Instrument):
             fn=fn,
             args=args,
             kwargs=kwargs,
-            config=BenchmarkConfig(),
+            config=BenchmarkConfig.from_codspeed_config(self.config),
         )
         self.benchmarks.append(bench)
         return out
@@ -153,6 +173,10 @@ class WallTimeInstrument(Instrument):
             "=",
             f"{len(self.benchmarks)} benchmarked",
         )
+
+        if len(self.benchmarks) == 0:
+            return
+
         table = Table(title="Benchmark Results")
 
         table.add_column("Benchmark", justify="right", style="cyan", no_wrap=True)
@@ -161,6 +185,7 @@ class WallTimeInstrument(Instrument):
             "Rel. StdDev",
             justify="right",
         )
+        table.add_column("Iter x Rounds", justify="right", style="blue")
         table.add_column("Outlier ratio", justify="right", style="blue")
 
         for bench in self.benchmarks:
@@ -169,6 +194,7 @@ class WallTimeInstrument(Instrument):
                 bench.name,
                 f"{bench.stats.min_ns/bench.stats.iter_per_round:.2f}ns",
                 f"{rsd*100:.1f}%",
+                f"{bench.stats.iter_per_round} x {bench.stats.rounds}",
                 f"{(bench.stats.outlier_rounds / bench.stats.rounds)*100:.1f}%",
             )
 

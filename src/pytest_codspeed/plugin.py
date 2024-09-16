@@ -14,7 +14,7 @@ import pytest
 from _pytest.fixtures import FixtureManager
 
 from pytest_codspeed.instruments import (
-    CodSpeedMeasurementMode,
+    MeasurementMode,
     get_instrument_from_mode,
 )
 from pytest_codspeed.utils import (
@@ -49,16 +49,52 @@ def pytest_addoption(parser: pytest.Parser):
     group.addoption(
         "--codspeed-mode",
         action="store",
-        choices=[mode.value for mode in CodSpeedMeasurementMode],
+        choices=[mode.value for mode in MeasurementMode],
         help="The measurement tool to use for measuring performance",
     )
+    group.addoption(
+        "--codspeed-warmup-time",
+        action="store",
+        type=float,
+        help=(
+            "The time to warm up the benchmark for (in seconds), "
+            "only for walltime mode"
+        ),
+    )
+    group.addoption(
+        "--codspeed-max-rounds",
+        action="store",
+        type=int,
+        help=(
+            "The maximum number of rounds to run a benchmark for"
+            ", only for walltime mode"
+        ),
+    )
+
+
+@dataclass(frozen=True)
+class CodSpeedConfig:
+    warmup_time_ns: int | None = None
+    max_rounds: int | None = None
+
+    @classmethod
+    def from_pytest_config(cls, config: pytest.Config) -> CodSpeedConfig:
+        warmup_time = config.getoption("--codspeed-warmup-time", None)
+        warmup_time_ns = (
+            int(warmup_time * 1_000_000_000) if warmup_time is not None else None
+        )
+        return cls(
+            warmup_time_ns=warmup_time_ns,
+            max_rounds=config.getoption("--codspeed-max-rounds", None),
+        )
 
 
 @dataclass(unsafe_hash=True)
 class CodSpeedPlugin:
     is_codspeed_enabled: bool
-    mode: CodSpeedMeasurementMode
+    mode: MeasurementMode
     instrument: Instrument
+    config: CodSpeedConfig
     disabled_plugins: tuple[str, ...]
     result_path: Path | None
     benchmark_count: int = field(default=0, hash=False, compare=False)
@@ -85,15 +121,13 @@ def pytest_configure(config: pytest.Config):
 
     if os.environ.get("CODSPEED_ENV") is not None:
         if os.environ.get("CODSPEED_RUNNER_MODE") == "walltime":
-            default_mode = CodSpeedMeasurementMode.WallTime.value
+            default_mode = MeasurementMode.WallTime.value
         else:
-            default_mode = CodSpeedMeasurementMode.CPUInstrumentation.value
+            default_mode = MeasurementMode.CPUInstrumentation.value
     else:
-        default_mode = CodSpeedMeasurementMode.WallTime.value
+        default_mode = MeasurementMode.WallTime.value
 
-    mode = CodSpeedMeasurementMode(
-        config.getoption("--codspeed-mode", None) or default_mode
-    )
+    mode = MeasurementMode(config.getoption("--codspeed-mode", None) or default_mode)
     instrument = get_instrument_from_mode(mode)
     disabled_plugins: list[str] = []
     if is_codspeed_enabled:
@@ -114,11 +148,14 @@ def pytest_configure(config: pytest.Config):
     else:
         result_path = config.rootpath / f".codspeed/results_{time() * 1000:.0f}.json"
 
+    codspeedconfig = CodSpeedConfig.from_pytest_config(config)
+
     plugin = CodSpeedPlugin(
         disabled_plugins=tuple(disabled_plugins),
         is_codspeed_enabled=is_codspeed_enabled,
         mode=mode,
-        instrument=instrument(),
+        instrument=instrument(codspeedconfig),
+        config=codspeedconfig,
         result_path=result_path,
     )
     config.pluginmanager.register(plugin, PLUGIN_NAME)
@@ -155,7 +192,14 @@ def pytest_plugin_registered(plugin, manager: pytest.PytestPluginManager):
 def pytest_report_header(config: pytest.Config):
     plugin = get_plugin(config)
     config_str, warns = plugin.instrument.get_instrument_config_str_and_warns()
-    out = [f"codspeed: {__version__} ({config_str})", *warns]
+    out = [
+        (
+            f"codspeed: {__version__} ("
+            f"{'enabled' if plugin.is_codspeed_enabled else 'disabled'}, {config_str}"
+            ")"
+        ),
+        *warns,
+    ]
     if len(plugin.disabled_plugins) > 0:
         out.append(
             "\033[93mCodSpeed had to disable the following plugins: "

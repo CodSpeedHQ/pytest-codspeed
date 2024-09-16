@@ -9,15 +9,17 @@ if TYPE_CHECKING:
 
     import pytest
 
+    from pytest_codspeed.plugin import CodSpeedConfig
+
     T = TypeVar("T")
     P = ParamSpec("P")
 
 
 class Instrument(metaclass=ABCMeta):
-    instrument: ClassVar[CodSpeedMeasurementMode]
+    instrument: ClassVar[MeasurementMode]
 
     @abstractmethod
-    def __init__(self): ...
+    def __init__(self, config: CodSpeedConfig): ...
 
     @abstractmethod
     def get_instrument_config_str_and_warns(self) -> tuple[str, list[str]]: ...
@@ -41,18 +43,18 @@ class Instrument(metaclass=ABCMeta):
     ) -> dict[str, Any]: ...
 
 
-class CodSpeedMeasurementMode(str, Enum):
+class MeasurementMode(str, Enum):
     CPUInstrumentation = "cpu_instrumentation"
     WallTime = "walltime"
 
 
-def get_instrument_from_mode(mode: CodSpeedMeasurementMode) -> type[Instrument]:
+def get_instrument_from_mode(mode: MeasurementMode) -> type[Instrument]:
     from pytest_codspeed.instruments.cpu_instrumentation import (
         CPUInstrumentationInstrument,
     )
     from pytest_codspeed.instruments.walltime import WallTimeInstrument
 
-    if mode == CodSpeedMeasurementMode.CPUInstrumentation:
+    if mode == MeasurementMode.CPUInstrumentation:
         return CPUInstrumentationInstrument
     else:
         return WallTimeInstrument
