@@ -169,14 +169,20 @@ class WallTimeInstrument(Instrument):
 
     def report(self, session: Session) -> None:
         reporter = session.config.pluginmanager.get_plugin("terminalreporter")
+
+        if len(self.benchmarks) == 0:
+            reporter.write_sep(
+                "=",
+                f"{len(self.benchmarks)} benchmarked",
+            )
+            return
+        self._print_benchmark_table()
         reporter.write_sep(
             "=",
             f"{len(self.benchmarks)} benchmarked",
         )
 
-        if len(self.benchmarks) == 0:
-            return
-
+    def _print_benchmark_table(self) -> None:
         table = Table(title="Benchmark Results")
 
         table.add_column("Benchmark", justify="right", style="cyan", no_wrap=True)

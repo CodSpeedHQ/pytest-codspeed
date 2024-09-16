@@ -46,7 +46,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-lint = ["mypy ~= 1.3.0", "ruff ~= 0.3.3"]
+lint = ["mypy ~= 1.11.2", "ruff ~= 0.6.5"]
 compat = [
     "pytest-benchmark ~= 4.0.0",
     "pytest-xdist ~= 3.6.1",
