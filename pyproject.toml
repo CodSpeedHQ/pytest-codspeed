@@ -42,6 +42,7 @@ dependencies = [
     "pytest>=3.8",
     "filelock >= 3.12.2",
     "rich>=13.8.1",
+    "importlib-metadata>=8.5.0; python_version < '3.10'",
 ]
 
 [project.optional-dependencies]

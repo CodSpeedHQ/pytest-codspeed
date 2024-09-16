@@ -1,11 +1,16 @@
 from __future__ import annotations
 
-import importlib
 import os
+import sys
 import sysconfig
 from pathlib import Path
 
 from pytest_codspeed import __version__
+
+if sys.version_info < (3, 10):
+    import importlib_metadata as importlib_metadata
+else:
+    import importlib.metadata as importlib_metadata
 
 
 def get_git_relative_path(abs_path: Path) -> Path:
@@ -52,7 +57,7 @@ def get_environment_metadata() -> dict[str, dict]:
         "python": {
             "sysconfig": sysconfig.get_config_vars(),
             "dependencies": {
-                d.name: d.version for d in importlib.metadata.distributions()
+                d.name: d.version for d in importlib_metadata.distributions()
             },
         },
     }
