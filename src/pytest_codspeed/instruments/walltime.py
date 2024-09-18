@@ -53,24 +53,32 @@ class BenchmarkStats:
     median_ns: float
 
     rounds: int
+    total_time: float
     outlier_rounds: int
     iter_per_round: int
     warmup_iters: int
 
     @classmethod
     def from_list(
-        cls, times: list[float], *, rounds: int, iter_per_round: int, warmup_iters: int
+        cls,
+        times_ns: list[float],
+        *,
+        rounds: int,
+        iter_per_round: int,
+        warmup_iters: int,
+        total_time: float,
     ) -> BenchmarkStats:
-        stdev_ns = stdev(times) if len(times) > 1 else 0
-        mean_ns = mean(times)
+        stdev_ns = stdev(times_ns) if len(times_ns) > 1 else 0
+        mean_ns = mean(times_ns)
         return cls(
-            min_ns=min(times),
-            max_ns=max(times),
+            min_ns=min(times_ns),
+            max_ns=max(times_ns),
             stdev_ns=stdev_ns,
             mean_ns=mean_ns,
-            median_ns=median(times),
+            median_ns=median(times_ns),
             rounds=rounds,
-            outlier_rounds=sum(1 for t in times if abs(t - mean_ns) > stdev_ns),
+            total_time=total_time,
+            outlier_rounds=sum(1 for t in times_ns if abs(t - mean_ns) > stdev_ns),
             iter_per_round=iter_per_round,
             warmup_iters=warmup_iters,
         )
@@ -92,20 +100,20 @@ def run_benchmark(
     out = fn(*args, **kwargs)
 
     # Warmup
-    times: list[float] = []
+    times_ns: list[float] = []
     warmup_start = start = perf_counter_ns()
     while True:
         start = perf_counter_ns()
         fn(*args, **kwargs)
         end = perf_counter_ns()
-        times.append(end - start)
+        times_ns.append(end - start)
         if end - warmup_start > config.warmup_time_ns:
             break
 
     # Round sizing
-    warmup_mean_ns = mean(times)
-    warmup_iters = len(times)
-    times.clear()
+    warmup_mean_ns = mean(times_ns)
+    warmup_iters = len(times_ns)
+    times_ns.clear()
     iter_per_round = (
         int(ceil(config.min_round_time_ns / warmup_mean_ns))
         if warmup_mean_ns <= config.min_round_time_ns
@@ -125,14 +133,20 @@ def run_benchmark(
         for _ in iter_range:
             fn(*args, **kwargs)
         end = perf_counter_ns()
-        times.append(end - start)
+        times_ns.append(end - start)
 
         if end - run_start > config.max_time_ns:
             # TODO: log something
             break
+    benchmark_end = perf_counter_ns()
+    total_time = (benchmark_end - run_start) / 1e9
 
     stats = BenchmarkStats.from_list(
-        times, rounds=rounds, iter_per_round=iter_per_round, warmup_iters=warmup_iters
+        times_ns,
+        rounds=rounds,
+        total_time=total_time,
+        iter_per_round=iter_per_round,
+        warmup_iters=warmup_iters,
     )
 
     return Benchmark(name=name, uri=uri, config=config, stats=stats), out
