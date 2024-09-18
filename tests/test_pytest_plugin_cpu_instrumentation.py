@@ -8,6 +8,7 @@ from conftest import (
     skip_without_pytest_xdist,
     skip_without_valgrind,
 )
+
 from pytest_codspeed.instruments import MeasurementMode
 
 

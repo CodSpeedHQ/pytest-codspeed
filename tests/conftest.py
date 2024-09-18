@@ -7,6 +7,7 @@ from contextlib import contextmanager
 from typing import TYPE_CHECKING
 
 import pytest
+
 from pytest_codspeed.instruments import MeasurementMode
 
 if TYPE_CHECKING:

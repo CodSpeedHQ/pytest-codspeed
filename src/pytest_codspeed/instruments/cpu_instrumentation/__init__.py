@@ -5,16 +5,16 @@ import sys
 from typing import TYPE_CHECKING
 
 from pytest_codspeed import __version__
-from pytest_codspeed._wrapper import get_lib
 from pytest_codspeed.instruments import Instrument, MeasurementMode
+from pytest_codspeed.instruments.cpu_instrumentation._wrapper import get_lib
 
 if TYPE_CHECKING:
     from typing import Any, Callable
 
     from pytest import Session
 
-    from pytest_codspeed._wrapper import LibType
     from pytest_codspeed.instruments import P, T
+    from pytest_codspeed.instruments.cpu_instrumentation._wrapper import LibType
     from pytest_codspeed.plugin import CodSpeedConfig
 
 SUPPORTS_PERF_TRAMPOLINE = sys.version_info >= (3, 12)
