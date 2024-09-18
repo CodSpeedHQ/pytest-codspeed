@@ -123,7 +123,7 @@ def pytest_configure(config: pytest.Config):
         if os.environ.get("CODSPEED_RUNNER_MODE") == "walltime":
             default_mode = MeasurementMode.WallTime.value
         else:
-            default_mode = MeasurementMode.CPUInstrumentation.value
+            default_mode = MeasurementMode.Instrumentation.value
     else:
         default_mode = MeasurementMode.WallTime.value
 
@@ -144,7 +144,7 @@ def pytest_configure(config: pytest.Config):
 
     profile_folder = os.environ.get("CODSPEED_PROFILE_FOLDER")
     if profile_folder:
-        result_path = Path(profile_folder) / "walltime" / f"{os.getpid()}.json"
+        result_path = Path(profile_folder) / "results" / f"{os.getpid()}.json"
     else:
         result_path = config.rootpath / f".codspeed/results_{time() * 1000:.0f}.json"
 

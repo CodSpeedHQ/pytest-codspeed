@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 from rich.console import Console
 from rich.table import Table
 
-from pytest_codspeed.instruments import Instrument, MeasurementMode
+from pytest_codspeed.instruments import Instrument
 
 if TYPE_CHECKING:
     from typing import Any, Callable
@@ -153,7 +153,7 @@ def run_benchmark(
 
 
 class WallTimeInstrument(Instrument):
-    instrument = MeasurementMode.WallTime
+    instrument = "walltime"
 
     def __init__(self, config: CodSpeedConfig) -> None:
         self.config = config
@@ -224,7 +224,7 @@ class WallTimeInstrument(Instrument):
     def get_result_dict(self) -> dict[str, Any]:
         return {
             "instrument": {
-                "type": self.instrument.value,
+                "type": self.instrument,
                 "clock_info": get_clock_info("perf_counter").__dict__,
             },
             "benchmarks": [asdict(bench) for bench in self.benchmarks],

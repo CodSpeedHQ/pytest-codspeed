@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 
 class Instrument(metaclass=ABCMeta):
-    instrument: ClassVar[MeasurementMode]
+    instrument: ClassVar[str]
 
     @abstractmethod
     def __init__(self, config: CodSpeedConfig): ...
@@ -44,17 +44,17 @@ class Instrument(metaclass=ABCMeta):
 
 
 class MeasurementMode(str, Enum):
-    CPUInstrumentation = "cpu_instrumentation"
+    Instrumentation = "instrumentation"
     WallTime = "walltime"
 
 
 def get_instrument_from_mode(mode: MeasurementMode) -> type[Instrument]:
-    from pytest_codspeed.instruments.cpu_instrumentation import (
-        CPUInstrumentationInstrument,
+    from pytest_codspeed.instruments.valgrind import (
+        ValgrindInstrument,
     )
     from pytest_codspeed.instruments.walltime import WallTimeInstrument
 
-    if mode == MeasurementMode.CPUInstrumentation:
-        return CPUInstrumentationInstrument
+    if mode == MeasurementMode.Instrumentation:
+        return ValgrindInstrument
     else:
         return WallTimeInstrument

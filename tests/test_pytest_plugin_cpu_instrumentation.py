@@ -36,7 +36,7 @@ def test_plugin_enabled_cpu_instrumentation_without_env(
                 return 1 + 1
         """
     )
-    result = run_pytest_codspeed_with_mode(pytester, MeasurementMode.CPUInstrumentation)
+    result = run_pytest_codspeed_with_mode(pytester, MeasurementMode.Instrumentation)
     result.stdout.fnmatch_lines(
         [
             (
@@ -76,8 +76,7 @@ def test_perf_maps_generation(pytester: pytest.Pytester, codspeed_env) -> None:
     with open(perf_filepath) as perf_file:
         lines = perf_file.readlines()
         assert any(
-            "py::CPUInstrumentationInstrument.measure.<locals>.__codspeed_root_frame__"
-            in line
+            "py::ValgrindInstrument.measure.<locals>.__codspeed_root_frame__" in line
             for line in lines
         ), "No root frame found in perf map"
         assert any(

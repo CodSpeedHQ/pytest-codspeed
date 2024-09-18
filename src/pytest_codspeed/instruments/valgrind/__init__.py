@@ -5,8 +5,8 @@ import sys
 from typing import TYPE_CHECKING
 
 from pytest_codspeed import __version__
-from pytest_codspeed.instruments import Instrument, MeasurementMode
-from pytest_codspeed.instruments.cpu_instrumentation._wrapper import get_lib
+from pytest_codspeed.instruments import Instrument
+from pytest_codspeed.instruments.valgrind._wrapper import get_lib
 
 if TYPE_CHECKING:
     from typing import Any, Callable
@@ -14,14 +14,14 @@ if TYPE_CHECKING:
     from pytest import Session
 
     from pytest_codspeed.instruments import P, T
-    from pytest_codspeed.instruments.cpu_instrumentation._wrapper import LibType
+    from pytest_codspeed.instruments.valgrind._wrapper import LibType
     from pytest_codspeed.plugin import CodSpeedConfig
 
 SUPPORTS_PERF_TRAMPOLINE = sys.version_info >= (3, 12)
 
 
-class CPUInstrumentationInstrument(Instrument):
-    instrument = MeasurementMode.CPUInstrumentation
+class ValgrindInstrument(Instrument):
+    instrument = "valgrind"
     lib: LibType | None
 
     def __init__(self, config: CodSpeedConfig) -> None:
@@ -90,6 +90,6 @@ class CPUInstrumentationInstrument(Instrument):
 
     def get_result_dict(self) -> dict[str, Any]:
         return {
-            "instrument": {"type": self.instrument.value},
+            "instrument": {"type": self.instrument},
             # bench results will be dumped by valgrind
         }
