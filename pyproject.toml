@@ -87,8 +87,9 @@ force_grid_wrap = 0
 float_to_top = true
 
 [tool.pytest.ini_options]
-addopts = "--ignore=tests/benchmarks --ignore=tests/examples"
+addopts = "--ignore=tests/benchmarks --ignore=tests/examples --ignore=tests/benchmarks/TheAlgorithms"
 filterwarnings = ["ignore::DeprecationWarning:pytest_benchmark.utils.*:"]
+pythonpath = ["tests/benchmarks/TheAlgorithms"]
 
 [tool.coverage.run]
 branch = true

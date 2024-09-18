@@ -10,7 +10,9 @@ jobs:
   benchmarks:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+        with:
+          submodules: "recursive"
       - name: Set up Python 3.12
         uses: actions/setup-python@v2
         with:

@@ -1,0 +1,3 @@
+[submodule "tests/benchmarks/TheAlgorithms"]
+	path = tests/benchmarks/TheAlgorithms
+	url = git@github.com:TheAlgorithms/Python.git
