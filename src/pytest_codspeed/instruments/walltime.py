@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 
 from rich.console import Console
 from rich.table import Table
+from rich.text import Text
 
 from pytest_codspeed.instruments import Instrument
 
@@ -200,25 +201,29 @@ class WallTimeInstrument(Instrument):
         table = Table(title="Benchmark Results")
 
         table.add_column("Benchmark", justify="right", style="cyan", no_wrap=True)
-        table.add_column("Time (best)", justify="right", style="green")
+        table.add_column("Time (best)", justify="right", style="green bold")
         table.add_column(
             "Rel. StdDev",
             justify="right",
         )
-        table.add_column("Iter x Rounds", justify="right", style="blue")
-        table.add_column("Outlier ratio", justify="right", style="blue")
+        table.add_column("Run time", justify="right")
+        table.add_column("Iters", justify="right")
 
         for bench in self.benchmarks:
             rsd = bench.stats.stdev_ns / bench.stats.mean_ns
+            rsd_text = Text(f"{rsd*100:.1f}%")
+            if rsd > 0.1:
+                rsd_text.stylize("red bold")
             table.add_row(
                 bench.name,
-                f"{bench.stats.min_ns/bench.stats.iter_per_round:.2f}ns",
-                f"{rsd*100:.1f}%",
-                f"{bench.stats.iter_per_round} x {bench.stats.rounds}",
-                f"{(bench.stats.outlier_rounds / bench.stats.rounds)*100:.1f}%",
+                f"{bench.stats.min_ns/bench.stats.iter_per_round:,.0f}ns",
+                rsd_text,
+                f"{bench.stats.total_time:,.2f}s",
+                f"{bench.stats.iter_per_round * bench.stats.rounds:,}",
             )
 
         console = Console()
+        print("\n")
         console.print(table)
 
     def get_result_dict(self) -> dict[str, Any]:

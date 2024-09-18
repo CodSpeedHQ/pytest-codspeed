@@ -96,7 +96,7 @@ class CodSpeedPlugin:
     instrument: Instrument
     config: CodSpeedConfig
     disabled_plugins: tuple[str, ...]
-    result_path: Path | None
+    profile_folder: Path | None
     benchmark_count: int = field(default=0, hash=False, compare=False)
 
 
@@ -143,10 +143,6 @@ def pytest_configure(config: pytest.Config):
             disabled_plugins.append("pytest-speed")
 
     profile_folder = os.environ.get("CODSPEED_PROFILE_FOLDER")
-    if profile_folder:
-        result_path = Path(profile_folder) / "results" / f"{os.getpid()}.json"
-    else:
-        result_path = config.rootpath / f".codspeed/results_{time() * 1000:.0f}.json"
 
     codspeedconfig = CodSpeedConfig.from_pytest_config(config)
 
@@ -156,7 +152,7 @@ def pytest_configure(config: pytest.Config):
         mode=mode,
         instrument=instrument(codspeedconfig),
         config=codspeedconfig,
-        result_path=result_path,
+        profile_folder=Path(profile_folder) if profile_folder else None,
     )
     config.pluginmanager.register(plugin, PLUGIN_NAME)
 
@@ -297,10 +293,15 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus):
     plugin = get_plugin(session.config)
     if plugin.is_codspeed_enabled:
         plugin.instrument.report(session)
-        if plugin.result_path is not None:
-            data = {**get_environment_metadata(), **plugin.instrument.get_result_dict()}
-            plugin.result_path.parent.mkdir(parents=True, exist_ok=True)
-            plugin.result_path.write_text(json.dumps(data, indent=2))
+        if plugin.profile_folder:
+            result_path = plugin.profile_folder / "results" / f"{os.getpid()}.json"
+        else:
+            result_path = (
+                session.config.rootpath / f".codspeed/results_{time() * 1000:.0f}.json"
+            )
+        data = {**get_environment_metadata(), **plugin.instrument.get_result_dict()}
+        result_path.parent.mkdir(parents=True, exist_ok=True)
+        result_path.write_text(json.dumps(data, indent=2))
 
 
 class BenchmarkFixture:
