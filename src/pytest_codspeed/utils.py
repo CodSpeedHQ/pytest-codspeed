@@ -5,7 +5,7 @@ import sys
 import sysconfig
 from pathlib import Path
 
-from pytest_codspeed import __version__
+from pytest_codspeed import __semver_version__
 
 if sys.version_info < (3, 10):
     import importlib_metadata as importlib_metadata
@@ -51,7 +51,7 @@ def get_environment_metadata() -> dict[str, dict]:
     return {
         "creator": {
             "name": "pytest-codspeed",
-            "version": __version__,
+            "version": __semver_version__,
             "pid": os.getpid(),
         },
         "python": {

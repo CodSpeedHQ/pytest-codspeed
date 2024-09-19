@@ -4,7 +4,7 @@ import os
 import sys
 from typing import TYPE_CHECKING
 
-from pytest_codspeed import __version__
+from pytest_codspeed import __semver_version__
 from pytest_codspeed.instruments import Instrument
 from pytest_codspeed.instruments.valgrind._wrapper import get_lib
 
@@ -30,7 +30,7 @@ class ValgrindInstrument(Instrument):
         if self.should_measure:
             self.lib = get_lib()
             self.lib.dump_stats_at(
-                f"Metadata: pytest-codspeed {__version__}".encode("ascii")
+                f"Metadata: pytest-codspeed {__semver_version__}".encode("ascii")
             )
             if SUPPORTS_PERF_TRAMPOLINE:
                 sys.activate_stack_trampoline("perf")  # type: ignore

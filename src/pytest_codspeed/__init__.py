@@ -4,4 +4,4 @@ __semver_version__ = "3.0.0-b0"
 
 from .plugin import BenchmarkFixture
 
-__all__ = ["BenchmarkFixture", "__version__"]
+__all__ = ["BenchmarkFixture", "__version__", "__semver_version__"]
