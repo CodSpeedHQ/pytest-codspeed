@@ -46,6 +46,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+build = ["semver>=3.0.2"]
 lint = ["mypy ~= 1.11.2", "ruff ~= 0.6.5"]
 compat = [
     "pytest-benchmark ~= 4.0.0",
@@ -94,7 +95,7 @@ float_to_top = true
 [tool.pytest.ini_options]
 addopts = "--ignore=tests/benchmarks --ignore=tests/examples --ignore=tests/benchmarks/TheAlgorithms"
 filterwarnings = ["ignore::DeprecationWarning:pytest_benchmark.utils.*:"]
-pythonpath = ["tests/benchmarks/TheAlgorithms"]
+pythonpath = ["tests/benchmarks/TheAlgorithms", "./scripts"]
 
 [tool.coverage.run]
 branch = true

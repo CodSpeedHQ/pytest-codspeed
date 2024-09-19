@@ -8,6 +8,7 @@ if [ $# -ne 1 ]; then
 fi
 
 hatch version $1
+python scripts/generate_semver.py
 NEW_VERSION=$(hatch version)
 git add src/pytest_codspeed/__init__.py
 # Fail if there are any unstaged changes left
