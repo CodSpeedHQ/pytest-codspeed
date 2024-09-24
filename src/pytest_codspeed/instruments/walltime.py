@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from math import ceil
-from statistics import mean, median, stdev
+from statistics import mean, quantiles, stdev
 from time import get_clock_info, perf_counter_ns
 from typing import TYPE_CHECKING
 
@@ -53,7 +53,9 @@ class BenchmarkStats:
     max_ns: float
     stdev_ns: float
     mean_ns: float
+    q1_ns: float
     median_ns: float
+    q3_ns: float
 
     rounds: int
     total_time: float
@@ -73,12 +75,15 @@ class BenchmarkStats:
     ) -> BenchmarkStats:
         stdev_ns = stdev(times_ns) if len(times_ns) > 1 else 0
         mean_ns = mean(times_ns)
+        q1_ns, median_ns, q3_ns = quantiles(times_ns, n=4)
         return cls(
             min_ns=min(times_ns),
             max_ns=max(times_ns),
             stdev_ns=stdev_ns,
             mean_ns=mean_ns,
-            median_ns=median(times_ns),
+            median_ns=median_ns,
+            q1_ns=q1_ns,
+            q3_ns=q3_ns,
             rounds=rounds,
             total_time=total_time,
             outlier_rounds=sum(1 for t in times_ns if abs(t - mean_ns) > stdev_ns),
