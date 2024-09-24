@@ -40,8 +40,10 @@ class BenchmarkConfig:
             if config.warmup_time_ns is not None
             else DEFAULT_WARMUP_TIME_NS,
             min_round_time_ns=DEFAULT_MIN_ROUND_TIME_NS,
-            max_time_ns=DEFAULT_MAX_TIME_NS,
-            max_rounds=config.max_rounds or None,
+            max_time_ns=config.max_time_ns
+            if config.max_time_ns is not None
+            else DEFAULT_MAX_TIME_NS,
+            max_rounds=config.max_rounds,
         )
 
 
@@ -125,6 +127,7 @@ def run_benchmark(
         rounds = int(config.max_time_ns / round_time_ns)
     else:
         rounds = config.max_rounds
+    rounds = max(1, rounds)
 
     # Benchmark
     iter_range = range(iter_per_round)

@@ -62,6 +62,15 @@ def pytest_addoption(parser: pytest.Parser):
         ),
     )
     group.addoption(
+        "--codspeed-max-time",
+        action="store",
+        type=float,
+        help=(
+            "The maximum time to run a benchmark for (in seconds), "
+            "only for walltime mode"
+        ),
+    )
+    group.addoption(
         "--codspeed-max-rounds",
         action="store",
         type=int,
@@ -75,6 +84,7 @@ def pytest_addoption(parser: pytest.Parser):
 @dataclass(frozen=True)
 class CodSpeedConfig:
     warmup_time_ns: int | None = None
+    max_time_ns: int | None = None
     max_rounds: int | None = None
 
     @classmethod
@@ -83,9 +93,12 @@ class CodSpeedConfig:
         warmup_time_ns = (
             int(warmup_time * 1_000_000_000) if warmup_time is not None else None
         )
+        max_time = config.getoption("--codspeed-max-time", None)
+        max_time_ns = int(max_time * 1_000_000_000) if max_time is not None else None
         return cls(
             warmup_time_ns=warmup_time_ns,
             max_rounds=config.getoption("--codspeed-max-rounds", None),
+            max_time_ns=max_time_ns,
         )
 
 
@@ -248,15 +261,17 @@ def _measure(
 ) -> T:
     is_gc_enabled = gc.isenabled()
     if is_gc_enabled:
-        gc.collect()
-        gc.disable()
+        pass
+        # gc.collect()
+        # gc.disable()
     try:
         uri, name = get_git_relative_uri_and_name(nodeid, config.rootpath)
         return plugin.instrument.measure(name, uri, fn, *args, **kwargs)
     finally:
         # Ensure GC is re-enabled even if the test failed
         if is_gc_enabled:
-            gc.enable()
+            pass
+            # gc.enable()
 
 
 def wrap_runtest(
