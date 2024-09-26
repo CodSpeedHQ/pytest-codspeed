@@ -1,3 +1,4 @@
+import pytest
 from audio_filters.butterworth_filter import (
     make_allpass,
     make_bandpass,
@@ -7,6 +8,7 @@ from audio_filters.butterworth_filter import (
     make_lowshelf,
     make_peak,
 )
+from audio_filters.iir_filter import IIRFilter
 
 
 def test_make_lowpass(benchmark):
@@ -35,3 +37,14 @@ def test_make_lowshelf(benchmark):
 
 def test_make_highshelf(benchmark):
     benchmark(make_highshelf, 1000, 48000, 6)
+
+
+@pytest.mark.parametrize("a_coeffs, b_coeffs", [([1.0, -1.8, 0.81], [0.9, -1.8, 0.81])])
+def test_iir_filter_set_coefficients(benchmark, a_coeffs, b_coeffs):
+    filt = IIRFilter(2)
+    benchmark(filt.set_coefficients, a_coeffs, b_coeffs)
+
+
+def test_iir_filter_process(benchmark):
+    filt = IIRFilter(2)
+    benchmark(filt.process, 0)
