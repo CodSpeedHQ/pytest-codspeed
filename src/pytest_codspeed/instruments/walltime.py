@@ -51,11 +51,14 @@ class BenchmarkConfig:
 class BenchmarkStats:
     min_ns: float
     max_ns: float
-    stdev_ns: float
     mean_ns: float
+    stdev_ns: float
+
+    lower_fence_ns: float
     q1_ns: float
     median_ns: float
     q3_ns: float
+    upper_fence_ns: float
 
     rounds: int
     total_time: float
@@ -76,17 +79,26 @@ class BenchmarkStats:
         stdev_ns = stdev(times_ns) if len(times_ns) > 1 else 0
         mean_ns = mean(times_ns)
         q1_ns, median_ns, q3_ns = quantiles(times_ns, n=4)
+        iqr_ns = q3_ns - q1_ns
+        lower_fence_ns = q1_ns - 1.5 * iqr_ns
+        upper_fence_ns = q3_ns + 1.5 * iqr_ns
+        outliers_rounds = sum(
+            1 for t in times_ns if t < lower_fence_ns or t > upper_fence_ns
+        )
+
         return cls(
             min_ns=min(times_ns),
             max_ns=max(times_ns),
             stdev_ns=stdev_ns,
             mean_ns=mean_ns,
-            median_ns=median_ns,
+            lower_fence_ns=lower_fence_ns,
             q1_ns=q1_ns,
+            median_ns=median_ns,
             q3_ns=q3_ns,
+            upper_fence_ns=upper_fence_ns,
             rounds=rounds,
             total_time=total_time,
-            outlier_rounds=sum(1 for t in times_ns if abs(t - mean_ns) > stdev_ns),
+            outlier_rounds=outliers_rounds,
             iter_per_round=iter_per_round,
             warmup_iters=warmup_iters,
         )
