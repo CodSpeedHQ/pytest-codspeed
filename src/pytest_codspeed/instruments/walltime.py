@@ -55,15 +55,14 @@ class BenchmarkStats:
     mean_ns: float
     stdev_ns: float
 
-    lower_fence_ns: float
     q1_ns: float
     median_ns: float
     q3_ns: float
-    upper_fence_ns: float
 
     rounds: int
     total_time: float
-    outlier_rounds: int
+    iqr_outlier_rounds: int
+    stdev_outlier_rounds: int
     iter_per_round: int
     warmup_iters: int
 
@@ -79,12 +78,22 @@ class BenchmarkStats:
     ) -> BenchmarkStats:
         stdev_ns = stdev(times_ns) if len(times_ns) > 1 else 0
         mean_ns = mean(times_ns)
-        q1_ns, median_ns, q3_ns = quantiles(times_ns, n=4)
+        if len(times_ns) > 1:
+            q1_ns, median_ns, q3_ns = quantiles(times_ns, n=4)
+        else:
+            q1_ns, median_ns, q3_ns = (
+                mean_ns,
+                mean_ns,
+                mean_ns,
+            )
         iqr_ns = q3_ns - q1_ns
-        lower_fence_ns = q1_ns - 1.5 * iqr_ns
-        upper_fence_ns = q3_ns + 1.5 * iqr_ns
-        outliers_rounds = sum(
-            1 for t in times_ns if t < lower_fence_ns or t > upper_fence_ns
+        iqr_outlier_rounds = sum(
+            1 for t in times_ns if t < q1_ns - 1.5 * iqr_ns or t > q3_ns + 1.5 * iqr_ns
+        )
+        stdev_outlier_rounds = sum(
+            1
+            for t in times_ns
+            if t < mean_ns - 3 * stdev_ns or t > mean_ns + 3 * stdev_ns
         )
 
         return cls(
@@ -92,14 +101,13 @@ class BenchmarkStats:
             max_ns=max(times_ns),
             stdev_ns=stdev_ns,
             mean_ns=mean_ns,
-            lower_fence_ns=lower_fence_ns,
             q1_ns=q1_ns,
             median_ns=median_ns,
             q3_ns=q3_ns,
-            upper_fence_ns=upper_fence_ns,
             rounds=rounds,
             total_time=total_time,
-            outlier_rounds=outliers_rounds,
+            iqr_outlier_rounds=iqr_outlier_rounds,
+            stdev_outlier_rounds=stdev_outlier_rounds,
             iter_per_round=iter_per_round,
             warmup_iters=warmup_iters,
         )
