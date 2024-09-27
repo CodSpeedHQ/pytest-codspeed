@@ -77,7 +77,7 @@ def run_pytest_codspeed_with_mode(
     ]
     if mode == MeasurementMode.WallTime:
         # Run only 1 round to speed up the test times
-        csargs.extend(["--codspeed-warmup-time=0", "--codspeed-max-rounds=1"])
+        csargs.extend(["--codspeed-warmup-time=0", "--codspeed-max-rounds=2"])
     return pytester.runpytest(
         *csargs,
         *args,

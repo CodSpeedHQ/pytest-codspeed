@@ -7,6 +7,7 @@ from time import get_clock_info, perf_counter_ns
 from typing import TYPE_CHECKING
 
 from rich.console import Console
+from rich.markup import escape
 from rich.table import Table
 from rich.text import Text
 
@@ -235,7 +236,7 @@ class WallTimeInstrument(Instrument):
             if rsd > 0.1:
                 rsd_text.stylize("red bold")
             table.add_row(
-                bench.name,
+                escape(bench.name),
                 f"{bench.stats.min_ns/bench.stats.iter_per_round:,.0f}ns",
                 rsd_text,
                 f"{bench.stats.total_time:,.2f}s",
