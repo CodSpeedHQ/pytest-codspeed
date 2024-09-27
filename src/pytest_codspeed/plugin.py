@@ -261,17 +261,15 @@ def _measure(
 ) -> T:
     is_gc_enabled = gc.isenabled()
     if is_gc_enabled:
-        pass
-        # gc.collect()
-        # gc.disable()
+        gc.collect()
+        gc.disable()
     try:
         uri, name = get_git_relative_uri_and_name(nodeid, config.rootpath)
         return plugin.instrument.measure(name, uri, fn, *args, **kwargs)
     finally:
         # Ensure GC is re-enabled even if the test failed
         if is_gc_enabled:
-            pass
-            # gc.enable()
+            gc.enable()
 
 
 def wrap_runtest(
