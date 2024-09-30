@@ -1,4 +1,4 @@
-name: benchmarks
+name: CodSpeed
 on:
   push:
     branches: [master]
@@ -8,6 +8,7 @@ on:
 
 jobs:
   benchmarks:
+    name: Run benchmarks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

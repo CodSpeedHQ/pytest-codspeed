@@ -88,7 +88,7 @@ You can use the [CodSpeedHQ/action](https://github.com/CodSpeedHQ/action) to run
 Example workflow:
 
 ```yaml
-name: benchmarks
+name: CodSpeed
 
 on:
   push:
@@ -98,6 +98,7 @@ on:
 
 jobs:
   benchmarks:
+    name: Run benchmarks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
