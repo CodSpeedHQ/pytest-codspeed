@@ -5,6 +5,7 @@ import gc
 import importlib.util
 import json
 import os
+import random
 from dataclasses import dataclass, field
 from pathlib import Path
 from time import time
@@ -259,6 +260,7 @@ def _measure(
     *args: P.args,
     **kwargs: P.kwargs,
 ) -> T:
+    random.seed(0)
     is_gc_enabled = gc.isenabled()
     if is_gc_enabled:
         gc.collect()
