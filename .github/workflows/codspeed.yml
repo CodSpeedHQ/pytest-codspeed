@@ -3,7 +3,6 @@ on:
   push:
     branches: [master]
   pull_request:
-    branches: [master]
   workflow_dispatch:
 
 jobs:
@@ -14,10 +13,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: "recursive"
-      - name: Set up Python 3.12
+      - name: Set up Python 3.13
         uses: actions/setup-python@v2
         with:
-          python-version: "3.12"
+          python-version: "3.13"
       - name: Install local version of pytest-codspeed
         run: pip install .
       - name: Run benchmarks
