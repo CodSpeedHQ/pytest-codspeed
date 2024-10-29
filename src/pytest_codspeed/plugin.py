@@ -320,6 +320,18 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus):
 class BenchmarkFixture:
     """The fixture that can be used to benchmark a function."""
 
+    @property  # type: ignore
+    def __class__(self):
+        # Bypass the pytest-benchmark fixture class check
+        # https://github.com/ionelmc/pytest-benchmark/commit/d6511e3474931feb4e862948128e0c389acfceec
+        if IS_PYTEST_BENCHMARK_INSTALLED:
+            from pytest_benchmark.fixture import (
+                BenchmarkFixture as PytestBenchmarkFixture,
+            )
+
+            return PytestBenchmarkFixture
+        return BenchmarkFixture
+
     def __init__(self, request: pytest.FixtureRequest):
         self.extra_info: dict = {}
 

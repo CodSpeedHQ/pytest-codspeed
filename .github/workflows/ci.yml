@@ -30,7 +30,8 @@ jobs:
       matrix:
         config:
           - headless
-          - pytest-benchmark
+          - pytest-benchmark-4
+          - pytest-benchmark-5
           - valgrind
         python-version:
           - "3.9"
@@ -51,10 +52,15 @@ jobs:
         name: Install valgrind
         run: sudo apt-get install valgrind -y
       - name: Install dependencies with pytest${{ matrix.pytest-version }}
-        run: pip install .[dev,compat,build] "pytest${{ matrix.pytest-version }}"
-      - if: matrix.config != 'pytest-benchmark'
-        name: Uninstall pytest-benchmark
-        run: pip uninstall -y pytest-benchmark
+        run: |
+          pip install .[dev,compat,build] "pytest${{ matrix.pytest-version }}"
+          pip uninstall -y pytest-benchmark
+      - if: matrix.config == 'pytest-benchmark-4'
+        name: Install pytest-benchmark 4.0.0
+        run: pip install pytest-benchmark~=4.0.0
+      - if: matrix.config == 'pytest-benchmark-5'
+        name: Install pytest-benchmark 5.0.0
+        run: pip install pytest-benchmark~=5.0.0
       - name: Run tests
         run: pytest -vs
 
