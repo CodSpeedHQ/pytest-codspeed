@@ -5,15 +5,9 @@ def recursive_fibonacci(n: int) -> int:
 
 
 def recursive_cached_fibonacci(n: int) -> int:
-    cache = {0: 0, 1: 1}
-
-    def fibo(n) -> int:
-        if n in cache:
-            return cache[n]
-        cache[n] = fibo(n - 1) + fibo(n - 2)
-        return cache[n]
-
-    return fibo(n)
+    if n in [0, 1]:
+        return n
+    return recursive_fibonacci(n - 1) + recursive_fibonacci(n - 2)
 
 
 def iterative_fibonacci(n: int) -> int:
@@ -45,9 +39,3 @@ def test_recursive_cached_fibo_10(benchmark):
     @benchmark
     def _():
         recursive_cached_fibonacci(10)
-
-
-def test_recursive_cached_fibo_100(benchmark):
-    @benchmark
-    def _():
-        recursive_cached_fibonacci(100)
