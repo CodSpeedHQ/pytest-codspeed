@@ -4,35 +4,68 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
 
 permissions:
   id-token: write
   contents: write
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-
+  build-wheels:
+    strategy:
+      matrix:
+        platform:
+          - runs-on: ubuntu-24.04
+            arch: x86_64
+          - runs-on: buildjet-2vcpu-ubuntu-2204-arm
+            arch: arm64
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+    runs-on: ${{ matrix.platform.runs-on }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v4
       - uses: actions/setup-python@v2
         with:
-          python-version: "3.11"
+          python-version: ${{ matrix.python-version }}
 
-      - name: Install dependencies
-        run: pip install hatch
+      - name: Install valgrind
+        run: sudo apt-get install valgrind -y
 
       - name: Build the library
-        run: hatch build
+        run: uv build --wheel --out-dir dist/
 
-      - name: Publish package distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheel-${{ matrix.python-version }}-${{ runner.os }}
+          path: dist/*.whl
 
-      - name: Create a draft release
+  publish-wheels:
+    needs: build-wheels
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          path: dist/
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - uses: actions/setup-python@v2
+        with:
+          python-version: "3.12"
+      - name: Build the source dist
+        run: uv build --sdist --out-dir dist/
+
+      - name: List artifacts
+        run: ls -l dist/
+
+      - if: github.event_name == 'push'
+        name: Publish to PyPI
+        run: uv publish --trusted-publishing=always dist/*
+
+      - if: github.event_name == 'push'
+        name: Create a draft release
         run: |
-          NEW_VERSION=$(hatch project metadata | jq -r '.version')
-          gh release create v$NEW_VERSION --title "v$NEW_VERSION" --generate-notes -d
+          VERSION="${{ github.ref_name }}"
+          gh release create $VERSION --title $VERSION --generate-notes -d
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
