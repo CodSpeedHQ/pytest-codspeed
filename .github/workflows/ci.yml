@@ -54,9 +54,12 @@ jobs:
         run: sudo apt-get install valgrind -y
       - name: Install dependencies with pytest${{ matrix.pytest-version }}
         run: |
-          uv sync --all-extras --dev --locked
+          if [ "${{ matrix.config }}" == "valgrind" ]; then
+            export PYTEST_CODSPEED_FORCE_EXTENSION=1
+          fi
+          uv sync --all-extras --dev --locked --verbose
           uv pip install "pytest${{ matrix.pytest-version }}"
-          uv pip uninstall -y pytest-benchmark
+          uv pip uninstall pytest-benchmark
       - if: matrix.config == 'pytest-benchmark-4'
         name: Install pytest-benchmark 4.0.0
         run: uv pip install pytest-benchmark~=4.0.0
