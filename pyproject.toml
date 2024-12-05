@@ -1,7 +1,3 @@
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
 [project.urls]
 Homepage = "https://codspeed.io/"
 Documentation = "https://docs.codspeed.io/"
@@ -35,11 +31,7 @@ classifiers = [
 ]
 dependencies = [
     "cffi >= 1.17.1",
-    # cffi doesn't automatically install setuptools with python 3.12+
-    # cf https://github.com/python-cffi/cffi/releases/tag/v1.16.0
-    "setuptools; python_full_version >= '3.12.0'",
     "pytest>=3.8",
-    "filelock >= 3.12.2",
     "rich>=13.8.1",
     "importlib-metadata>=8.5.0; python_version < '3.10'",
 ]
@@ -53,8 +45,16 @@ compat = [
     # "pytest-speed>=0.3.5",
 ]
 test = ["pytest ~= 7.0", "pytest-cov ~= 4.0.0"]
+
 [project.entry-points]
 pytest11 = { codspeed = "pytest_codspeed.plugin" }
+
+[build-system]
+requires = ["setuptools >= 61", "cffi >= 1.17.1"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.dynamic]
+version = { attr = "pytest_codspeed.__version__" }
 
 [tool.hatch.envs.default]
 python = "3.11"
@@ -66,12 +66,6 @@ features = ["test"]
 [[tool.hatch.envs.test.matrix]]
 python = ["3.9", "3.10", "3.11", "3.12", "3.13"]
 features = ["compat", "test"]
-
-[tool.hatch.version]
-path = "src/pytest_codspeed/__init__.py"
-
-[tool.hatch.build.targets.sdist]
-include = ["/src"]
 
 [tool.mypy]
 python_version = "3.12"

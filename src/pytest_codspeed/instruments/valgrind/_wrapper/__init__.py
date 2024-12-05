@@ -1,38 +1,13 @@
 from __future__ import annotations
 
-import os
 from typing import TYPE_CHECKING
-
-from cffi import FFI  # type: ignore
-from filelock import FileLock
 
 if TYPE_CHECKING:
     from .wrapper import lib as LibType
 
-_wrapper_dir = os.path.dirname(os.path.abspath(__file__))
-
-
-def _get_ffi():
-    ffi = FFI()
-    with open(f"{_wrapper_dir}/wrapper.h") as f:
-        ffi.cdef(f.read())
-    ffi.set_source(
-        "dist_callgrind_wrapper",
-        '#include "wrapper.h"',
-        sources=["wrapper.c"],
-    )
-    return ffi
-
 
 def get_lib() -> LibType:
     try:
-        ffi = _get_ffi()
-        build_lock = FileLock(f"{_wrapper_dir}/build.lock")
-        with build_lock:
-            ffi.compile(
-                target="dist_callgrind_wrapper.*",
-                tmpdir=_wrapper_dir,
-            )
         from .dist_callgrind_wrapper import lib  # type: ignore
 
         return lib
