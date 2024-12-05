@@ -23,7 +23,9 @@ IS_EXTENSION_BUILDABLE = system == "Linux" and current_arch in [
     "arm64",
 ]
 
-IS_EXTENSION_REQUIRED = os.environ.get("PYTEST_CODSPEED_FORCE_EXTENSION") is not None
+IS_EXTENSION_REQUIRED = (
+    os.environ.get("PYTEST_CODSPEED_FORCE_EXTENSION_BUILD") is not None
+)
 if IS_EXTENSION_REQUIRED and not IS_EXTENSION_BUILDABLE:
     raise ValueError(
         "The extension is required but the current platform is not supported"

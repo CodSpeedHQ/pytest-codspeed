@@ -55,7 +55,7 @@ jobs:
       - name: Install dependencies with pytest${{ matrix.pytest-version }}
         run: |
           if [ "${{ matrix.config }}" == "valgrind" ]; then
-            export PYTEST_CODSPEED_FORCE_EXTENSION=1
+            export PYTEST_CODSPEED_FORCE_EXTENSION_BUILD=1
           fi
           uv sync --all-extras --dev --locked --verbose
           uv pip install "pytest${{ matrix.pytest-version }}"
