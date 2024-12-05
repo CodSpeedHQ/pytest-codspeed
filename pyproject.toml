@@ -53,6 +53,9 @@ pytest11 = { codspeed = "pytest_codspeed.plugin" }
 requires = ["setuptools >= 61", "cffi >= 1.17.1"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools]
+license-files = [] # Workaround of https://github.com/astral-sh/uv/issues/9513
+
 [tool.setuptools.dynamic]
 version = { attr = "pytest_codspeed.__version__" }
 
