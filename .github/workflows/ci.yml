@@ -44,6 +44,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
       - name: "Set up Python ${{ matrix.python-version }}"
         uses: actions/setup-python@v5
         with:
@@ -53,16 +54,17 @@ jobs:
         run: sudo apt-get install valgrind -y
       - name: Install dependencies with pytest${{ matrix.pytest-version }}
         run: |
-          pip install .[dev,compat,build] "pytest${{ matrix.pytest-version }}"
-          pip uninstall -y pytest-benchmark
+          uv sync --all-extras --dev --locked
+          uv pip install "pytest${{ matrix.pytest-version }}"
+          uv pip uninstall -y pytest-benchmark
       - if: matrix.config == 'pytest-benchmark-4'
         name: Install pytest-benchmark 4.0.0
-        run: pip install pytest-benchmark~=4.0.0
+        run: uv pip install pytest-benchmark~=4.0.0
       - if: matrix.config == 'pytest-benchmark-5'
         name: Install pytest-benchmark 5.0.0
-        run: pip install pytest-benchmark~=5.0.0
+        run: uv pip install pytest-benchmark~=5.0.0
       - name: Run tests
-        run: pytest -vs
+        run: uv run --no-sync pytest -vs
 
   all-checks:
     runs-on: ubuntu-latest
