@@ -19,7 +19,13 @@ jobs:
             arch: x86_64
           - runs-on: buildjet-2vcpu-ubuntu-2204-arm
             arch: arm64
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        python-version:
+          - "3.9"
+          - "3.10"
+          - "3.11"
+          - "3.12"
+          - "3.13"
+
     runs-on: ${{ matrix.platform.runs-on }}
     steps:
       - uses: actions/checkout@v4
@@ -27,6 +33,10 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
+
+      - name: Update APT cache # BuildJet doesn't cache APT well
+        if: startsWith(matrix.platform.runs-on, 'buildjet-')
+        run: sudo apt-get update
 
       - name: Install valgrind
         run: sudo apt-get install valgrind -y
@@ -38,12 +48,12 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: wheel-${{ matrix.python-version }}-${{ runner.os }}
+          name: wheel-${{ matrix.python-version }}-${{ matrix.platform.arch }}
           path: dist/*.whl
 
-  publish-wheels:
+  publish:
     needs: build-wheels
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -54,11 +64,17 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: "3.12"
+
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          path: dist/
+
       - name: Build the source dist
         run: uv build --sdist --out-dir dist/
 
       - name: List artifacts
-        run: ls -l dist/
+        run: ls -al dist/*
 
       - if: github.event_name == 'push'
         name: Publish to PyPI

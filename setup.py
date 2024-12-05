@@ -18,9 +18,11 @@ spec.loader.exec_module(build)
 system = platform.system()
 current_arch = platform.machine()
 
+print(f"System: {system} ({current_arch})")
+
 IS_EXTENSION_BUILDABLE = system == "Linux" and current_arch in [
     "x86_64",
-    "arm64",
+    "aarch64",
 ]
 
 IS_EXTENSION_REQUIRED = (
