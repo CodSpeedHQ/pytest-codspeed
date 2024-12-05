@@ -56,16 +56,28 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.dynamic]
 version = { attr = "pytest_codspeed.__version__" }
 
-[tool.hatch.envs.default]
-python = "3.11"
-features = ["lint", "test", "compat"]
 
-[tool.hatch.envs.test]
-features = ["test"]
+[tool.bumpver]
+current_version = "3.0.0"
+version_pattern = "MAJOR.MINOR.PATCH[-TAG]"
+commit_message = "Release v{new_version} 🚀"
+tag_message = "Release v{new_version} 🚀"
+tag_scope = "default"
+allow_dirty = false
+pre_commit_hook = "./scripts/pre-release.sh"
+post_commit_hook = "./scripts/post-release.sh"
+commit = true
+tag = false
+push = false
 
-[[tool.hatch.envs.test.matrix]]
-python = ["3.9", "3.10", "3.11", "3.12", "3.13"]
-features = ["compat", "test"]
+
+[tool.bumpver.file_patterns]
+"pyproject.toml" = ['current_version = "{version}"']
+"src/pytest_codspeed/__init__.py" = [
+    '__version__ = "{pep440_version}"',
+    '__semver_version__ = "{version}"',
+]
+
 
 [tool.mypy]
 python_version = "3.12"
