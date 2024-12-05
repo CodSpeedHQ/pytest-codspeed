@@ -6,6 +6,9 @@ on:
     branches: [master]
   workflow_dispatch:
 
+env:
+  PYTHON_VERSION: "3.12"
+
 jobs:
   build:
     name: Build wheel
@@ -15,7 +18,7 @@ jobs:
       - uses: astral-sh/setup-uv@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ env.PYTHON_VERSION }}
       - name: Install valgrind
         run: sudo apt-get install valgrind -y
       - name: Build the wheel
@@ -35,7 +38,7 @@ jobs:
           submodules: "recursive"
       - uses: actions/setup-python@v2
         with:
-          python-version: "3.12"
+          python-version: ${{ env.PYTHON_VERSION }}
       - uses: actions/download-artifact@v4
         with:
           name: wheel
