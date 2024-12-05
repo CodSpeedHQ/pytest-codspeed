@@ -12,4 +12,4 @@ def get_lib() -> LibType:
 
         return lib
     except Exception as e:
-        raise Exception("Failed to compile the wrapper") from e
+        raise Exception("Failed to get a compiled wrapper") from e
