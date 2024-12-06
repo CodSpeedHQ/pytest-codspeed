@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import os
 import shutil
 import sys
 from contextlib import contextmanager
@@ -32,7 +33,9 @@ if IS_PYTEST_BENCHMARK_INSTALLED:
 
 IS_VALGRIND_INSTALLED = shutil.which("valgrind") is not None
 skip_without_valgrind = pytest.mark.skipif(
-    not IS_VALGRIND_INSTALLED, reason="valgrind not installed"
+    "PYTEST_CODSPEED_FORCE_VALGRIND_TESTS" not in os.environ
+    and not IS_VALGRIND_INSTALLED,
+    reason="valgrind not installed",
 )
 
 if IS_VALGRIND_INSTALLED:
