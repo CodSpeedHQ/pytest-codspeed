@@ -17,39 +17,23 @@ jobs:
         platform:
           - runs-on: ubuntu-24.04
             arch: x86_64
-          - runs-on: buildjet-2vcpu-ubuntu-2204-arm
-            arch: arm64
-        python-version:
-          - "3.9"
-          - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
+          - runs-on: buildjet-8vcpu-ubuntu-2204-arm
+            arch: aarch64
 
     runs-on: ${{ matrix.platform.runs-on }}
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v4
-      - uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Update APT cache # BuildJet doesn't cache APT well
-        if: startsWith(matrix.platform.runs-on, 'buildjet-')
-        run: sudo apt-get update
-
-      - name: Install valgrind
-        run: sudo apt-get install valgrind -y
-
-      - name: Build the library
-        run: uv build --wheel --out-dir dist/
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.22.0
         env:
-          PYTEST_CODSPEED_FORCE_EXTENSION_BUILD: 1
+          CIBW_ARCHS: ${{ matrix.platform.arch }}
+        with:
+          output-dir: wheelhouse
 
       - uses: actions/upload-artifact@v4
         with:
-          name: wheel-${{ matrix.python-version }}-${{ matrix.platform.arch }}
-          path: dist/*.whl
+          name: wheels-${{ matrix.platform.arch }}
+          path: wheelhouse/*.whl
 
   publish:
     needs: build-wheels

@@ -81,6 +81,18 @@ push = false
     '__semver_version__ = "{version}"',
 ]
 
+[tool.cibuildwheel]
+build = "cp*manylinux*"
+test-extras = ["build", "test", "compat"]
+test-command = "pytest -v --ignore={project}/tests/benchmarks {project}/tests"
+
+[tool.cibuildwheel.linux]
+environment = { PYTEST_CODSPEED_FORCE_EXTENSION_BUILD = "1", PYTEST_CODSPEED_FORCE_VALGRIND_TESTS = "1" }
+archs = ["x86_64", "aarch64"]
+manylinux-x86_64-image = "manylinux_2_28"
+manylinux-aarch64-image = "manylinux_2_28"
+before-all = "yum -y install valgrind-devel || apk add --upgrad valgrind-dev"
+container-engine = { name = "docker", disable-host-mount = true }
 
 [tool.mypy]
 python_version = "3.12"
