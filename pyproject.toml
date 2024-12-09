@@ -37,7 +37,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-build = ["semver>=3.0.2"]
 lint = ["mypy ~= 1.11.2", "ruff ~= 0.6.5"]
 compat = [
     "pytest-benchmark ~= 5.0.0",
