@@ -5,23 +5,36 @@
 
 
 
-## [Unreleased]
+## [3.1.0] - 2024-12-09
 
-### <!-- 0 -->🚀 Features
-- Check buildability and fallback when build doesn't work
-- Compile the callgrind wrapper at build time
-
-### <!-- 1 -->🐛 Bug Fixes
-- Allow build on arm64
+### <!-- 2 -->🏗️ Refactor
+- Remove the scripted semver generation by @art049
 
 ### <!-- 7 -->⚙️ Internals
-- Define the version from the pyproject.toml
-- Force native extension build in CI
-- Updated matrix release workflow
-- Use a common python version in the codspeed job
-- Fix the codspeed workflow
-- Use uv in CI
-- Uv lock
+- Fix typo in cibuildwheel config by @art049 in [#57](https://github.com/CodSpeedHQ/pytest-codspeed/pull/57)
+
+
+## [3.1.0-beta] - 2024-12-06
+
+### <!-- 0 -->🚀 Features
+- Check buildability and fallback when build doesn't work by @art049
+- Compile the callgrind wrapper at build time by @art049
+
+### <!-- 1 -->🐛 Bug Fixes
+- Allow build on arm64 by @art049
+
+### <!-- 7 -->⚙️ Internals
+- Build wheels with cibuildwheel by @art049
+- Allow forcing integrated tests by @art049
+- Fix release script by @art049
+- Use bumpver to manage versions by @art049
+- Add a changelog by @art049
+- Force native extension build in CI by @art049
+- Updated matrix release workflow by @art049
+- Use a common python version in the codspeed job by @art049
+- Fix the codspeed workflow by @art049
+- Use uv in CI by @art049
+- Commit uv lock file by @art049
 
 
 ## [3.0.0] - 2024-10-29
@@ -229,7 +242,8 @@
 - Add a CI configuration with pytest-benchmark installed by @art049
 
 
-[unreleased]: https://github.com/CodSpeedHQ/pytest-codspeed/compare/v3.0.0..HEAD
+[3.1.0]: https://github.com/CodSpeedHQ/pytest-codspeed/compare/v3.1.0-beta..v3.1.0
+[3.1.0-beta]: https://github.com/CodSpeedHQ/pytest-codspeed/compare/v3.0.0..v3.1.0-beta
 [3.0.0]: https://github.com/CodSpeedHQ/pytest-codspeed/compare/v3.0.0b4..v3.0.0
 [3.0.0b4]: https://github.com/CodSpeedHQ/pytest-codspeed/compare/v3.0.0b3..v3.0.0b4
 [3.0.0b3]: https://github.com/CodSpeedHQ/pytest-codspeed/compare/v3.0.0b2..v3.0.0b3

@@ -333,7 +333,7 @@ wheels = [
 
 [[package]]
 name = "pytest-codspeed"
-version = "3.1.0b0"
+version = "3.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "cffi" },
@@ -343,9 +343,6 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
-build = [
-    { name = "semver" },
-]
 compat = [
     { name = "pytest-benchmark" },
     { name = "pytest-xdist" },
@@ -371,7 +368,6 @@ requires-dist = [
     { name = "pytest-xdist", marker = "extra == 'compat'", specifier = "~=3.6.1" },
     { name = "rich", specifier = ">=13.8.1" },
     { name = "ruff", marker = "extra == 'lint'", specifier = "~=0.6.5" },
-    { name = "semver", marker = "extra == 'build'", specifier = ">=3.0.2" },
 ]
 
 [[package]]
@@ -437,15 +433,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/bb/a4/c84bc13d0b573cf7bb7d17b16d6d29f84267c92d79b2f478d4ce322e8e72/ruff-0.6.9-py3-none-win32.whl", hash = "sha256:eb61ec9bdb2506cffd492e05ac40e5bc6284873aceb605503d8494180d6fc84d", size = 8522088 },
     { url = "https://files.pythonhosted.org/packages/74/be/fc352bd8ca40daae8740b54c1c3e905a7efe470d420a268cd62150248c91/ruff-0.6.9-py3-none-win_amd64.whl", hash = "sha256:785d31851c1ae91f45b3d8fe23b8ae4b5170089021fbb42402d811135f0b7117", size = 9359275 },
     { url = "https://files.pythonhosted.org/packages/3e/14/fd026bc74ded05e2351681545a5f626e78ef831f8edce064d61acd2e6ec7/ruff-0.6.9-py3-none-win_arm64.whl", hash = "sha256:a9641e31476d601f83cd602608739a0840e348bda93fec9f1ee816f8b6798b93", size = 8679879 },
-]
-
-[[package]]
-name = "semver"
-version = "3.0.2"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/41/6c/a536cc008f38fd83b3c1b98ce19ead13b746b5588c9a0cb9dd9f6ea434bc/semver-3.0.2.tar.gz", hash = "sha256:6253adb39c70f6e51afed2fa7152bcd414c411286088fb4b9effb133885ab4cc", size = 214988 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/9a/77/0cc7a8a3bc7e53d07e8f47f147b92b0960e902b8254859f4aee5c4d7866b/semver-3.0.2-py3-none-any.whl", hash = "sha256:b1ea4686fe70b981f85359eda33199d60c53964284e0cfb4977d243e37cf4bf4", size = 17099 },
 ]
 
 [[package]]
