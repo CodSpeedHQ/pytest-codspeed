@@ -60,7 +60,7 @@ version = { attr = "pytest_codspeed.__version__" }
 
 
 [tool.bumpver]
-current_version = "3.1.1-beta0"
+current_version = "3.1.1-beta1"
 version_pattern = "MAJOR.MINOR.PATCH[-TAG[NUM]]"
 commit_message = "Release v{new_version} 🚀"
 tag_message = "Release v{new_version} 🚀"
