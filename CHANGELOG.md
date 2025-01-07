@@ -5,6 +5,14 @@
 
 
 
+## [3.1.1] - 2025-01-07
+
+### <!-- 7 -->⚙️ Internals
+- Fix tag num with bumpver by @art049 in [#61](https://github.com/CodSpeedHQ/pytest-codspeed/pull/61)
+- Update uv lock before release by @art049
+- Add a py3-none-any fallback wheel by @art049
+
+
 ## [3.1.0] - 2024-12-09
 
 ### <!-- 2 -->🏗️ Refactor
@@ -242,6 +250,7 @@
 - Add a CI configuration with pytest-benchmark installed by @art049
 
 
+[3.1.1]: https://github.com/CodSpeedHQ/pytest-codspeed/compare/v3.1.0..v3.1.1
 [3.1.0]: https://github.com/CodSpeedHQ/pytest-codspeed/compare/v3.1.0-beta..v3.1.0
 [3.1.0-beta]: https://github.com/CodSpeedHQ/pytest-codspeed/compare/v3.0.0..v3.1.0-beta
 [3.0.0]: https://github.com/CodSpeedHQ/pytest-codspeed/compare/v3.0.0b4..v3.0.0
