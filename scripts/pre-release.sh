@@ -17,5 +17,5 @@ else
     git add CHANGELOG.md
 fi
 
-uv sync
+uv lock
 git add uv.lock
