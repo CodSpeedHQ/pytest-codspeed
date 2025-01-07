@@ -35,8 +35,46 @@ jobs:
           name: wheels-${{ matrix.platform.arch }}
           path: wheelhouse/*.whl
 
+  build-py3-none-any:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - uses: actions/setup-python@v2
+        with:
+          python-version: "3.12"
+      - name: Build py3-none-any wheel
+        env:
+          PYTEST_CODSPEED_SKIP_EXTENSION_BUILD: "1"
+        run: uv build --wheel --out-dir dist/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-py3-none-any
+          path: dist/*.whl
+
+  build-sdist:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - uses: actions/setup-python@v2
+        with:
+          python-version: "3.12"
+      - name: Build the source dist
+        run: uv build --sdist --out-dir dist/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sdist
+          path: dist/*.tar.gz
+
   publish:
-    needs: build-wheels
+    needs:
+      - build-wheels
+      - build-py3-none-any
+      - build-sdist
+
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/download-artifact@v4
@@ -53,9 +91,6 @@ jobs:
         with:
           merge-multiple: true
           path: dist/
-
-      - name: Build the source dist
-        run: uv build --sdist --out-dir dist/
 
       - name: List artifacts
         run: ls -al dist/*
