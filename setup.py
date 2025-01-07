@@ -33,7 +33,7 @@ SKIP_EXTENSION_BUILD = (
     os.environ.get("PYTEST_CODSPEED_SKIP_EXTENSION_BUILD") is not None
 )
 
-if SKIP_EXTENSION_BUILD and IS_EXTENSION_BUILDABLE:
+if SKIP_EXTENSION_BUILD and IS_EXTENSION_REQUIRED:
     raise ValueError("Extension build required but the build requires to skip it")
 
 if IS_EXTENSION_REQUIRED and not IS_EXTENSION_BUILDABLE:
