@@ -333,7 +333,7 @@ wheels = [
 
 [[package]]
 name = "pytest-codspeed"
-version = "3.1.1b2"
+version = "3.1.1b3"
 source = { editable = "." }
 dependencies = [
     { name = "cffi" },
