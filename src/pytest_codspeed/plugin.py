@@ -13,13 +13,13 @@ from typing import TYPE_CHECKING
 import pytest
 from _pytest.fixtures import FixtureManager
 
+from pytest_codspeed.benchmark import Benchmark
 from pytest_codspeed.instruments import (
     MeasurementMode,
     get_instrument_from_mode,
 )
 from pytest_codspeed.utils import (
     get_environment_metadata,
-    get_git_relative_uri_and_name,
 )
 
 from . import __version__
@@ -253,8 +253,7 @@ def pytest_collection_modifyitems(
 
 def _measure(
     plugin: CodSpeedPlugin,
-    nodeid: str,
-    config: pytest.Config,
+    item: pytest.Item,
     fn: Callable[P, T],
     *args: P.args,
     **kwargs: P.kwargs,
@@ -264,8 +263,8 @@ def _measure(
         gc.collect()
         gc.disable()
     try:
-        uri, name = get_git_relative_uri_and_name(nodeid, config.rootpath)
-        return plugin.instrument.measure(name, uri, fn, *args, **kwargs)
+        benchmark = Benchmark.from_item(item)
+        return plugin.instrument.measure(benchmark, fn, *args, **kwargs)
     finally:
         # Ensure GC is re-enabled even if the test failed
         if is_gc_enabled:
@@ -274,13 +273,13 @@ def _measure(
 
 def wrap_runtest(
     plugin: CodSpeedPlugin,
-    nodeid: str,
-    config: pytest.Config,
-    fn: Callable[P, T],
+    item: pytest.Item,
 ) -> Callable[P, T]:
+    fn = item.runtest
+
     @functools.wraps(fn)
     def wrapped(*args: P.args, **kwargs: P.kwargs) -> T:
-        return _measure(plugin, nodeid, config, fn, *args, **kwargs)
+        return _measure(plugin, item, fn, *args, **kwargs)
 
     return wrapped
 
@@ -297,7 +296,7 @@ def pytest_runtest_protocol(item: pytest.Item, nextitem: pytest.Item | None):
         return None
 
     # Wrap runtest and defer to default protocol
-    item.runtest = wrap_runtest(plugin, item.nodeid, item.config, item.runtest)
+    item.runtest = wrap_runtest(plugin, item)
     return None
 
 
@@ -340,10 +339,9 @@ class BenchmarkFixture:
     def __call__(self, func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
         config = self._request.config
         plugin = get_plugin(config)
-        if plugin.is_codspeed_enabled:
-            return _measure(
-                plugin, self._request.node.nodeid, config, func, *args, **kwargs
-            )
+        item = self._request.node
+        if plugin.is_codspeed_enabled and isinstance(item, pytest.Item):
+            return _measure(plugin, item, func, *args, **kwargs)
         else:
             return func(*args, **kwargs)
 

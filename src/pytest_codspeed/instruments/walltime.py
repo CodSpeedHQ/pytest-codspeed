@@ -11,6 +11,7 @@ from rich.markup import escape
 from rich.table import Table
 from rich.text import Text
 
+from pytest_codspeed.benchmark import Benchmark
 from pytest_codspeed.instruments import Instrument
 
 if TYPE_CHECKING:
@@ -28,14 +29,14 @@ DEFAULT_MIN_ROUND_TIME_NS = TIMER_RESOLUTION_NS * 100
 
 
 @dataclass
-class BenchmarkConfig:
+class WalltimeBenchmarkConfig:
     warmup_time_ns: int
     min_round_time_ns: float
     max_time_ns: int
     max_rounds: int | None
 
     @classmethod
-    def from_codspeed_config(cls, config: CodSpeedConfig) -> BenchmarkConfig:
+    def from_codspeed_config(cls, config: CodSpeedConfig) -> WalltimeBenchmarkConfig:
         return cls(
             warmup_time_ns=config.warmup_time_ns
             if config.warmup_time_ns is not None
@@ -49,7 +50,7 @@ class BenchmarkConfig:
 
 
 @dataclass
-class BenchmarkStats:
+class WalltimeBenchmarkStats:
     min_ns: float
     max_ns: float
     mean_ns: float
@@ -75,7 +76,7 @@ class BenchmarkStats:
         iter_per_round: int,
         warmup_iters: int,
         total_time: float,
-    ) -> BenchmarkStats:
+    ) -> WalltimeBenchmarkStats:
         stdev_ns = stdev(times_ns) if len(times_ns) > 1 else 0
         mean_ns = mean(times_ns)
         if len(times_ns) > 1:
@@ -114,17 +115,18 @@ class BenchmarkStats:
 
 
 @dataclass
-class Benchmark:
-    name: str
-    uri: str
-
-    config: BenchmarkConfig
-    stats: BenchmarkStats
+class WalltimeBenchmark(Benchmark):
+    config: WalltimeBenchmarkConfig
+    stats: WalltimeBenchmarkStats
 
 
 def run_benchmark(
-    name: str, uri: str, fn: Callable[P, T], args, kwargs, config: BenchmarkConfig
-) -> tuple[Benchmark, T]:
+    benchmark: Benchmark,
+    fn: Callable[P, T],
+    args,
+    kwargs,
+    config: WalltimeBenchmarkConfig,
+) -> tuple[WalltimeBenchmark, T]:
     # Compute the actual result of the function
     out = fn(*args, **kwargs)
 
@@ -171,7 +173,7 @@ def run_benchmark(
     benchmark_end = perf_counter_ns()
     total_time = (benchmark_end - run_start) / 1e9
 
-    stats = BenchmarkStats.from_list(
+    stats = WalltimeBenchmarkStats.from_list(
         times_ns,
         rounds=rounds,
         total_time=total_time,
@@ -179,7 +181,11 @@ def run_benchmark(
         warmup_iters=warmup_iters,
     )
 
-    return Benchmark(name=name, uri=uri, config=config, stats=stats), out
+    return WalltimeBenchmark(
+        **asdict(benchmark),
+        config=config,
+        stats=stats,
+    ), out
 
 
 class WallTimeInstrument(Instrument):
@@ -187,26 +193,24 @@ class WallTimeInstrument(Instrument):
 
     def __init__(self, config: CodSpeedConfig) -> None:
         self.config = config
-        self.benchmarks: list[Benchmark] = []
+        self.benchmarks: list[WalltimeBenchmark] = []
 
     def get_instrument_config_str_and_warns(self) -> tuple[str, list[str]]:
         return f"mode: walltime, timer_resolution: {TIMER_RESOLUTION_NS:.1f}ns", []
 
     def measure(
         self,
-        name: str,
-        uri: str,
+        benchmark: Benchmark,
         fn: Callable[P, T],
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> T:
         bench, out = run_benchmark(
-            name=name,
-            uri=uri,
+            benchmark=benchmark,
             fn=fn,
             args=args,
             kwargs=kwargs,
-            config=BenchmarkConfig.from_codspeed_config(self.config),
+            config=WalltimeBenchmarkConfig.from_codspeed_config(self.config),
         )
         self.benchmarks.append(bench)
         return out
@@ -244,7 +248,7 @@ class WallTimeInstrument(Instrument):
             if rsd > 0.1:
                 rsd_text.stylize("red bold")
             table.add_row(
-                escape(bench.name),
+                escape(bench.display_name),
                 f"{bench.stats.min_ns/bench.stats.iter_per_round:,.0f}ns",
                 rsd_text,
                 f"{bench.stats.total_time:,.2f}s",

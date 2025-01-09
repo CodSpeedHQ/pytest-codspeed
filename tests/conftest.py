@@ -81,7 +81,10 @@ def run_pytest_codspeed_with_mode(
     if mode == MeasurementMode.WallTime:
         # Run only 1 round to speed up the test times
         csargs.extend(["--codspeed-warmup-time=0", "--codspeed-max-rounds=2"])
-    return pytester.runpytest(
+    # create empty `.git` folder in the rootdir to simulate a git repository
+    if not pytester.path.joinpath(".git").exists():
+        pytester.mkdir(".git")
+    return pytester.runpytest_subprocess(
         *csargs,
         *args,
         **kwargs,

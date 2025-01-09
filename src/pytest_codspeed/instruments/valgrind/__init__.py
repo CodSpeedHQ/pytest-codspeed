@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import sys
+from dataclasses import asdict
 from typing import TYPE_CHECKING
 
 from pytest_codspeed import __semver_version__
@@ -13,6 +14,7 @@ if TYPE_CHECKING:
 
     from pytest import Session
 
+    from pytest_codspeed.benchmark import Benchmark
     from pytest_codspeed.instruments import P, T
     from pytest_codspeed.instruments.valgrind._wrapper import LibType
     from pytest_codspeed.plugin import CodSpeedConfig
@@ -26,6 +28,7 @@ class ValgrindInstrument(Instrument):
 
     def __init__(self, config: CodSpeedConfig) -> None:
         self.benchmark_count = 0
+        self.benchmarks: list[Benchmark] = []
         self.should_measure = os.environ.get("CODSPEED_ENV") is not None
         if self.should_measure:
             self.lib = get_lib()
@@ -54,13 +57,13 @@ class ValgrindInstrument(Instrument):
 
     def measure(
         self,
-        name: str,
-        uri: str,
+        benchmark: Benchmark,
         fn: Callable[P, T],
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> T:
         self.benchmark_count += 1
+        self.benchmarks.append(benchmark)
         if self.lib is None:  # Thus should_measure is False
             return fn(*args, **kwargs)
 
@@ -78,7 +81,7 @@ class ValgrindInstrument(Instrument):
         finally:
             # Ensure instrumentation is stopped even if the test failed
             self.lib.stop_instrumentation()
-            self.lib.dump_stats_at(uri.encode("ascii"))
+            self.lib.dump_stats_at(benchmark.to_json_string().encode("ascii"))
 
     def report(self, session: Session) -> None:
         reporter = session.config.pluginmanager.get_plugin("terminalreporter")
@@ -91,5 +94,5 @@ class ValgrindInstrument(Instrument):
     def get_result_dict(self) -> dict[str, Any]:
         return {
             "instrument": {"type": self.instrument},
-            # bench results will be dumped by valgrind
+            "benchmarks": [asdict(bench) for bench in self.benchmarks],
         }
