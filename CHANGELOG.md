@@ -5,6 +5,12 @@
 
 
 
+## [3.1.2] - 2025-01-09
+
+### <!-- 1 -->🐛 Bug Fixes
+- Update package_data to include header and source files for valgrind wrapper by @art049 in [#64](https://github.com/CodSpeedHQ/pytest-codspeed/pull/64)
+
+
 ## [3.1.1] - 2025-01-07
 
 ### <!-- 7 -->⚙️ Internals
@@ -250,6 +256,7 @@
 - Add a CI configuration with pytest-benchmark installed by @art049
 
 
+[3.1.2]: https://github.com/CodSpeedHQ/pytest-codspeed/compare/v3.1.1..v3.1.2
 [3.1.1]: https://github.com/CodSpeedHQ/pytest-codspeed/compare/v3.1.0..v3.1.1
 [3.1.0]: https://github.com/CodSpeedHQ/pytest-codspeed/compare/v3.1.0-beta..v3.1.0
 [3.1.0-beta]: https://github.com/CodSpeedHQ/pytest-codspeed/compare/v3.0.0..v3.1.0-beta
