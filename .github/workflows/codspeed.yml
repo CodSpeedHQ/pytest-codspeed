@@ -10,28 +10,17 @@ env:
   PYTHON_VERSION: "3.12"
 
 jobs:
-  build:
-    name: Build wheel
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-      - name: Install valgrind
-        run: sudo apt-get install valgrind -y
-      - name: Build the wheel
-        run: uv build --wheel --out-dir dist/
-      - uses: actions/upload-artifact@v4
-        with:
-          name: wheel
-          path: dist/*.whl
+  benchmarks-instrumentation:
+    strategy:
+      matrix:
+        include:
+          - mode: "instrumentation"
+            runs-on: ubuntu-24.04
+          - mode: "walltime"
+            runs-on: codspeed-macro
 
-  benchmarks:
-    name: Run benchmarks
-    needs: build
-    runs-on: ubuntu-24.04
+    name: Run ${{ matrix.mode }} benchmarks
+    runs-on: ${{ matrix.runs-on }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -39,13 +28,13 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-      - uses: actions/download-artifact@v4
-        with:
-          name: wheel
-          path: dist
       - name: Install local version of pytest-codspeed
-        run: pip install dist/*.whl
+        run: |
+          sudo apt-get install valgrind -y
+          pip install .
+          sudo apt-get remove valgrind -y
       - name: Run benchmarks
         uses: CodSpeedHQ/action@main
         with:
           run: pytest tests/benchmarks/ --codspeed
+          token: ${{ secrets.CODSPEED_TOKEN }}
