@@ -50,12 +50,11 @@ print(
 )
 
 setup(
-    exclude_package_data={
-        "pytest_codspeed.instruments.valgrind._wrapper": [
-            "*.c",
-            "*.h",
-            "build.py",
-        ],
+    package_data={
+        "pytest_codspeed": [
+            "instruments/valgrind/_wrapper/*.h",
+            "instruments/valgrind/_wrapper/*.c",
+        ]
     },
     ext_modules=(
         [ffi_extension] if IS_EXTENSION_BUILDABLE and not SKIP_EXTENSION_BUILD else []
