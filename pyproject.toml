@@ -45,6 +45,12 @@ compat = [
 ]
 test = ["pytest ~= 7.0", "pytest-cov ~= 4.0.0"]
 
+[tool.uv.sources]
+pytest-codspeed = { workspace = true }
+
+[dependency-groups]
+dev = ["pytest-codspeed"]
+
 [project.entry-points]
 pytest11 = { codspeed = "pytest_codspeed.plugin" }
 

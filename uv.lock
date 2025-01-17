@@ -333,7 +333,6 @@ wheels = [
 
 [[package]]
 name = "pytest-codspeed"
-version = "3.1.2"
 source = { editable = "." }
 dependencies = [
     { name = "cffi" },
@@ -356,6 +355,11 @@ test = [
     { name = "pytest-cov" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "pytest-codspeed" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "cffi", specifier = ">=1.17.1" },
@@ -369,6 +373,9 @@ requires-dist = [
     { name = "rich", specifier = ">=13.8.1" },
     { name = "ruff", marker = "extra == 'lint'", specifier = "~=0.6.5" },
 ]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest-codspeed", editable = "." }]
 
 [[package]]
 name = "pytest-cov"
