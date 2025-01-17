@@ -40,6 +40,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v4
+        with:
+          version: "0.5.20"
       - uses: actions/setup-python@v2
         with:
           python-version: "3.12"
@@ -58,6 +60,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v4
+        with:
+          version: "0.5.20"
       - uses: actions/setup-python@v2
         with:
           python-version: "3.12"
@@ -83,6 +87,8 @@ jobs:
           path: dist/
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v4
+        with:
+          version: "0.5.20"
       - uses: actions/setup-python@v2
         with:
           python-version: "3.12"
