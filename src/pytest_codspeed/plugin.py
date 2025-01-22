@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 import pytest
 from _pytest.fixtures import FixtureManager
 
-from pytest_codspeed.benchmark import Benchmark
+from pytest_codspeed.benchmark import BenchmarkMetadata
 from pytest_codspeed.instruments import (
     MeasurementMode,
     get_instrument_from_mode,
@@ -263,8 +263,8 @@ def _measure(
         gc.collect()
         gc.disable()
     try:
-        benchmark = Benchmark.from_item(item)
-        return plugin.instrument.measure(benchmark, fn, *args, **kwargs)
+        benchmark_metadata = BenchmarkMetadata.from_item(item)
+        return plugin.instrument.measure(benchmark_metadata, fn, *args, **kwargs)
     finally:
         # Ensure GC is re-enabled even if the test failed
         if is_gc_enabled:

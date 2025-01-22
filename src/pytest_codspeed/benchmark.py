@@ -17,7 +17,7 @@ def has_args(item: pytest.Item) -> bool:
 
 
 @dataclass
-class Benchmark:
+class BenchmarkMetadata:
     file: str
     module: str
     groups: list[str]
@@ -26,7 +26,7 @@ class Benchmark:
     args_names: list[str]
 
     @classmethod
-    def from_item(cls, item: pytest.Item) -> Benchmark:
+    def from_item(cls, item: pytest.Item) -> BenchmarkMetadata:
         file = str(get_git_relative_path(item.path))
         module = "::".join(
             [node.name for node in item.listchain() if isinstance(node, pytest.Class)]

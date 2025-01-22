@@ -1,6 +1,6 @@
 import pytest
 
-from pytest_codspeed.plugin import Benchmark
+from pytest_codspeed.plugin import BenchmarkMetadata
 
 
 class ClassWithStr:
@@ -9,7 +9,7 @@ class ClassWithStr:
 
 
 benchmarks = [
-    Benchmark(
+    BenchmarkMetadata(
         file="test_benchmark_results.py",
         module="TestClass::TestNested",
         groups=["bench-group"],
@@ -17,7 +17,7 @@ benchmarks = [
         args=[58.3, "baz"],
         args_names=["a", "b"],
     ),
-    Benchmark(
+    BenchmarkMetadata(
         file="another_test_file.py",
         module="AnotherClass::AnotherTest",
         groups=["another-group"],
@@ -25,7 +25,7 @@ benchmarks = [
         args=[42, "foo"],
         args_names=["x", "y"],
     ),
-    Benchmark(
+    BenchmarkMetadata(
         file="yet_another_test_file.py",
         module="",
         groups=[],
@@ -33,7 +33,7 @@ benchmarks = [
         args=[],
         args_names=[],
     ),
-    Benchmark(
+    BenchmarkMetadata(
         file="test_complex_args.py",
         module="",
         groups=[],
@@ -65,7 +65,7 @@ benchmarks = [
         ),
     ],
 )
-def test_benchmark_to_json(bench, expected_json):
+def test_benchmark_metadata_to_json(bench, expected_json):
     assert bench.to_json_string() == expected_json
 
 
@@ -78,5 +78,5 @@ def test_benchmark_to_json(bench, expected_json):
         (benchmarks[3], "test_complex_args[x0-foo-z2-w3-class_str]"),
     ],
 )
-def test_benchmark_display_name(bench, expected_display_name):
+def test_benchmark_metadata_display_name(bench, expected_display_name):
     assert bench.display_name == expected_display_name

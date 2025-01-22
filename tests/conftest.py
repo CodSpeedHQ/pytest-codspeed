@@ -84,6 +84,7 @@ def run_pytest_codspeed_with_mode(
     # create empty `.git` folder in the rootdir to simulate a git repository
     if not pytester.path.joinpath(".git").exists():
         pytester.mkdir(".git")
+    # subprocess is important for inline-snapshot to work properly
     return pytester.runpytest_subprocess(
         *csargs,
         *args,

@@ -11,7 +11,7 @@ from rich.markup import escape
 from rich.table import Table
 from rich.text import Text
 
-from pytest_codspeed.benchmark import Benchmark
+from pytest_codspeed.benchmark import BenchmarkMetadata
 from pytest_codspeed.instruments import Instrument
 
 if TYPE_CHECKING:
@@ -115,13 +115,13 @@ class WalltimeBenchmarkStats:
 
 
 @dataclass
-class WalltimeBenchmark(Benchmark):
+class WalltimeBenchmark(BenchmarkMetadata):
     config: WalltimeBenchmarkConfig
     stats: WalltimeBenchmarkStats
 
 
 def run_benchmark(
-    benchmark: Benchmark,
+    benchmark_metadata: BenchmarkMetadata,
     fn: Callable[P, T],
     args,
     kwargs,
@@ -182,7 +182,7 @@ def run_benchmark(
     )
 
     return WalltimeBenchmark(
-        **asdict(benchmark),
+        **asdict(benchmark_metadata),
         config=config,
         stats=stats,
     ), out
@@ -200,13 +200,13 @@ class WallTimeInstrument(Instrument):
 
     def measure(
         self,
-        benchmark: Benchmark,
+        benchmark_metadata: BenchmarkMetadata,
         fn: Callable[P, T],
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> T:
         bench, out = run_benchmark(
-            benchmark=benchmark,
+            benchmark_metadata=benchmark_metadata,
             fn=fn,
             args=args,
             kwargs=kwargs,
