@@ -26,6 +26,9 @@ DEFAULT_MAX_TIME_NS = 3_000_000_000
 TIMER_RESOLUTION_NS = get_clock_info("perf_counter").resolution * 1e9
 DEFAULT_MIN_ROUND_TIME_NS = TIMER_RESOLUTION_NS * 1_000_000
 
+IQR_OUTLIER_FACTOR = 1.5
+STDEV_OUTLIER_FACTOR = 3
+
 
 @dataclass
 class BenchmarkConfig:
@@ -89,12 +92,16 @@ class BenchmarkStats:
             )
         iqr_ns = q3_ns - q1_ns
         iqr_outlier_rounds = sum(
-            1 for t in times_ns if t < q1_ns - 1.5 * iqr_ns or t > q3_ns + 1.5 * iqr_ns
+            1
+            for t in times_ns
+            if t < q1_ns - IQR_OUTLIER_FACTOR * iqr_ns
+            or t > q3_ns + IQR_OUTLIER_FACTOR * iqr_ns
         )
         stdev_outlier_rounds = sum(
             1
             for t in times_ns
-            if t < mean_ns - 3 * stdev_ns or t > mean_ns + 3 * stdev_ns
+            if t < mean_ns - STDEV_OUTLIER_FACTOR * stdev_ns
+            or t > mean_ns + STDEV_OUTLIER_FACTOR * stdev_ns
         )
 
         return cls(
