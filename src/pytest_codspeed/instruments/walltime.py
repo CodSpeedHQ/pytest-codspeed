@@ -69,13 +69,14 @@ class BenchmarkStats:
     @classmethod
     def from_list(
         cls,
-        times_ns: list[float],
+        times_per_round_ns: list[float],
         *,
         rounds: int,
         iter_per_round: int,
         warmup_iters: int,
         total_time: float,
     ) -> BenchmarkStats:
+        times_ns = [t / iter_per_round for t in times_per_round_ns]
         stdev_ns = stdev(times_ns) if len(times_ns) > 1 else 0
         mean_ns = mean(times_ns)
         if len(times_ns) > 1:
@@ -129,20 +130,20 @@ def run_benchmark(
     out = fn(*args, **kwargs)
 
     # Warmup
-    times_ns: list[float] = []
+    times_per_round_ns: list[float] = []
     warmup_start = start = perf_counter_ns()
     while True:
         start = perf_counter_ns()
         fn(*args, **kwargs)
         end = perf_counter_ns()
-        times_ns.append(end - start)
+        times_per_round_ns.append(end - start)
         if end - warmup_start > config.warmup_time_ns:
             break
 
     # Round sizing
-    warmup_mean_ns = mean(times_ns)
-    warmup_iters = len(times_ns)
-    times_ns.clear()
+    warmup_mean_ns = mean(times_per_round_ns)
+    warmup_iters = len(times_per_round_ns)
+    times_per_round_ns.clear()
     iter_per_round = (
         int(ceil(config.min_round_time_ns / warmup_mean_ns))
         if warmup_mean_ns <= config.min_round_time_ns
@@ -163,7 +164,7 @@ def run_benchmark(
         for _ in iter_range:
             fn(*args, **kwargs)
         end = perf_counter_ns()
-        times_ns.append(end - start)
+        times_per_round_ns.append(end - start)
 
         if end - run_start > config.max_time_ns:
             # TODO: log something
@@ -172,7 +173,7 @@ def run_benchmark(
     total_time = (benchmark_end - run_start) / 1e9
 
     stats = BenchmarkStats.from_list(
-        times_ns,
+        times_per_round_ns,
         rounds=rounds,
         total_time=total_time,
         iter_per_round=iter_per_round,
@@ -240,12 +241,12 @@ class WallTimeInstrument(Instrument):
 
         for bench in self.benchmarks:
             rsd = bench.stats.stdev_ns / bench.stats.mean_ns
-            rsd_text = Text(f"{rsd*100:.1f}%")
+            rsd_text = Text(f"{rsd * 100:.1f}%")
             if rsd > 0.1:
                 rsd_text.stylize("red bold")
             table.add_row(
                 escape(bench.name),
-                f"{bench.stats.min_ns/bench.stats.iter_per_round:,.0f}ns",
+                f"{bench.stats.min_ns / bench.stats.iter_per_round:,.0f}ns",
                 rsd_text,
                 f"{bench.stats.total_time:,.2f}s",
                 f"{bench.stats.iter_per_round * bench.stats.rounds:,}",
