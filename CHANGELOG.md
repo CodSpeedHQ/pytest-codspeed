@@ -5,6 +5,24 @@
 
 
 
+## [3.2.0] - 2025-01-31
+
+### <!-- 0 -->🚀 Features
+- Increase the min round time to a bigger value (+/- 1ms) by @art049
+- Add benchmarks-walltime job to run additional performance benchmarks by @art049 in [#65](https://github.com/CodSpeedHQ/pytest-codspeed/pull/65)
+- Fix the random seed while measuring with instruments by @art049 in [#48](https://github.com/CodSpeedHQ/pytest-codspeed/pull/48)
+
+### <!-- 1 -->🐛 Bug Fixes
+- Use time per iteration instead of total round time in stats by @art049
+
+### <!-- 2 -->🏗️ Refactor
+- Replace hardcoded outlier factor for improved readability by @art049 in [#67](https://github.com/CodSpeedHQ/pytest-codspeed/pull/67)
+
+### <!-- 7 -->⚙️ Internals
+- Fix self-dependency by @adriencaccia in [#66](https://github.com/CodSpeedHQ/pytest-codspeed/pull/66)
+- Fix uv version in CI by @adriencaccia
+
+
 ## [3.1.2] - 2025-01-09
 
 ### <!-- 1 -->🐛 Bug Fixes
@@ -256,6 +274,7 @@
 - Add a CI configuration with pytest-benchmark installed by @art049
 
 
+[3.2.0]: https://github.com/CodSpeedHQ/pytest-codspeed/compare/v3.1.2..v3.2.0
 [3.1.2]: https://github.com/CodSpeedHQ/pytest-codspeed/compare/v3.1.1..v3.1.2
 [3.1.1]: https://github.com/CodSpeedHQ/pytest-codspeed/compare/v3.1.0..v3.1.1
 [3.1.0]: https://github.com/CodSpeedHQ/pytest-codspeed/compare/v3.1.0-beta..v3.1.0
