@@ -53,7 +53,9 @@ jobs:
           python-version: "${{ matrix.python-version }}"
       - if: matrix.config == 'valgrind' || matrix.config == 'pytest-benchmark'
         name: Install valgrind
-        run: sudo apt-get install valgrind -y
+        run: |
+          sudo apt-get update
+          sudo apt-get install valgrind -y
       - name: Install dependencies with pytest${{ matrix.pytest-version }}
         run: |
           if [ "${{ matrix.config }}" == "valgrind" ]; then

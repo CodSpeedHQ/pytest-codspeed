@@ -30,6 +30,7 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Install local version of pytest-codspeed
         run: |
+          sudo apt-get update
           sudo apt-get install valgrind -y
           pip install .
           sudo apt-get remove valgrind -y
