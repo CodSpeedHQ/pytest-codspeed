@@ -69,4 +69,4 @@ def sum_of_squares_sum_comprehension_power(arr) -> int:
 )
 @pytest.mark.benchmark
 def test_sum_of_squares(func):
-    assert func(range(1000)) == 332833500
+    assert func(range(100000)) == 333328333350000
