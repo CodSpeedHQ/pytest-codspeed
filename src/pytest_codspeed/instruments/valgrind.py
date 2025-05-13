@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-import os
 import sys
 from typing import TYPE_CHECKING
 
 from pytest_codspeed import __semver_version__
 from pytest_codspeed.instruments import Instrument
-from pytest_codspeed.instruments.valgrind._wrapper import get_lib
+from pytest_codspeed.instruments.hooks import InstrumentHooks
 
 if TYPE_CHECKING:
     from typing import Any, Callable
@@ -14,7 +13,6 @@ if TYPE_CHECKING:
     from pytest import Session
 
     from pytest_codspeed.instruments import P, T
-    from pytest_codspeed.instruments.valgrind._wrapper import LibType
     from pytest_codspeed.plugin import CodSpeedConfig
 
 SUPPORTS_PERF_TRAMPOLINE = sys.version_info >= (3, 12)
@@ -22,20 +20,17 @@ SUPPORTS_PERF_TRAMPOLINE = sys.version_info >= (3, 12)
 
 class ValgrindInstrument(Instrument):
     instrument = "valgrind"
-    lib: LibType | None
+    instrument_hooks: InstrumentHooks | None
 
     def __init__(self, config: CodSpeedConfig) -> None:
         self.benchmark_count = 0
-        self.should_measure = os.environ.get("CODSPEED_ENV") is not None
-        if self.should_measure:
-            self.lib = get_lib()
-            self.lib.dump_stats_at(
-                f"Metadata: pytest-codspeed {__semver_version__}".encode("ascii")
-            )
-            if SUPPORTS_PERF_TRAMPOLINE:
-                sys.activate_stack_trampoline("perf")  # type: ignore
-        else:
-            self.lib = None
+        try:
+            self.instrument_hooks = InstrumentHooks()
+            self.instrument_hooks.set_integration("pytest-codspeed", __semver_version__)
+        except RuntimeError:
+            self.instrument_hooks = None
+
+        self.should_measure = self.instrument_hooks is not None
 
     def get_instrument_config_str_and_warns(self) -> tuple[str, list[str]]:
         config = (
@@ -61,7 +56,8 @@ class ValgrindInstrument(Instrument):
         **kwargs: P.kwargs,
     ) -> T:
         self.benchmark_count += 1
-        if self.lib is None:  # Thus should_measure is False
+
+        if not self.instrument_hooks:
             return fn(*args, **kwargs)
 
         def __codspeed_root_frame__() -> T:
@@ -71,14 +67,15 @@ class ValgrindInstrument(Instrument):
             # Warmup CPython performance map cache
             __codspeed_root_frame__()
 
-        self.lib.zero_stats()
-        self.lib.start_instrumentation()
+        # Manually call the library function to avoid an extra stack frame. Also
+        # call the callgrind markers directly to avoid extra overhead.
+        self.instrument_hooks.lib.callgrind_start_instrumentation()
         try:
             return __codspeed_root_frame__()
         finally:
             # Ensure instrumentation is stopped even if the test failed
-            self.lib.stop_instrumentation()
-            self.lib.dump_stats_at(uri.encode("ascii"))
+            self.instrument_hooks.lib.callgrind_stop_instrumentation()
+            self.instrument_hooks.set_executed_benchmark(uri)
 
     def report(self, session: Session) -> None:
         reporter = session.config.pluginmanager.get_plugin("terminalreporter")

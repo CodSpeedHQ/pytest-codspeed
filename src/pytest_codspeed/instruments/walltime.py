@@ -11,7 +11,9 @@ from rich.markup import escape
 from rich.table import Table
 from rich.text import Text
 
+from pytest_codspeed import __semver_version__
 from pytest_codspeed.instruments import Instrument
+from pytest_codspeed.instruments.hooks import InstrumentHooks
 
 if TYPE_CHECKING:
     from typing import Any, Callable
@@ -131,17 +133,26 @@ class Benchmark:
 
 
 def run_benchmark(
-    name: str, uri: str, fn: Callable[P, T], args, kwargs, config: BenchmarkConfig
+    instrument_hooks: InstrumentHooks | None,
+    name: str,
+    uri: str,
+    fn: Callable[P, T],
+    args,
+    kwargs,
+    config: BenchmarkConfig,
 ) -> tuple[Benchmark, T]:
+    def __codspeed_root_frame__() -> T:
+        return fn(*args, **kwargs)
+
     # Compute the actual result of the function
-    out = fn(*args, **kwargs)
+    out = __codspeed_root_frame__()
 
     # Warmup
     times_per_round_ns: list[float] = []
     warmup_start = start = perf_counter_ns()
     while True:
         start = perf_counter_ns()
-        fn(*args, **kwargs)
+        __codspeed_root_frame__()
         end = perf_counter_ns()
         times_per_round_ns.append(end - start)
         if end - warmup_start > config.warmup_time_ns:
@@ -166,16 +177,21 @@ def run_benchmark(
     # Benchmark
     iter_range = range(iter_per_round)
     run_start = perf_counter_ns()
+    if instrument_hooks:
+        instrument_hooks.start_benchmark()
     for _ in range(rounds):
         start = perf_counter_ns()
         for _ in iter_range:
-            fn(*args, **kwargs)
+            __codspeed_root_frame__()
         end = perf_counter_ns()
         times_per_round_ns.append(end - start)
 
         if end - run_start > config.max_time_ns:
             # TODO: log something
             break
+    if instrument_hooks:
+        instrument_hooks.stop_benchmark()
+        instrument_hooks.set_executed_benchmark(uri)
     benchmark_end = perf_counter_ns()
     total_time = (benchmark_end - run_start) / 1e9
 
@@ -192,8 +208,15 @@ def run_benchmark(
 
 class WallTimeInstrument(Instrument):
     instrument = "walltime"
+    instrument_hooks: InstrumentHooks | None
 
     def __init__(self, config: CodSpeedConfig) -> None:
+        try:
+            self.instrument_hooks = InstrumentHooks()
+            self.instrument_hooks.set_integration("pytest-codspeed", __semver_version__)
+        except RuntimeError:
+            self.instrument_hooks = None
+
         self.config = config
         self.benchmarks: list[Benchmark] = []
 
@@ -209,6 +232,7 @@ class WallTimeInstrument(Instrument):
         **kwargs: P.kwargs,
     ) -> T:
         bench, out = run_benchmark(
+            instrument_hooks=self.instrument_hooks,
             name=name,
             uri=uri,
             fn=fn,
