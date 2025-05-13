@@ -5,9 +5,7 @@ from pathlib import Path
 
 from setuptools import setup
 
-build_path = (
-    Path(__file__).parent / "src/pytest_codspeed/instruments/valgrind/_wrapper/build.py"
-)
+build_path = Path(__file__).parent / "src/pytest_codspeed/instruments/hooks/build.py"
 
 spec = importlib.util.spec_from_file_location("build", build_path)
 assert spec is not None, "The spec should be initialized"
@@ -52,8 +50,8 @@ print(
 setup(
     package_data={
         "pytest_codspeed": [
-            "instruments/valgrind/_wrapper/*.h",
-            "instruments/valgrind/_wrapper/*.c",
+            "instruments/hooks/instrument-hooks/includes/*.h",
+            "instruments/hooks/instrument-hooks/dist/*.c",
         ]
     },
     ext_modules=(
