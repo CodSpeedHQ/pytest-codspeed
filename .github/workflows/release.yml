@@ -23,6 +23,8 @@ jobs:
     runs-on: ${{ matrix.platform.runs-on }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.22.0
         env:
@@ -39,6 +41,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - uses: astral-sh/setup-uv@v4
         with:
           version: "0.5.20"
@@ -59,6 +63,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - uses: astral-sh/setup-uv@v4
         with:
           version: "0.5.20"
