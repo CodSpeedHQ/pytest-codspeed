@@ -23,12 +23,12 @@ if TYPE_CHECKING:
     from pytest import Session
 
     from pytest_codspeed.instruments import P, T
-    from pytest_codspeed.plugin import CodSpeedConfig
+    from pytest_codspeed.plugin import BenchmarkMarkerOptions, CodSpeedConfig
 
 DEFAULT_WARMUP_TIME_NS = 1_000_000_000
 DEFAULT_MAX_TIME_NS = 3_000_000_000
 TIMER_RESOLUTION_NS = get_clock_info("perf_counter").resolution * 1e9
-DEFAULT_MIN_ROUND_TIME_NS = TIMER_RESOLUTION_NS * 1_000_000
+DEFAULT_MIN_ROUND_TIME_NS = int(TIMER_RESOLUTION_NS * 1_000_000)
 
 IQR_OUTLIER_FACTOR = 1.5
 STDEV_OUTLIER_FACTOR = 3
@@ -42,16 +42,35 @@ class BenchmarkConfig:
     max_rounds: int | None
 
     @classmethod
-    def from_codspeed_config(cls, config: CodSpeedConfig) -> BenchmarkConfig:
+    def from_codspeed_config_and_marker_data(
+        cls, config: CodSpeedConfig, marker_data: BenchmarkMarkerOptions
+    ) -> BenchmarkConfig:
+        if marker_data.max_time is not None:
+            max_time_ns = int(marker_data.max_time * 1e9)
+        elif config.max_time_ns is not None:
+            max_time_ns = config.max_time_ns
+        else:
+            max_time_ns = DEFAULT_MAX_TIME_NS
+
+        if marker_data.max_rounds is not None:
+            max_rounds = marker_data.max_rounds
+        elif config.max_rounds is not None:
+            max_rounds = config.max_rounds
+        else:
+            max_rounds = None
+
+        if marker_data.min_time is not None:
+            min_round_time_ns = int(marker_data.min_time * 1e9)
+        else:
+            min_round_time_ns = DEFAULT_MIN_ROUND_TIME_NS
+
         return cls(
             warmup_time_ns=config.warmup_time_ns
             if config.warmup_time_ns is not None
             else DEFAULT_WARMUP_TIME_NS,
-            min_round_time_ns=DEFAULT_MIN_ROUND_TIME_NS,
-            max_time_ns=config.max_time_ns
-            if config.max_time_ns is not None
-            else DEFAULT_MAX_TIME_NS,
-            max_rounds=config.max_rounds,
+            min_round_time_ns=min_round_time_ns,
+            max_time_ns=max_time_ns,
+            max_rounds=max_rounds,
         )
 
 
@@ -231,6 +250,7 @@ class WallTimeInstrument(Instrument):
 
     def measure(
         self,
+        marker_options: BenchmarkMarkerOptions,
         name: str,
         uri: str,
         fn: Callable[P, T],
@@ -244,7 +264,9 @@ class WallTimeInstrument(Instrument):
             fn=fn,
             args=args,
             kwargs=kwargs,
-            config=BenchmarkConfig.from_codspeed_config(self.config),
+            config=BenchmarkConfig.from_codspeed_config_and_marker_data(
+                self.config, marker_options
+            ),
         )
         self.benchmarks.append(bench)
         return out

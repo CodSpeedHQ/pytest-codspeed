@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING
 import pytest
 from _pytest.fixtures import FixtureManager
 
+from pytest_codspeed.config import BenchmarkMarkerOptions, CodSpeedConfig
 from pytest_codspeed.instruments import (
     MeasurementMode,
     get_instrument_from_mode,
@@ -58,8 +59,7 @@ def pytest_addoption(parser: pytest.Parser):
         action="store",
         type=float,
         help=(
-            "The time to warm up the benchmark for (in seconds), "
-            "only for walltime mode"
+            "The time to warm up the benchmark for (in seconds), only for walltime mode"
         ),
     )
     group.addoption(
@@ -80,27 +80,6 @@ def pytest_addoption(parser: pytest.Parser):
             ", only for walltime mode"
         ),
     )
-
-
-@dataclass(frozen=True)
-class CodSpeedConfig:
-    warmup_time_ns: int | None = None
-    max_time_ns: int | None = None
-    max_rounds: int | None = None
-
-    @classmethod
-    def from_pytest_config(cls, config: pytest.Config) -> CodSpeedConfig:
-        warmup_time = config.getoption("--codspeed-warmup-time", None)
-        warmup_time_ns = (
-            int(warmup_time * 1_000_000_000) if warmup_time is not None else None
-        )
-        max_time = config.getoption("--codspeed-max-time", None)
-        max_time_ns = int(max_time * 1_000_000_000) if max_time is not None else None
-        return cls(
-            warmup_time_ns=warmup_time_ns,
-            max_rounds=config.getoption("--codspeed-max-rounds", None),
-            max_time_ns=max_time_ns,
-        )
 
 
 @dataclass(unsafe_hash=True)
@@ -254,20 +233,21 @@ def pytest_collection_modifyitems(
 
 def _measure(
     plugin: CodSpeedPlugin,
-    nodeid: str,
+    node: pytest.Item,
     config: pytest.Config,
     fn: Callable[P, T],
     *args: P.args,
     **kwargs: P.kwargs,
 ) -> T:
+    marker_options = BenchmarkMarkerOptions.from_pytest_item(node)
     random.seed(0)
     is_gc_enabled = gc.isenabled()
     if is_gc_enabled:
         gc.collect()
         gc.disable()
     try:
-        uri, name = get_git_relative_uri_and_name(nodeid, config.rootpath)
-        return plugin.instrument.measure(name, uri, fn, *args, **kwargs)
+        uri, name = get_git_relative_uri_and_name(node.nodeid, config.rootpath)
+        return plugin.instrument.measure(marker_options, name, uri, fn, *args, **kwargs)
     finally:
         # Ensure GC is re-enabled even if the test failed
         if is_gc_enabled:
@@ -276,13 +256,13 @@ def _measure(
 
 def wrap_runtest(
     plugin: CodSpeedPlugin,
-    nodeid: str,
+    node: pytest.Item,
     config: pytest.Config,
     fn: Callable[P, T],
 ) -> Callable[P, T]:
     @functools.wraps(fn)
     def wrapped(*args: P.args, **kwargs: P.kwargs) -> T:
-        return _measure(plugin, nodeid, config, fn, *args, **kwargs)
+        return _measure(plugin, node, config, fn, *args, **kwargs)
 
     return wrapped
 
@@ -299,7 +279,7 @@ def pytest_runtest_protocol(item: pytest.Item, nextitem: pytest.Item | None):
         return None
 
     # Wrap runtest and defer to default protocol
-    item.runtest = wrap_runtest(plugin, item.nodeid, item.config, item.runtest)
+    item.runtest = wrap_runtest(plugin, item, item.config, item.runtest)
     return None
 
 
@@ -343,9 +323,7 @@ class BenchmarkFixture:
         config = self._request.config
         plugin = get_plugin(config)
         if plugin.is_codspeed_enabled:
-            return _measure(
-                plugin, self._request.node.nodeid, config, func, *args, **kwargs
-            )
+            return _measure(plugin, self._request.node, config, func, *args, **kwargs)
         else:
             return func(*args, **kwargs)
 

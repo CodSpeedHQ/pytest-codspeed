@@ -9,6 +9,7 @@ if TYPE_CHECKING:
 
     import pytest
 
+    from pytest_codspeed.config import BenchmarkMarkerOptions
     from pytest_codspeed.plugin import CodSpeedConfig
 
     T = TypeVar("T")
@@ -27,6 +28,7 @@ class Instrument(metaclass=ABCMeta):
     @abstractmethod
     def measure(
         self,
+        marker_options: BenchmarkMarkerOptions,
         name: str,
         uri: str,
         fn: Callable[P, T],

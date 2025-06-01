@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from pytest import Session
 
     from pytest_codspeed.instruments import P, T
-    from pytest_codspeed.plugin import CodSpeedConfig
+    from pytest_codspeed.plugin import BenchmarkMarkerOptions, CodSpeedConfig
 
 SUPPORTS_PERF_TRAMPOLINE = sys.version_info >= (3, 12)
 
@@ -35,7 +35,7 @@ class ValgrindInstrument(Instrument):
     def get_instrument_config_str_and_warns(self) -> tuple[str, list[str]]:
         config = (
             f"mode: instrumentation, "
-            f"callgraph: {'enabled' if SUPPORTS_PERF_TRAMPOLINE  else 'not supported'}"
+            f"callgraph: {'enabled' if SUPPORTS_PERF_TRAMPOLINE else 'not supported'}"
         )
         warnings = []
         if not self.should_measure:
@@ -49,6 +49,7 @@ class ValgrindInstrument(Instrument):
 
     def measure(
         self,
+        marker_options: BenchmarkMarkerOptions,
         name: str,
         uri: str,
         fn: Callable[P, T],

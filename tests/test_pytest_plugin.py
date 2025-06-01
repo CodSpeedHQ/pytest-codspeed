@@ -220,6 +220,46 @@ def test_pytest_benchmark_compatibility(pytester: pytest.Pytester) -> None:
     )
 
 
+def test_codspeed_marker_unexpected_args(pytester: pytest.Pytester) -> None:
+    pytester.makepyfile(
+        """
+        import pytest
+
+        @pytest.mark.codspeed_benchmark(
+            "positional_arg"
+        )
+        def test_bench():
+            pass
+        """
+    )
+    result = pytester.runpytest("--codspeed")
+    assert result.ret == 1
+    result.stdout.fnmatch_lines_random(
+        ["*ValueError: Positional arguments are not allowed in the benchmark marker*"],
+    )
+
+
+def test_codspeed_marker_unexpected_kwargs(pytester: pytest.Pytester) -> None:
+    pytester.makepyfile(
+        """
+        import pytest
+
+        @pytest.mark.codspeed_benchmark(
+            not_allowed=True
+        )
+        def test_bench():
+            pass
+        """
+    )
+    result = pytester.runpytest("--codspeed")
+    assert result.ret == 1
+    result.stdout.fnmatch_lines_random(
+        [
+            "*ValueError: Unknown kwargs passed to benchmark marker: not_allowed*",
+        ],
+    )
+
+
 def test_pytest_benchmark_extra_info(pytester: pytest.Pytester) -> None:
     """https://pytest-benchmark.readthedocs.io/en/latest/usage.html#extra-info"""
     pytester.makepyfile(
