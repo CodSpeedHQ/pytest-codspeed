@@ -338,3 +338,25 @@ def test_capsys(pytester: pytest.Pytester, mode: MeasurementMode):
     result.assert_outcomes(passed=1)
     result.stdout.no_fnmatch_line("*print to stdout*")
     result.stderr.no_fnmatch_line("*print to stderr*")
+
+@pytest.mark.parametrize("mode", [*MeasurementMode])
+def test_benchmark_fixture_used_twice(
+    pytester: pytest.Pytester, mode: MeasurementMode
+) -> None:
+    """Test that using the benchmark fixture twice in a test raises an error."""
+    pytester.makepyfile(
+        """
+        def test_benchmark_used_twice(benchmark):
+            def foo():
+                pass
+
+            benchmark(foo)
+            benchmark(foo)
+        """
+    )
+    result = run_pytest_codspeed_with_mode(pytester, mode)
+    assert result.ret == 1, "the run should have failed"
+    result.stdout.fnmatch_lines(
+        ["*RuntimeError: The benchmark fixture can only be used once per test*"]
+    )
+

@@ -318,14 +318,20 @@ class BenchmarkFixture:
         self.extra_info: dict = {}
 
         self._request = request
+        self._config = self._request.config
+        self._plugin = get_plugin(self._config)
+        self._called = False
 
-    def __call__(self, func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
-        config = self._request.config
-        plugin = get_plugin(config)
-        if plugin.is_codspeed_enabled:
-            return _measure(plugin, self._request.node, config, func, *args, **kwargs)
+    def __call__(self, target: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
+        if self._called:
+            raise RuntimeError("The benchmark fixture can only be used once per test")
+        self._called = True
+        if self._plugin.is_codspeed_enabled:
+            return _measure(
+                self._plugin, self._request.node, self._config, target, *args, **kwargs
+            )
         else:
-            return func(*args, **kwargs)
+            return target(*args, **kwargs)
 
 
 @pytest.fixture(scope="function")
