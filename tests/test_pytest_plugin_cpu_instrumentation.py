@@ -79,12 +79,12 @@ def test_perf_maps_generation(pytester: pytest.Pytester, codspeed_env) -> None:
             "py::ValgrindInstrument.measure.<locals>.__codspeed_root_frame__" in line
             for line in lines
         ), "No root frame found in perf map"
-        assert any(
-            "py::test_some_addition_marked" in line for line in lines
-        ), "No marked test frame found in perf map"
-        assert any(
-            "py::test_some_addition_fixtured" in line for line in lines
-        ), "No fixtured test frame found in perf map"
+        assert any("py::test_some_addition_marked" in line for line in lines), (
+            "No marked test frame found in perf map"
+        )
+        assert any("py::test_some_addition_fixtured" in line for line in lines), (
+            "No fixtured test frame found in perf map"
+        )
         assert any(
             "py::test_some_addition_fixtured.<locals>.fixtured_child" in line
             for line in lines
