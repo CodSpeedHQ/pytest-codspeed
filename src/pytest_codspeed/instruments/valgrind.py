@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+import warnings
 from typing import TYPE_CHECKING
 
 from pytest_codspeed import __semver_version__
@@ -12,7 +13,8 @@ if TYPE_CHECKING:
 
     from pytest import Session
 
-    from pytest_codspeed.instruments import P, T
+    from pytest_codspeed.config import PedanticOptions
+    from pytest_codspeed.instruments import T
     from pytest_codspeed.plugin import BenchmarkMarkerOptions, CodSpeedConfig
 
 SUPPORTS_PERF_TRAMPOLINE = sys.version_info >= (3, 12)
@@ -52,9 +54,9 @@ class ValgrindInstrument(Instrument):
         marker_options: BenchmarkMarkerOptions,
         name: str,
         uri: str,
-        fn: Callable[P, T],
-        *args: P.args,
-        **kwargs: P.kwargs,
+        fn: Callable[..., T],
+        *args: tuple,
+        **kwargs: dict[str, Any],
     ) -> T:
         self.benchmark_count += 1
 
@@ -78,8 +80,54 @@ class ValgrindInstrument(Instrument):
             self.instrument_hooks.lib.callgrind_stop_instrumentation()
             self.instrument_hooks.set_executed_benchmark(uri)
 
+    def measure_pedantic(
+        self,
+        marker_options: BenchmarkMarkerOptions,
+        pedantic_options: PedanticOptions[T],
+        name: str,
+        uri: str,
+    ) -> T:
+        if pedantic_options.rounds != 1 or pedantic_options.iterations != 1:
+            warnings.warn(
+                "Valgrind instrument ignores rounds and iterations settings "
+                "in pedantic mode"
+            )
+        if not self.instrument_hooks:
+            args, kwargs = pedantic_options.setup_and_get_args_kwargs()
+            out = pedantic_options.target(*args, **kwargs)
+            if pedantic_options.teardown is not None:
+                pedantic_options.teardown(*args, **kwargs)
+            return out
+
+        def __codspeed_root_frame__(*args, **kwargs) -> T:
+            return pedantic_options.target(*args, **kwargs)
+
+        # Warmup
+        warmup_rounds = max(
+            pedantic_options.warmup_rounds, 1 if SUPPORTS_PERF_TRAMPOLINE else 0
+        )
+        for _ in range(warmup_rounds):
+            args, kwargs = pedantic_options.setup_and_get_args_kwargs()
+            __codspeed_root_frame__(*args, **kwargs)
+            if pedantic_options.teardown is not None:
+                pedantic_options.teardown(*args, **kwargs)
+
+        # Compute the actual result of the function
+        args, kwargs = pedantic_options.setup_and_get_args_kwargs()
+        self.instrument_hooks.lib.callgrind_start_instrumentation()
+        try:
+            out = __codspeed_root_frame__(*args, **kwargs)
+        finally:
+            self.instrument_hooks.lib.callgrind_stop_instrumentation()
+            self.instrument_hooks.set_executed_benchmark(uri)
+            if pedantic_options.teardown is not None:
+                pedantic_options.teardown(*args, **kwargs)
+
+        return out
+
     def report(self, session: Session) -> None:
         reporter = session.config.pluginmanager.get_plugin("terminalreporter")
+        assert reporter is not None, "terminalreporter not found"
         count_suffix = "benchmarked" if self.should_measure else "benchmark tested"
         reporter.write_sep(
             "=",

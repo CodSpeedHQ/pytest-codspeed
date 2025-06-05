@@ -22,7 +22,8 @@ if TYPE_CHECKING:
 
     from pytest import Session
 
-    from pytest_codspeed.instruments import P, T
+    from pytest_codspeed.config import PedanticOptions
+    from pytest_codspeed.instruments import T
     from pytest_codspeed.plugin import BenchmarkMarkerOptions, CodSpeedConfig
 
 DEFAULT_WARMUP_TIME_NS = 1_000_000_000
@@ -153,80 +154,6 @@ class Benchmark:
     stats: BenchmarkStats
 
 
-def run_benchmark(
-    instrument_hooks: InstrumentHooks | None,
-    name: str,
-    uri: str,
-    fn: Callable[P, T],
-    args,
-    kwargs,
-    config: BenchmarkConfig,
-) -> tuple[Benchmark, T]:
-    def __codspeed_root_frame__() -> T:
-        return fn(*args, **kwargs)
-
-    # Compute the actual result of the function
-    out = __codspeed_root_frame__()
-
-    # Warmup
-    times_per_round_ns: list[float] = []
-    warmup_start = start = perf_counter_ns()
-    while True:
-        start = perf_counter_ns()
-        __codspeed_root_frame__()
-        end = perf_counter_ns()
-        times_per_round_ns.append(end - start)
-        if end - warmup_start > config.warmup_time_ns:
-            break
-
-    # Round sizing
-    warmup_mean_ns = mean(times_per_round_ns)
-    warmup_iters = len(times_per_round_ns)
-    times_per_round_ns.clear()
-    iter_per_round = (
-        int(ceil(config.min_round_time_ns / warmup_mean_ns))
-        if warmup_mean_ns <= config.min_round_time_ns
-        else 1
-    )
-    if config.max_rounds is None:
-        round_time_ns = warmup_mean_ns * iter_per_round
-        rounds = int(config.max_time_ns / round_time_ns)
-    else:
-        rounds = config.max_rounds
-    rounds = max(1, rounds)
-
-    # Benchmark
-    iter_range = range(iter_per_round)
-    run_start = perf_counter_ns()
-    if instrument_hooks:
-        instrument_hooks.start_benchmark()
-    for _ in range(rounds):
-        start = perf_counter_ns()
-        for _ in iter_range:
-            __codspeed_root_frame__()
-        end = perf_counter_ns()
-        times_per_round_ns.append(end - start)
-
-        if end - run_start > config.max_time_ns:
-            # TODO: log something
-            break
-    if instrument_hooks:
-        instrument_hooks.stop_benchmark()
-        instrument_hooks.set_executed_benchmark(uri)
-    benchmark_end = perf_counter_ns()
-    total_time = (benchmark_end - run_start) / 1e9
-
-    stats = BenchmarkStats.from_list(
-        times_per_round_ns,
-        rounds=rounds,
-        total_time=total_time,
-        iter_per_round=iter_per_round,
-        warmup_iters=warmup_iters,
-    )
-
-    return Benchmark(name=name, uri=uri, config=config, stats=stats), out
-
-
 class WallTimeInstrument(Instrument):
     instrument = "walltime"
     instrument_hooks: InstrumentHooks | None
@@ -253,26 +180,137 @@ class WallTimeInstrument(Instrument):
         marker_options: BenchmarkMarkerOptions,
         name: str,
         uri: str,
-        fn: Callable[P, T],
-        *args: P.args,
-        **kwargs: P.kwargs,
+        fn: Callable[..., T],
+        *args: tuple,
+        **kwargs: dict[str, Any],
     ) -> T:
-        bench, out = run_benchmark(
-            instrument_hooks=self.instrument_hooks,
-            name=name,
-            uri=uri,
-            fn=fn,
-            args=args,
-            kwargs=kwargs,
-            config=BenchmarkConfig.from_codspeed_config_and_marker_data(
-                self.config, marker_options
-            ),
+        benchmark_config = BenchmarkConfig.from_codspeed_config_and_marker_data(
+            self.config, marker_options
         )
-        self.benchmarks.append(bench)
+
+        def __codspeed_root_frame__() -> T:
+            return fn(*args, **kwargs)
+
+        # Compute the actual result of the function
+        out = __codspeed_root_frame__()
+
+        # Warmup
+        times_per_round_ns: list[float] = []
+        warmup_start = start = perf_counter_ns()
+        while True:
+            start = perf_counter_ns()
+            __codspeed_root_frame__()
+            end = perf_counter_ns()
+            times_per_round_ns.append(end - start)
+            if end - warmup_start > benchmark_config.warmup_time_ns:
+                break
+
+        # Round sizing
+        warmup_mean_ns = mean(times_per_round_ns)
+        warmup_iters = len(times_per_round_ns)
+        times_per_round_ns.clear()
+        iter_per_round = (
+            int(ceil(benchmark_config.min_round_time_ns / warmup_mean_ns))
+            if warmup_mean_ns <= benchmark_config.min_round_time_ns
+            else 1
+        )
+        if benchmark_config.max_rounds is None:
+            round_time_ns = warmup_mean_ns * iter_per_round
+            rounds = int(benchmark_config.max_time_ns / round_time_ns)
+        else:
+            rounds = benchmark_config.max_rounds
+        rounds = max(1, rounds)
+
+        # Benchmark
+        iter_range = range(iter_per_round)
+        run_start = perf_counter_ns()
+        for _ in range(rounds):
+            start = perf_counter_ns()
+            for _ in iter_range:
+                __codspeed_root_frame__()
+            end = perf_counter_ns()
+            times_per_round_ns.append(end - start)
+
+            if end - run_start > benchmark_config.max_time_ns:
+                # TODO: log something
+                break
+        benchmark_end = perf_counter_ns()
+        total_time = (benchmark_end - run_start) / 1e9
+
+        stats = BenchmarkStats.from_list(
+            times_per_round_ns,
+            rounds=rounds,
+            total_time=total_time,
+            iter_per_round=iter_per_round,
+            warmup_iters=warmup_iters,
+        )
+
+        self.benchmarks.append(
+            Benchmark(name=name, uri=uri, config=benchmark_config, stats=stats)
+        )
+        return out
+
+    def measure_pedantic(
+        self,
+        marker_options: BenchmarkMarkerOptions,
+        pedantic_options: PedanticOptions[T],
+        name: str,
+        uri: str,
+    ) -> T:
+        benchmark_config = BenchmarkConfig.from_codspeed_config_and_marker_data(
+            self.config, marker_options
+        )
+
+        def __codspeed_root_frame__(*args, **kwargs) -> T:
+            return pedantic_options.target(*args, **kwargs)
+
+        iter_range = range(pedantic_options.iterations)
+
+        # Warmup
+        for _ in range(pedantic_options.warmup_rounds):
+            args, kwargs = pedantic_options.setup_and_get_args_kwargs()
+            for _ in iter_range:
+                __codspeed_root_frame__(*args, **kwargs)
+            if pedantic_options.teardown is not None:
+                pedantic_options.teardown(*args, **kwargs)
+
+        # Benchmark
+        times_per_round_ns: list[float] = []
+        benchmark_start = perf_counter_ns()
+        for _ in range(pedantic_options.rounds):
+            start = perf_counter_ns()
+            args, kwargs = pedantic_options.setup_and_get_args_kwargs()
+            for _ in iter_range:
+                __codspeed_root_frame__(*args, **kwargs)
+            end = perf_counter_ns()
+            times_per_round_ns.append(end - start)
+            if pedantic_options.teardown is not None:
+                pedantic_options.teardown(*args, **kwargs)
+
+        benchmark_end = perf_counter_ns()
+        total_time = (benchmark_end - benchmark_start) / 1e9
+        stats = BenchmarkStats.from_list(
+            times_per_round_ns,
+            rounds=pedantic_options.rounds,
+            total_time=total_time,
+            iter_per_round=pedantic_options.iterations,
+            warmup_iters=pedantic_options.warmup_rounds,
+        )
+
+        # Compute the actual result of the function
+        args, kwargs = pedantic_options.setup_and_get_args_kwargs()
+        out = __codspeed_root_frame__(*args, **kwargs)
+        if pedantic_options.teardown is not None:
+            pedantic_options.teardown(*args, **kwargs)
+
+        self.benchmarks.append(
+            Benchmark(name=name, uri=uri, config=benchmark_config, stats=stats)
+        )
         return out
 
     def report(self, session: Session) -> None:
         reporter = session.config.pluginmanager.get_plugin("terminalreporter")
+        assert reporter is not None, "terminalreporter not found"
 
         if len(self.benchmarks) == 0:
             reporter.write_sep(

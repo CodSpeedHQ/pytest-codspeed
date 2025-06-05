@@ -1,9 +1,14 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import TYPE_CHECKING
+import dataclasses
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Generic, TypeVar
+
+T = TypeVar("T")
 
 if TYPE_CHECKING:
+    from typing import Any, Callable
+
     import pytest
 
 
@@ -64,17 +69,51 @@ class BenchmarkMarkerOptions:
             raise ValueError(
                 "Positional arguments are not allowed in the benchmark marker"
             )
+        kwargs = marker.kwargs
 
-        options = cls(
-            group=marker.kwargs.pop("group", None),
-            min_time=marker.kwargs.pop("min_time", None),
-            max_time=marker.kwargs.pop("max_time", None),
-            max_rounds=marker.kwargs.pop("max_rounds", None),
-        )
-
-        if len(marker.kwargs) > 0:
+        unknown_kwargs = set(kwargs.keys()) - {
+            field.name for field in dataclasses.fields(cls)
+        }
+        if unknown_kwargs:
             raise ValueError(
                 "Unknown kwargs passed to benchmark marker: "
-                + ", ".join(marker.kwargs.keys())
+                + ", ".join(sorted(unknown_kwargs))
             )
-        return options
+
+        return cls(**kwargs)
+
+
+@dataclass(frozen=True)
+class PedanticOptions(Generic[T]):
+    """Parameters for running a benchmark using the pedantic fixture API."""
+
+    target: Callable[..., T]
+    setup: Callable[[], Any | None] | None
+    teardown: Callable[..., Any | None] | None
+    rounds: int
+    warmup_rounds: int
+    iterations: int
+    args: tuple[Any, ...] = field(default_factory=tuple)
+    kwargs: dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if self.rounds < 0:
+            raise ValueError("rounds must be positive")
+        if self.warmup_rounds < 0:
+            raise ValueError("warmup_rounds must be non-negative")
+        if self.iterations <= 0:
+            raise ValueError("iterations must be positive")
+        if self.iterations > 1 and self.setup is not None:
+            raise ValueError(
+                "setup cannot be used with multiple iterations, use multiple rounds"
+            )
+
+    def setup_and_get_args_kwargs(self) -> tuple[tuple[Any, ...], dict[str, Any]]:
+        if self.setup is None:
+            return self.args, self.kwargs
+        maybe_result = self.setup(*self.args, **self.kwargs)
+        if maybe_result is not None:
+            if len(self.args) > 0 or len(self.kwargs) > 0:
+                raise ValueError("setup cannot return a value when args are provided")
+            return maybe_result
+        return self.args, self.kwargs

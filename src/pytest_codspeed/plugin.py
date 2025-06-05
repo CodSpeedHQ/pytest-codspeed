@@ -14,7 +14,11 @@ from typing import TYPE_CHECKING
 import pytest
 from _pytest.fixtures import FixtureManager
 
-from pytest_codspeed.config import BenchmarkMarkerOptions, CodSpeedConfig
+from pytest_codspeed.config import (
+    BenchmarkMarkerOptions,
+    CodSpeedConfig,
+    PedanticOptions,
+)
 from pytest_codspeed.instruments import (
     MeasurementMode,
     get_instrument_from_mode,
@@ -27,12 +31,11 @@ from pytest_codspeed.utils import (
 from . import __version__
 
 if TYPE_CHECKING:
-    from typing import Callable, ParamSpec, TypeVar
+    from typing import Any, Callable, TypeVar
 
     from pytest_codspeed.instruments import Instrument
 
     T = TypeVar("T")
-    P = ParamSpec("P")
 
 IS_PYTEST_BENCHMARK_INSTALLED = importlib.util.find_spec("pytest_benchmark") is not None
 IS_PYTEST_SPEED_INSTALLED = importlib.util.find_spec("pytest_speed") is not None
@@ -137,14 +140,14 @@ def pytest_configure(config: pytest.Config):
 
     profile_folder = os.environ.get("CODSPEED_PROFILE_FOLDER")
 
-    codspeedconfig = CodSpeedConfig.from_pytest_config(config)
+    codspeed_config = CodSpeedConfig.from_pytest_config(config)
 
     plugin = CodSpeedPlugin(
         disabled_plugins=tuple(disabled_plugins),
         is_codspeed_enabled=is_codspeed_enabled,
         mode=mode,
-        instrument=instrument(codspeedconfig),
-        config=codspeedconfig,
+        instrument=instrument(codspeed_config),
+        config=codspeed_config,
         profile_folder=Path(profile_folder) if profile_folder else None,
     )
     config.pluginmanager.register(plugin, PLUGIN_NAME)
@@ -235,9 +238,10 @@ def _measure(
     plugin: CodSpeedPlugin,
     node: pytest.Item,
     config: pytest.Config,
-    fn: Callable[P, T],
-    *args: P.args,
-    **kwargs: P.kwargs,
+    pedantic_options: PedanticOptions | None,
+    fn: Callable[..., T],
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
 ) -> T:
     marker_options = BenchmarkMarkerOptions.from_pytest_item(node)
     random.seed(0)
@@ -247,7 +251,14 @@ def _measure(
         gc.disable()
     try:
         uri, name = get_git_relative_uri_and_name(node.nodeid, config.rootpath)
-        return plugin.instrument.measure(marker_options, name, uri, fn, *args, **kwargs)
+        if pedantic_options is None:
+            return plugin.instrument.measure(
+                marker_options, name, uri, fn, *args, **kwargs
+            )
+        else:
+            return plugin.instrument.measure_pedantic(
+                marker_options, pedantic_options, name, uri
+            )
     finally:
         # Ensure GC is re-enabled even if the test failed
         if is_gc_enabled:
@@ -258,11 +269,11 @@ def wrap_runtest(
     plugin: CodSpeedPlugin,
     node: pytest.Item,
     config: pytest.Config,
-    fn: Callable[P, T],
-) -> Callable[P, T]:
+    fn: Callable[..., T],
+) -> Callable[..., T]:
     @functools.wraps(fn)
-    def wrapped(*args: P.args, **kwargs: P.kwargs) -> T:
-        return _measure(plugin, node, config, fn, *args, **kwargs)
+    def wrapped(*args: tuple, **kwargs: dict[str, Any]) -> T:
+        return _measure(plugin, node, config, None, fn, args, kwargs)
 
     return wrapped
 
@@ -322,16 +333,65 @@ class BenchmarkFixture:
         self._plugin = get_plugin(self._config)
         self._called = False
 
-    def __call__(self, target: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
+    def __call__(
+        self, target: Callable[..., T], *args: tuple, **kwargs: dict[str, Any]
+    ) -> T:
         if self._called:
             raise RuntimeError("The benchmark fixture can only be used once per test")
         self._called = True
         if self._plugin.is_codspeed_enabled:
             return _measure(
-                self._plugin, self._request.node, self._config, target, *args, **kwargs
+                self._plugin,
+                self._request.node,
+                self._config,
+                None,
+                target,
+                args,
+                kwargs,
             )
         else:
             return target(*args, **kwargs)
+
+    def pedantic(
+        self,
+        target: Callable[..., T],
+        args: tuple[Any, ...] = (),
+        kwargs: dict[str, Any] = {},
+        setup: Callable | None = None,
+        teardown: Callable | None = None,
+        rounds: int = 1,
+        warmup_rounds: int = 0,
+        iterations: int = 1,
+    ):
+        if self._called:
+            raise RuntimeError("The benchmark fixture can only be used once per test")
+        self._called = True
+        pedantic_options = PedanticOptions(
+            target=target,
+            args=args,
+            kwargs=kwargs,
+            setup=setup,
+            teardown=teardown,
+            rounds=rounds,
+            warmup_rounds=warmup_rounds,
+            iterations=iterations,
+        )
+        if self._plugin.is_codspeed_enabled:
+            return _measure(
+                self._plugin,
+                self._request.node,
+                self._config,
+                pedantic_options,
+                target,
+                args,
+                kwargs,
+            )
+        else:
+            args, kwargs = pedantic_options.setup_and_get_args_kwargs()
+            result = target(*args, **kwargs)
+            if pedantic_options.teardown is not None:
+                pedantic_options.teardown(*args, **kwargs)
+            return result
 
 
 @pytest.fixture(scope="function")

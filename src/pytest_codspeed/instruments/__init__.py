@@ -5,15 +5,14 @@ from enum import Enum
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, ClassVar, ParamSpec, TypeVar
+    from typing import Any, Callable, ClassVar, TypeVar
 
     import pytest
 
-    from pytest_codspeed.config import BenchmarkMarkerOptions
+    from pytest_codspeed.config import BenchmarkMarkerOptions, PedanticOptions
     from pytest_codspeed.plugin import CodSpeedConfig
 
     T = TypeVar("T")
-    P = ParamSpec("P")
 
 
 class Instrument(metaclass=ABCMeta):
@@ -31,9 +30,18 @@ class Instrument(metaclass=ABCMeta):
         marker_options: BenchmarkMarkerOptions,
         name: str,
         uri: str,
-        fn: Callable[P, T],
-        *args: P.args,
-        **kwargs: P.kwargs,
+        fn: Callable[..., T],
+        *args: tuple,
+        **kwargs: dict[str, Any],
+    ) -> T: ...
+
+    @abstractmethod
+    def measure_pedantic(
+        self,
+        marker_options: BenchmarkMarkerOptions,
+        pedantic_options: PedanticOptions[T],
+        name: str,
+        uri: str,
     ) -> T: ...
 
     @abstractmethod

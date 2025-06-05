@@ -116,3 +116,84 @@ def test_pytest_xdist_concurrency_compatibility(
             result = pytester.runpytest("--codspeed", "-n", "128")
         assert result.ret == 0, "the run should have succeeded"
         result.stdout.fnmatch_lines(["*256 passed*"])
+
+
+def test_valgrind_pedantic_warning(pytester: pytest.Pytester) -> None:
+    """
+    Test that using pedantic mode with Valgrind instrumentation shows a warning about
+    ignoring rounds and iterations.
+    """
+    pytester.makepyfile(
+        """
+        def test_benchmark_pedantic(benchmark):
+            def foo():
+                return 1 + 1
+
+            benchmark.pedantic(foo, rounds=10, iterations=100)
+        """
+    )
+    result = run_pytest_codspeed_with_mode(pytester, MeasurementMode.Instrumentation)
+    result.stdout.fnmatch_lines(
+        [
+            "*UserWarning: Valgrind instrument ignores rounds and iterations settings "
+            "in pedantic mode*"
+        ]
+    )
+    result.assert_outcomes(passed=1)
+
+
+@skip_without_valgrind
+@skip_without_perf_trampoline
+def test_benchmark_pedantic_instrumentation(
+    pytester: pytest.Pytester, codspeed_env
+) -> None:
+    """Test that pedantic mode works with instrumentation mode."""
+    pytester.makepyfile(
+        """
+        def test_pedantic_full_features(benchmark):
+            setup_calls = 0
+            teardown_calls = 0
+            target_calls = 0
+
+            def setup():
+                nonlocal setup_calls
+                setup_calls += 1
+                return (1, 2), {"c": 3}
+
+            def teardown(a, b, c):
+                nonlocal teardown_calls
+                teardown_calls += 1
+                assert a == 1
+                assert b == 2
+                assert c == 3
+
+            def target(a, b, c):
+                nonlocal target_calls
+                target_calls += 1
+                assert a == 1
+                assert b == 2
+                assert c == 3
+                return a + b + c
+
+            result = benchmark.pedantic(
+                target,
+                setup=setup,
+                teardown=teardown,
+                rounds=3,
+                warmup_rounds=3
+            )
+
+            # Verify the results
+            # Instrumentation ignores rounds but is called during warmup
+            assert result == 6  # 1 + 2 + 3
+            assert setup_calls == 1 + 3
+            assert teardown_calls == 1 + 3
+            assert target_calls == 1 + 3
+        """
+    )
+    with codspeed_env():
+        result = run_pytest_codspeed_with_mode(
+            pytester, MeasurementMode.Instrumentation
+        )
+    assert result.ret == 0, "the run should have succeeded"
+    result.assert_outcomes(passed=1)
