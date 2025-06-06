@@ -6,7 +6,7 @@ import warnings
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .dist_instrument_hooks import lib as LibType
+    from .dist_instrument_hooks import InstrumentHooksPointer, LibType
 
 SUPPORTS_PERF_TRAMPOLINE = sys.version_info >= (3, 12)
 
@@ -15,7 +15,7 @@ class InstrumentHooks:
     """Zig library wrapper class providing benchmark measurement functionality."""
 
     lib: LibType
-    instance: int
+    instance: InstrumentHooksPointer
 
     def __init__(self) -> None:
         if os.environ.get("CODSPEED_ENV") is None:
@@ -28,16 +28,14 @@ class InstrumentHooks:
             from .dist_instrument_hooks import lib  # type: ignore
         except ImportError as e:
             raise RuntimeError(f"Failed to load instrument hooks library: {e}") from e
+        self.lib = lib
 
-        instance = lib.instrument_hooks_init()
-        if instance == 0:
+        self.instance = self.lib.instrument_hooks_init()
+        if self.instance == 0:
             raise RuntimeError("Failed to initialize CodSpeed instrumentation library.")
 
         if SUPPORTS_PERF_TRAMPOLINE:
             sys.activate_stack_trampoline("perf")  # type: ignore
-
-        self.lib = lib
-        self.instance = instance
 
     def __del__(self):
         if hasattr(self, "lib") and hasattr(self, "instance"):
