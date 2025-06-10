@@ -36,6 +36,9 @@ jobs:
           sudo apt-get remove valgrind -y
       - name: Run benchmarks
         uses: CodSpeedHQ/action@main
+        env:
+          CODSPEED_USE_PERF: 1
         with:
           run: pytest tests/benchmarks/ --codspeed
           token: ${{ secrets.CODSPEED_TOKEN }}
+          runner-version: 3.6.0
