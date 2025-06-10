@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import functools
 import gc
-import importlib.util
 import json
 import os
 import random
@@ -19,11 +18,11 @@ from pytest_codspeed.config import (
     CodSpeedConfig,
     PedanticOptions,
 )
-from pytest_codspeed.instruments import (
-    MeasurementMode,
-    get_instrument_from_mode,
-)
+from pytest_codspeed.instruments import MeasurementMode, get_instrument_from_mode
 from pytest_codspeed.utils import (
+    BEFORE_PYTEST_8_1_1,
+    IS_PYTEST_BENCHMARK_INSTALLED,
+    IS_PYTEST_SPEED_INSTALLED,
     get_environment_metadata,
     get_git_relative_uri_and_name,
 )
@@ -36,10 +35,6 @@ if TYPE_CHECKING:
     from pytest_codspeed.instruments import Instrument
 
     T = TypeVar("T")
-
-IS_PYTEST_BENCHMARK_INSTALLED = importlib.util.find_spec("pytest_benchmark") is not None
-IS_PYTEST_SPEED_INSTALLED = importlib.util.find_spec("pytest_speed") is not None
-BEFORE_PYTEST_8_1_1 = pytest.version_tuple < (8, 1, 1)
 
 
 @pytest.hookimpl(trylast=True)

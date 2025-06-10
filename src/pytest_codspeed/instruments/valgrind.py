@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import sys
 import warnings
 from typing import TYPE_CHECKING
 
 from pytest_codspeed import __semver_version__
 from pytest_codspeed.instruments import Instrument
 from pytest_codspeed.instruments.hooks import InstrumentHooks
+from pytest_codspeed.utils import SUPPORTS_PERF_TRAMPOLINE
 
 if TYPE_CHECKING:
     from typing import Any, Callable
@@ -16,8 +16,6 @@ if TYPE_CHECKING:
     from pytest_codspeed.config import PedanticOptions
     from pytest_codspeed.instruments import T
     from pytest_codspeed.plugin import BenchmarkMarkerOptions, CodSpeedConfig
-
-SUPPORTS_PERF_TRAMPOLINE = sys.version_info >= (3, 12)
 
 
 class ValgrindInstrument(Instrument):

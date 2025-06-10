@@ -10,13 +10,13 @@ from typing import TYPE_CHECKING
 import pytest
 
 from pytest_codspeed.instruments import MeasurementMode
+from pytest_codspeed.utils import IS_PYTEST_BENCHMARK_INSTALLED
 
 if TYPE_CHECKING:
     from _pytest.pytester import RunResult
 
 pytest_plugins = ["pytester"]
 
-IS_PYTEST_BENCHMARK_INSTALLED = importlib.util.find_spec("pytest_benchmark") is not None
 skip_without_pytest_benchmark = pytest.mark.skipif(
     not IS_PYTEST_BENCHMARK_INSTALLED, reason="pytest_benchmark not installed"
 )

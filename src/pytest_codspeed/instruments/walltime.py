@@ -16,6 +16,7 @@ from rich.text import Text
 from pytest_codspeed import __semver_version__
 from pytest_codspeed.instruments import Instrument
 from pytest_codspeed.instruments.hooks import InstrumentHooks
+from pytest_codspeed.utils import SUPPORTS_PERF_TRAMPOLINE
 
 if TYPE_CHECKING:
     from typing import Any, Callable
@@ -173,7 +174,13 @@ class WallTimeInstrument(Instrument):
         self.benchmarks: list[Benchmark] = []
 
     def get_instrument_config_str_and_warns(self) -> tuple[str, list[str]]:
-        return f"mode: walltime, timer_resolution: {TIMER_RESOLUTION_NS:.1f}ns", []
+        config_str = (
+            f"mode: walltime, "
+            f"callgraph: "
+            f"{'enabled' if SUPPORTS_PERF_TRAMPOLINE else 'not supported'}, "
+            f"timer_resolution: {TIMER_RESOLUTION_NS:.1f}ns"
+        )
+        return config_str, []
 
     def measure(
         self,

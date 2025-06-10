@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import importlib.util
 import os
 import sys
 import sysconfig
 from pathlib import Path
+
+import pytest
 
 from pytest_codspeed import __semver_version__
 
@@ -11,6 +14,12 @@ if sys.version_info < (3, 10):
     import importlib_metadata as importlib_metadata
 else:
     import importlib.metadata as importlib_metadata
+
+
+IS_PYTEST_BENCHMARK_INSTALLED = importlib.util.find_spec("pytest_benchmark") is not None
+IS_PYTEST_SPEED_INSTALLED = importlib.util.find_spec("pytest_speed") is not None
+BEFORE_PYTEST_8_1_1 = pytest.version_tuple < (8, 1, 1)
+SUPPORTS_PERF_TRAMPOLINE = sysconfig.get_config_var("PY_HAVE_PERF_TRAMPOLINE") == 1
 
 
 def get_git_relative_path(abs_path: Path) -> Path:
