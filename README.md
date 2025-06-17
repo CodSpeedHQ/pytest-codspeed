@@ -11,11 +11,11 @@ Pytest plugin to create CodSpeed benchmarks
 
 </div>
 
-## Requirements
+---
 
-**Python**: 3.9 and later
+**Documentation**: https://codspeed.io/docs/reference/pytest-codspeed
 
-**pytest**: any recent version
+---
 
 ## Installation
 

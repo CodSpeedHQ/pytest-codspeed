@@ -1,6 +1,6 @@
 [project.urls]
 Homepage = "https://codspeed.io/"
-Documentation = "https://docs.codspeed.io/"
+Documentation = "https://codspeed.io/docs/reference/pytest-codspeed"
 Source = "https://github.com/CodSpeedHQ/pytest-codspeed"
 
 [project]
