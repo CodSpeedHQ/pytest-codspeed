@@ -27,9 +27,9 @@ pip install pytest-codspeed
 
 ### Creating benchmarks
 
-Creating benchmarks with `pytest-codspeed` is compatible with the standard `pytest-benchmark` API. So if you already have benchmarks written with it, you can start using `pytest-codspeed` right away.
+In a nutshell, `pytest-codspeed` offers two approaches to create performance benchmarks that integrate seamlessly with your existing test suite.
 
-#### Marking a whole test function as a benchmark with `pytest.mark.benchmark`
+Use `@pytest.mark.benchmark` to measure entire test functions automatically:
 
 ```python
 import pytest
@@ -37,55 +37,53 @@ from statistics import median
 
 @pytest.mark.benchmark
 def test_median_performance():
-    return median([1, 2, 3, 4, 5])
+    input = [1, 2, 3, 4, 5]
+    output = sum(i**2 for i in input)
+    assert output == 55
 ```
 
-#### Benchmarking selected lines of a test function with the `benchmark` fixture
+Since this measure the entire function, you might want to use the `benchmark` fixture for precise control over what code gets measured:
 
 ```python
-import pytest
-from statistics import mean
-
 def test_mean_performance(benchmark):
-    # Precompute some data useful for the benchmark but that should not be
-    # included in the benchmark time
     data = [1, 2, 3, 4, 5]
-
-    # Benchmark the execution of the function
-    benchmark(lambda: mean(data))
-
-
-def test_mean_and_median_performance(benchmark):
-    # Precompute some data useful for the benchmark but that should not be
-    # included in the benchmark time
-    data = [1, 2, 3, 4, 5]
-
-    # Benchmark the execution of the function:
-    # The `@benchmark` decorator will automatically call the function and
-    # measure its execution
-    @benchmark
-    def bench():
-        mean(data)
-        median(data)
+    # Only the function call is measured
+    result = benchmark(lambda: sum(i**2 for i in data))
+    assert result == 55
 ```
 
-### Running benchmarks
+Check out the [full documentation](https://codspeed.io/docs/reference/pytest-codspeed) for more details.
 
-#### Testing the benchmarks locally
+### Testing the benchmarks locally
 
-If you want to run only the benchmarks tests locally, you can use the `--codspeed` pytest flag:
+If you want to run the benchmarks tests locally, you can use the `--codspeed` pytest flag:
 
-```shell
-pytest tests/ --codspeed
+```sh
+$ pytest tests/ --codspeed
+============================= test session starts ====================
+platform darwin -- Python 3.13.0, pytest-7.4.4, pluggy-1.5.0
+codspeed: 3.0.0 (enabled, mode: walltime, timer_resolution: 41.7ns)
+rootdir: /home/user/codspeed-test, configfile: pytest.ini
+plugins: codspeed-3.0.0
+collected 1 items
+
+tests/test_sum_squares.py .                                    [ 100%]
+
+                         Benchmark Results
+┏━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━┓
+┃     Benchmark  ┃ Time (best) ┃ Rel. StdDev ┃ Run time ┃ Iters  ┃
+┣━━━━━━━━━━━━━━━━╋━━━━━━━━━━━━━╋━━━━━━━━━━━━━╋━━━━━━━━━━╋━━━━━━━━┫
+┃test_sum_squares┃     1,873ns ┃        4.8% ┃    3.00s ┃ 66,930 ┃
+┗━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━┻━━━━━━━━━━━━━┻━━━━━━━━━━┻━━━━━━━━┛
+=============================== 1 benchmarked ========================
+=============================== 1 passed in 4.12s ====================
 ```
 
-> **Note:** Running `pytest-codspeed` locally will not produce any performance reporting. It's only useful for making sure that your benchmarks are working as expected. If you want to get performance reporting, you should run the benchmarks in your CI.
-
-#### In your CI
+### Running the benchmarks in your CI
 
 You can use the [CodSpeedHQ/action](https://github.com/CodSpeedHQ/action) to run the benchmarks in Github Actions and upload the results to CodSpeed.
 
-Example workflow:
+Here is an example of a GitHub Actions workflow that runs the benchmarks and reports the results to CodSpeed on every push to the `main` branch and every pull request:
 
 ```yaml
 name: CodSpeed
@@ -95,6 +93,9 @@ on:
     branches:
       - "main" # or "master"
   pull_request:
+  # `workflow_dispatch` allows CodSpeed to trigger backtest
+  # performance analysis in order to generate initial data.
+  workflow_dispatch:
 
 jobs:
   benchmarks:
@@ -104,9 +105,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.13"
+
       - name: Install dependencies
         run: pip install -r requirements.txt
+
       - name: Run benchmarks
         uses: CodSpeedHQ/action@v3
         with:
