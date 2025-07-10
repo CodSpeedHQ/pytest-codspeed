@@ -13,7 +13,7 @@ else
         echo "GITHUB_TOKEN is not set. Trying to fetch it from gh"
         GITHUB_TOKEN=$(gh auth token)
     fi
-    git cliff -o CHANGELOG.md --tag $VERSION
+    git cliff --unreleased --tag $VERSION --prepend CHANGELOG.md
     git add CHANGELOG.md
 fi
 
