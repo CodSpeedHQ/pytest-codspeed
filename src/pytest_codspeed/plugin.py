@@ -329,7 +329,7 @@ class BenchmarkFixture:
         self._called = False
 
     def __call__(
-        self, target: Callable[..., T], *args: tuple, **kwargs: dict[str, Any]
+        self, target: Callable[P, T], *args: P.args, **kwargs: P.kwargs
     ) -> T:
         if self._called:
             raise RuntimeError("The benchmark fixture can only be used once per test")
