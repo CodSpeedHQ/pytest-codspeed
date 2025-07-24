@@ -30,11 +30,12 @@ from pytest_codspeed.utils import (
 from . import __version__
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, TypeVar
+    from typing import Any, Callable, ParamSpec, TypeVar
 
     from pytest_codspeed.instruments import Instrument
 
     T = TypeVar("T")
+    P = ParamSpec("P")
 
 
 @pytest.hookimpl(trylast=True)
@@ -328,9 +329,7 @@ class BenchmarkFixture:
         self._plugin = get_plugin(self._config)
         self._called = False
 
-    def __call__(
-        self, target: Callable[P, T], *args: P.args, **kwargs: P.kwargs
-    ) -> T:
+    def __call__(self, target: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
         if self._called:
             raise RuntimeError("The benchmark fixture can only be used once per test")
         self._called = True
