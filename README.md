@@ -92,7 +92,7 @@ on:
   push:
     branches:
       - "main" # or "master"
-  pull_request:
+  pull_request: # required to have reports on PRs
   # `workflow_dispatch` allows CodSpeed to trigger backtest
   # performance analysis in order to generate initial data.
   workflow_dispatch:
