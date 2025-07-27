@@ -267,7 +267,7 @@ def wrap_runtest(
     fn: Callable[..., T],
 ) -> Callable[..., T]:
     @functools.wraps(fn)
-    def wrapped(*args: tuple, **kwargs: dict[str, Any]) -> T:
+    def wrapped(*args: Any, **kwargs: Any) -> T:
         return _measure(plugin, node, config, None, fn, args, kwargs)
 
     return wrapped
@@ -329,7 +329,7 @@ class BenchmarkFixture:
         self._called = False
 
     def __call__(
-        self, target: Callable[..., T], *args: tuple, **kwargs: dict[str, Any]
+        self, target: Callable[..., T], *args: Any, **kwargs: Any
     ) -> T:
         if self._called:
             raise RuntimeError("The benchmark fixture can only be used once per test")

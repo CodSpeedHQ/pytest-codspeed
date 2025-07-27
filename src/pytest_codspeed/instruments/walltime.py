@@ -188,8 +188,8 @@ class WallTimeInstrument(Instrument):
         name: str,
         uri: str,
         fn: Callable[..., T],
-        *args: tuple,
-        **kwargs: dict[str, Any],
+        *args: Any,
+        **kwargs: Any,
     ) -> T:
         benchmark_config = BenchmarkConfig.from_codspeed_config_and_marker_data(
             self.config, marker_options
