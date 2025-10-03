@@ -37,5 +37,6 @@ jobs:
       - name: Run benchmarks
         uses: CodSpeedHQ/action@main
         with:
+          mode: ${{ matrix.mode }}
           run: pytest tests/benchmarks/ --codspeed
           token: ${{ secrets.CODSPEED_TOKEN }}
