@@ -63,7 +63,7 @@ class InstrumentHooks:
         if pid is None:
             pid = os.getpid()
 
-        ret = self.lib.instrument_hooks_executed_benchmark(
+        ret = self.lib.instrument_hooks_set_executed_benchmark(
             self.instance, pid, uri.encode("ascii")
         )
         if ret != 0:

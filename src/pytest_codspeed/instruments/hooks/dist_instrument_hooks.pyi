@@ -12,13 +12,19 @@ class lib:
     @staticmethod
     def instrument_hooks_stop_benchmark(hooks: InstrumentHooksPointer) -> int: ...
     @staticmethod
-    def instrument_hooks_executed_benchmark(
+    def instrument_hooks_set_executed_benchmark(
         hooks: InstrumentHooksPointer, pid: int, uri: bytes
     ) -> int: ...
     @staticmethod
     def instrument_hooks_set_integration(
         hooks: InstrumentHooksPointer, name: bytes, version: bytes
     ) -> int: ...
+    @staticmethod
+    def instrument_hooks_add_marker(
+        hooks: InstrumentHooksPointer, pid: int, marker_type: int, timestamp: int
+    ) -> int: ...
+    @staticmethod
+    def instrument_hooks_current_timestamp() -> int: ...
     @staticmethod
     def callgrind_start_instrumentation() -> int: ...
     @staticmethod
