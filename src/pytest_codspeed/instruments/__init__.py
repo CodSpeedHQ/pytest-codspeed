@@ -8,11 +8,13 @@ if TYPE_CHECKING:
     from typing import Any, Callable, ClassVar, TypeVar
 
     import pytest
+    from typing_extensions import ParamSpec
 
     from pytest_codspeed.config import BenchmarkMarkerOptions, PedanticOptions
     from pytest_codspeed.plugin import CodSpeedConfig
 
     T = TypeVar("T")
+    P = ParamSpec("P")
 
 
 class Instrument(metaclass=ABCMeta):
@@ -30,9 +32,9 @@ class Instrument(metaclass=ABCMeta):
         marker_options: BenchmarkMarkerOptions,
         name: str,
         uri: str,
-        fn: Callable[..., T],
-        *args: tuple,
-        **kwargs: dict[str, Any],
+        fn: Callable[P, T],
+        *args: P.args,
+        **kwargs: P.kwargs,
     ) -> T: ...
 
     @abstractmethod

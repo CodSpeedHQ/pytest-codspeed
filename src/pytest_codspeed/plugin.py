@@ -30,11 +30,12 @@ from pytest_codspeed.utils import (
 from . import __version__
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, TypeVar
+    from typing import Any, Callable, ParamSpec, TypeVar
 
     from pytest_codspeed.instruments import Instrument
 
     T = TypeVar("T")
+    P = ParamSpec("P")
 
 
 @pytest.hookimpl(trylast=True)
@@ -264,10 +265,10 @@ def wrap_runtest(
     plugin: CodSpeedPlugin,
     node: pytest.Item,
     config: pytest.Config,
-    fn: Callable[..., T],
-) -> Callable[..., T]:
+    fn: Callable[P, T],
+) -> Callable[P, T]:
     @functools.wraps(fn)
-    def wrapped(*args: tuple, **kwargs: dict[str, Any]) -> T:
+    def wrapped(*args: P.args, **kwargs: P.kwargs) -> T:
         return _measure(plugin, node, config, None, fn, args, kwargs)
 
     return wrapped
@@ -328,9 +329,7 @@ class BenchmarkFixture:
         self._plugin = get_plugin(self._config)
         self._called = False
 
-    def __call__(
-        self, target: Callable[..., T], *args: tuple, **kwargs: dict[str, Any]
-    ) -> T:
+    def __call__(self, target: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
         if self._called:
             raise RuntimeError("The benchmark fixture can only be used once per test")
         self._called = True
