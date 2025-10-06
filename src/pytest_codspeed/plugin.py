@@ -265,10 +265,10 @@ def wrap_runtest(
     plugin: CodSpeedPlugin,
     node: pytest.Item,
     config: pytest.Config,
-    fn: Callable[..., T],
-) -> Callable[..., T]:
+    fn: Callable[P, T],
+) -> Callable[P, T]:
     @functools.wraps(fn)
-    def wrapped(*args: tuple, **kwargs: dict[str, Any]) -> T:
+    def wrapped(*args: P.args, **kwargs: P.kwargs) -> T:
         return _measure(plugin, node, config, None, fn, args, kwargs)
 
     return wrapped

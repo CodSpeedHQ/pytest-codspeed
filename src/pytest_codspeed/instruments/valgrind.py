@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from pytest import Session
 
     from pytest_codspeed.config import PedanticOptions
-    from pytest_codspeed.instruments import T
+    from pytest_codspeed.instruments import P, T
     from pytest_codspeed.plugin import BenchmarkMarkerOptions, CodSpeedConfig
 
 
@@ -52,9 +52,9 @@ class ValgrindInstrument(Instrument):
         marker_options: BenchmarkMarkerOptions,
         name: str,
         uri: str,
-        fn: Callable[..., T],
-        *args: tuple,
-        **kwargs: dict[str, Any],
+        fn: Callable[P, T],
+        *args: P.args,
+        **kwargs: P.kwargs,
     ) -> T:
         self.benchmark_count += 1
 
