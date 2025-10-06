@@ -8,23 +8,23 @@ on:
 
 env:
   PYTHON_VERSION: "3.12"
+  SHARDS: 4
 
 jobs:
-  benchmarks-instrumentation:
+  benchmarks:
     strategy:
       matrix:
-        include:
-          - mode: "instrumentation"
-            runs-on: ubuntu-24.04
-          - mode: "walltime"
-            runs-on: codspeed-macro
+        shard: [1, 2, 3, 4]
+        mode: ["instrumentation", "walltime"]
 
-    name: Run ${{ matrix.mode }} benchmarks
-    runs-on: ${{ matrix.runs-on }}
+    name: "Run ${{ matrix.mode }} benchmarks (Shard #${{ matrix.shard }})"
+    runs-on: ${{ matrix.mode == 'instrumentation' && 'ubuntu-24.04' || 'codspeed-macro' }}
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: "recursive"
+      - name: Install required-version defined in uv.toml
+        uses: astral-sh/setup-uv@v5
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ env.PYTHON_VERSION }}
@@ -32,10 +32,18 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install valgrind -y
-          pip install .
+          uv sync --dev
           sudo apt-get remove valgrind -y
       - name: Run benchmarks
         uses: CodSpeedHQ/action@main
         with:
-          run: pytest tests/benchmarks/ --codspeed
+          mode: ${{ matrix.mode }}
+          run: uv run pytest tests/benchmarks/ --codspeed --test-group=${{ matrix.shard }} --test-group-count=${{ env.SHARDS }}
           token: ${{ secrets.CODSPEED_TOKEN }}
+
+  all-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "All CI checks passed."
+    needs:
+      - benchmarks

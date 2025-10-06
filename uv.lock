@@ -346,36 +346,36 @@ compat = [
     { name = "pytest-benchmark" },
     { name = "pytest-xdist" },
 ]
-lint = [
-    { name = "mypy" },
-    { name = "ruff" },
-]
-test = [
-    { name = "pytest" },
-    { name = "pytest-cov" },
-]
 
 [package.dev-dependencies]
 dev = [
+    { name = "mypy" },
+    { name = "pytest" },
     { name = "pytest-codspeed" },
+    { name = "pytest-cov" },
+    { name = "pytest-test-groups" },
+    { name = "ruff" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "cffi", specifier = ">=1.17.1" },
     { name = "importlib-metadata", marker = "python_full_version < '3.10'", specifier = ">=8.5.0" },
-    { name = "mypy", marker = "extra == 'lint'", specifier = "~=1.11.2" },
     { name = "pytest", specifier = ">=3.8" },
-    { name = "pytest", marker = "extra == 'test'", specifier = "~=7.0" },
     { name = "pytest-benchmark", marker = "extra == 'compat'", specifier = "~=5.0.0" },
-    { name = "pytest-cov", marker = "extra == 'test'", specifier = "~=4.0.0" },
     { name = "pytest-xdist", marker = "extra == 'compat'", specifier = "~=3.6.1" },
     { name = "rich", specifier = ">=13.8.1" },
-    { name = "ruff", marker = "extra == 'lint'", specifier = "~=0.11.12" },
 ]
 
 [package.metadata.requires-dev]
-dev = [{ name = "pytest-codspeed", editable = "." }]
+dev = [
+    { name = "mypy", specifier = "~=1.11.2" },
+    { name = "pytest", specifier = "~=7.0" },
+    { name = "pytest-codspeed", editable = "." },
+    { name = "pytest-cov", specifier = "~=4.0.0" },
+    { name = "pytest-test-groups", specifier = ">=1.1.0" },
+    { name = "ruff", specifier = "~=0.11.12" },
+]
 
 [[package]]
 name = "pytest-cov"
@@ -388,6 +388,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/ea/70/da97fd5f6270c7d2ce07559a19e5bf36a76f0af21500256f005a69d9beba/pytest-cov-4.0.0.tar.gz", hash = "sha256:996b79efde6433cdbd0088872dbc5fb3ed7fe1578b68cdbba634f14bb8dd0470", size = 62013 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/fe/1f/9ec0ddd33bd2b37d6ec50bb39155bca4fe7085fa78b3b434c05459a860e3/pytest_cov-4.0.0-py3-none-any.whl", hash = "sha256:2feb1b751d66a8bd934e5edfa2e961d11309dc37b73b0eabe73b5945fee20f6b", size = 21554 },
+]
+
+[[package]]
+name = "pytest-test-groups"
+version = "1.2.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/9f/5a/c7874fe15e03d86a1109a3274b57a2473edb8a1dda4a4d27f25d848b6ff5/pytest_test_groups-1.2.1.tar.gz", hash = "sha256:67576b295522fc144b3a42fa1801f50ae962389e984b48bab4336686d09032f1", size = 8137 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/31/ff/7ff0ca5e8051931bf7fb65e31f085f7c0577615bf3a4776fb583cb471800/pytest_test_groups-1.2.1-py3-none-any.whl", hash = "sha256:8c7a016448f9ad347fb69a62f417f0a2358ecbf129fe44bc44ee991918a0bb73", size = 5278 },
 ]
 
 [[package]]
