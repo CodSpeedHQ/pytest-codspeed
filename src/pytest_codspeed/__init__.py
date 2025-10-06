@@ -1,6 +1,6 @@
-__version__ = "4.0.0"
+__version__ = "4.1.0"
 # We also have the semver version since __version__ is not semver compliant
-__semver_version__ = "4.0.0"
+__semver_version__ = "4.1.0"
 
 from .plugin import BenchmarkFixture
 
