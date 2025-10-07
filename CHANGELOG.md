@@ -5,6 +5,24 @@
 
 
 
+## [4.1.1] - 2025-10-07
+
+### <!-- 1 -->🐛 Bug Fixes
+- Wheel installation due to file system loop
+- Use ParamSpec in instrument definition instead of tuple and dict by @art049
+- Use ParamSpec in the plugin call definition by @flying-sheep
+
+### <!-- 3 -->📚 Documentation
+- Add pull_request trigger comment by @adriencaccia
+
+### <!-- 7 -->⚙️ Internals
+- Remove the beta versions from the changelog by @art049
+- Exclude beta tags in changelog by @art049
+- Bump instrument-hooks (#87) by @not-matthias in [#87](https://github.com/CodSpeedHQ/pytest-codspeed/pull/87)
+- Switch to sharded upload (#75) by @art049 in [#75](https://github.com/CodSpeedHQ/pytest-codspeed/pull/75)
+- Fix changelog generation by @art049
+
+
 ## [4.1.0] - 2025-10-06
 
 ### <!-- 1 -->🐛 Bug Fixes
