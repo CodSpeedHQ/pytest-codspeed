@@ -25,6 +25,27 @@ jobs:
         with:
           extra_args: --all-files
 
+  test-instrument-hooks:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: astral-sh/setup-uv@v4
+        with:
+          version: "0.5.20"
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: uv sync --all-extras --dev --locked --verbose
+      - name: Build package
+        run: uv pip install .
+
   tests:
     runs-on: ubuntu-latest
     strategy:
