@@ -39,7 +39,9 @@ jobs:
         with:
           mode: ${{ matrix.mode }}
           run: uv run pytest tests/benchmarks/ --codspeed --test-group=${{ matrix.shard }} --test-group-count=${{ env.SHARDS }}
-          token: ${{ secrets.CODSPEED_TOKEN }}
+          # token: ${{ secrets.CODSPEED_TOKEN }}
+          runner-version: v4.3.0-beta.0
+          upload-url: https://api.staging.preview.codspeed.io/upload
 
   all-checks:
     runs-on: ubuntu-latest
