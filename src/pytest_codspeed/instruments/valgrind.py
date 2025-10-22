@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import warnings
 from typing import TYPE_CHECKING
 
@@ -27,7 +28,11 @@ class ValgrindInstrument(Instrument):
         try:
             self.instrument_hooks = InstrumentHooks()
             self.instrument_hooks.set_integration("pytest-codspeed", __semver_version__)
-        except RuntimeError:
+        except RuntimeError as e:
+            if os.environ.get("CODSPEED_ENV") is not None:
+                raise Exception(
+                    "Failed to initialize CPU simulation instrument hooks"
+                ) from e
             self.instrument_hooks = None
 
         self.should_measure = self.instrument_hooks is not None
