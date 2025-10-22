@@ -8,7 +8,7 @@ import random
 from dataclasses import dataclass, field
 from pathlib import Path
 from time import time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import pytest
 from _pytest.fixtures import FixtureManager
@@ -96,7 +96,7 @@ PLUGIN_NAME = "codspeed_plugin"
 
 
 def get_plugin(config: pytest.Config) -> CodSpeedPlugin:
-    return config.pluginmanager.get_plugin(PLUGIN_NAME)
+    return cast("CodSpeedPlugin", config.pluginmanager.get_plugin(PLUGIN_NAME))
 
 
 @pytest.hookimpl(tryfirst=True)
@@ -159,13 +159,15 @@ def pytest_plugin_registered(plugin, manager: pytest.PytestPluginManager):
         plugin, FixtureManager
     ):
         fixture_manager = plugin
-        codspeed_plugin: CodSpeedPlugin = manager.get_plugin(PLUGIN_NAME)
+        codspeed_plugin: CodSpeedPlugin = cast(
+            "CodSpeedPlugin", manager.get_plugin(PLUGIN_NAME)
+        )
         if codspeed_plugin.is_codspeed_enabled:
             codspeed_benchmark_fixtures = plugin.getfixturedefs(
                 "codspeed_benchmark",
                 fixture_manager.session.nodeid
                 if BEFORE_PYTEST_8_1_1
-                else fixture_manager.session,
+                else cast("str", fixture_manager.session),
             )
             assert codspeed_benchmark_fixtures is not None
             # Archive the alternative benchmark fixture
@@ -173,7 +175,9 @@ def pytest_plugin_registered(plugin, manager: pytest.PytestPluginManager):
                 fixture_manager._arg2fixturedefs["benchmark"]
             )
             # Replace the alternative fixture with the codspeed one
-            fixture_manager._arg2fixturedefs["benchmark"] = codspeed_benchmark_fixtures
+            fixture_manager._arg2fixturedefs["benchmark"] = list(
+                codspeed_benchmark_fixtures
+            )
 
 
 @pytest.hookimpl(trylast=True)
@@ -286,7 +290,7 @@ def pytest_runtest_protocol(item: pytest.Item, nextitem: pytest.Item | None):
         return None
 
     # Wrap runtest and defer to default protocol
-    item.runtest = wrap_runtest(plugin, item, item.config, item.runtest)
+    item.runtest = wrap_runtest(plugin, item, item.config, item.runtest)  # type: ignore[method-assign]
     return None
 
 
@@ -314,7 +318,7 @@ class BenchmarkFixture:
         # Bypass the pytest-benchmark fixture class check
         # https://github.com/ionelmc/pytest-benchmark/commit/d6511e3474931feb4e862948128e0c389acfceec
         if IS_PYTEST_BENCHMARK_INSTALLED:
-            from pytest_benchmark.fixture import (
+            from pytest_benchmark.fixture import (  # type: ignore[import-untyped]
                 BenchmarkFixture as PytestBenchmarkFixture,
             )
 
