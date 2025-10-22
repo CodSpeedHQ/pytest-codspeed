@@ -17,10 +17,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
-      - name: Set up Python 3.11
+      - name: Set up Python 3.14
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.14"
       - uses: pre-commit/action@v3.0.1
         with:
           extra_args: --all-files
@@ -41,6 +41,7 @@ jobs:
           - "3.11"
           - "3.12"
           - "3.13"
+          - "3.14"
         pytest-version:
           - ">=8.1.1"
 

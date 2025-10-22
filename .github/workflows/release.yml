@@ -48,7 +48,7 @@ jobs:
           version: "0.5.20"
       - uses: actions/setup-python@v2
         with:
-          python-version: "3.12"
+          python-version: "3.14"
       - name: Build py3-none-any wheel
         env:
           PYTEST_CODSPEED_SKIP_EXTENSION_BUILD: "1"
@@ -70,7 +70,7 @@ jobs:
           version: "0.5.20"
       - uses: actions/setup-python@v2
         with:
-          python-version: "3.12"
+          python-version: "3.14"
       - name: Build the source dist
         run: uv build --sdist --out-dir dist/
 
@@ -97,7 +97,7 @@ jobs:
           version: "0.5.20"
       - uses: actions/setup-python@v2
         with:
-          python-version: "3.12"
+          python-version: "3.14"
 
       - uses: actions/download-artifact@v4
         with:
