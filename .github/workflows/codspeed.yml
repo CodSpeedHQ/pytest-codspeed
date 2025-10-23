@@ -34,6 +34,7 @@ jobs:
           sudo apt-get install valgrind -y
           uv sync --dev
           sudo apt-get remove valgrind -y
+      - uses: dtolnay/rust-toolchain@stable
       - name: Run benchmarks
         uses: CodSpeedHQ/action@chore/runner-branch
         with:
