@@ -3,7 +3,7 @@
 
 [![CI](https://github.com/CodSpeedHQ/pytest-codspeed/actions/workflows/ci.yml/badge.svg)](https://github.com/CodSpeedHQ/pytest-codspeed/actions/workflows/ci.yml)
 [![PyPi Version](https://img.shields.io/pypi/v/pytest-codspeed?color=%2334D058&label=pypi)](https://pypi.org/project/pytest-codspeed)
-![Python Version](https://img.shields.io/badge/python-3.9%20|%203.10%20|%203.11%20|%203.12%20|%203.13-informational.svg)
+![Python Version](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-informational.svg)
 [![Discord](https://img.shields.io/badge/chat%20on-discord-7289da.svg)](https://discord.com/invite/MxpaCfKSqF)
 [![CodSpeed Badge](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://codspeed.io/CodSpeedHQ/pytest-codspeed)
 
@@ -61,10 +61,10 @@ If you want to run the benchmarks tests locally, you can use the `--codspeed` py
 ```sh
 $ pytest tests/ --codspeed
 ============================= test session starts ====================
-platform darwin -- Python 3.13.0, pytest-7.4.4, pluggy-1.5.0
-codspeed: 3.0.0 (enabled, mode: walltime, timer_resolution: 41.7ns)
+platform darwin -- Python 3.14.0, pytest-7.4.4, pluggy-1.5.0
+codspeed: 4.2.0 (enabled, mode: walltime, timer_resolution: 41.7ns)
 rootdir: /home/user/codspeed-test, configfile: pytest.ini
-plugins: codspeed-3.0.0
+plugins: codspeed-4.2.0
 collected 1 items
 
 tests/test_sum_squares.py .                                    [ 100%]
@@ -105,7 +105,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.14"
 
       - name: Install dependencies
         run: pip install -r requirements.txt
@@ -113,7 +113,7 @@ jobs:
       - name: Run benchmarks
         uses: CodSpeedHQ/action@v4
         with:
-          mode: instrumentation   # or `walltime`
+          mode: instrumentation # or `walltime`
           token: ${{ secrets.CODSPEED_TOKEN }}
           run: pytest tests/ --codspeed
 ```
