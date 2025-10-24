@@ -5,6 +5,19 @@
 
 
 
+## [4.2.0] - 2025-10-24
+
+### <!-- 0 -->🚀 Features
+- Support python 3.14 by @adriencaccia in [#91](https://github.com/CodSpeedHQ/pytest-codspeed/pull/91)
+
+### <!-- 1 -->🐛 Bug Fixes
+- Throw error when instrument hooks failed to initialize under codspeed env by @adriencaccia
+
+### <!-- 7 -->⚙️ Internals
+- Bump mypy by @adriencaccia
+- Bump python to 3.14 in the ci by @adriencaccia
+
+
 ## [4.1.1] - 2025-10-07
 
 ### <!-- 1 -->🐛 Bug Fixes
