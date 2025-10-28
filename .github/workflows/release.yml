@@ -22,7 +22,7 @@ jobs:
 
     runs-on: ${{ matrix.platform.runs-on }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: true
       - name: Build wheels
@@ -40,11 +40,11 @@ jobs:
   build-py3-none-any:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: true
-      - uses: astral-sh/setup-uv@v4
-      - uses: actions/setup-python@v2
+      - uses: astral-sh/setup-uv@v7
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.14"
       - name: Build py3-none-any wheel
@@ -60,11 +60,11 @@ jobs:
   build-sdist:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: true
-      - uses: astral-sh/setup-uv@v4
-      - uses: actions/setup-python@v2
+      - uses: astral-sh/setup-uv@v7
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.14"
       - name: Build the source dist
@@ -87,9 +87,9 @@ jobs:
         with:
           merge-multiple: true
           path: dist/
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v4
-      - uses: actions/setup-python@v2
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.14"
 
