@@ -31,7 +31,6 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "cffi >= 1.17.1",
     "pytest>=3.8",
     "rich>=13.8.1",
     "importlib-metadata>=8.5.0; python_version < '3.10'",
