@@ -44,6 +44,9 @@ compat = [
     # "pytest-speed>=0.3.5",
 ]
 
+[tool.uv]
+required-version = "0.9.5"
+
 [tool.uv.sources]
 pytest-codspeed = { workspace = true }
 

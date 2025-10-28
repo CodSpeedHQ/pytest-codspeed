@@ -50,8 +50,6 @@ jobs:
         with:
           submodules: true
       - uses: astral-sh/setup-uv@v4
-        with:
-          version: "0.9.5"
       - name: "Set up Python ${{ matrix.python-version }}"
         uses: actions/setup-python@v5
         with:
