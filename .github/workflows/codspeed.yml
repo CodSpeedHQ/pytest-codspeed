@@ -34,13 +34,33 @@ jobs:
           sudo apt-get install valgrind -y
           uv sync --dev
           sudo apt-get remove valgrind -y
+
+      - name: Install valgrind
+        run: |
+          git clone https://github.com/CodSpeedHQ/valgrind-codspeed.git --branch cod-578-fix-span-ordering-on-the-flamegraph
+          sudo apt-get install -y \
+              build-essential \
+              automake \
+              autoconf \
+              libc6-dev \
+              gcc-multilib \
+              libc6-dev-i386 \
+              gdb \
+              docbook \
+              docbook-xsl \
+              docbook-xml \
+              xsltproc
+            ./autogen.sh
+            ./configure
+            make -j$(nproc)
+            sudo make install
+
       - name: Run benchmarks
         uses: CodSpeedHQ/action@main
         with:
           mode: ${{ matrix.mode }}
           run: uv run pytest tests/benchmarks/ --codspeed --test-group=${{ matrix.shard }} --test-group-count=${{ env.SHARDS }}
           # token: ${{ secrets.CODSPEED_TOKEN }}
-          runner-version: v4.3.0-beta.0
           upload-url: https://api.staging.preview.codspeed.io/upload
 
   all-checks:
