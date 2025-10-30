@@ -44,17 +44,15 @@ jobs:
               automake \
               autoconf \
               libc6-dev \
-              gcc-multilib \
-              libc6-dev-i386 \
               gdb \
               docbook \
               docbook-xsl \
               docbook-xml \
               xsltproc
-            ./autogen.sh
-            ./configure
-            make -j$(nproc)
-            sudo make install
+          ./autogen.sh
+          ./configure
+          make -j$(nproc)
+          sudo make install
 
       - name: Run benchmarks
         uses: CodSpeedHQ/action@main
