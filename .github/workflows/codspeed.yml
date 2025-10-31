@@ -37,7 +37,7 @@ jobs:
 
       - name: Install valgrind
         run: |
-          git clone https://github.com/CodSpeedHQ/valgrind-codspeed.git --branch cod-578-fix-span-ordering-on-the-flamegraph
+          git clone https://github.com/CodSpeedHQ/valgrind-codspeed.git --branch cod-1573-v431-seems-to-cause-hangs
           cd valgrind-codspeed
           sudo apt-get install -y \
               build-essential \
