@@ -359,7 +359,7 @@ class WallTimeInstrument(Instrument):
                 rsd_text.stylize("red bold")
             table.add_row(
                 escape(bench.name),
-                f"{bench.stats.min_ns / bench.stats.iter_per_round:,.0f}ns",
+                format_time(bench.stats.min_ns / bench.stats.iter_per_round),
                 rsd_text,
                 f"{bench.stats.total_time:,.2f}s",
                 f"{bench.stats.iter_per_round * bench.stats.rounds:,}",
@@ -377,3 +377,36 @@ class WallTimeInstrument(Instrument):
             },
             "benchmarks": [asdict(bench) for bench in self.benchmarks],
         }
+
+
+def format_time(time_ns: float) -> str:
+    """Format time in nanoseconds to a human-readable string with appropriate units.
+
+    Args:
+        time_ns: Time in nanoseconds
+
+    Returns:
+        Formatted string with appropriate unit (ns, µs, ms, or s)
+
+    Examples:
+        >>> format_time(123)
+        '123ns'
+        >>> format_time(1_234)
+        '1.23µs'
+        >>> format_time(76_126_625)
+        '76.1ms'
+        >>> format_time(2_500_000_000)
+        '2.50s'
+    """
+    if time_ns < 1_000:
+        # Less than 1 microsecond - show in nanoseconds
+        return f"{time_ns:.0f}ns"
+    elif time_ns < 1_000_000:
+        # Less than 1 millisecond - show in microseconds
+        return f"{time_ns / 1_000:.2f}µs"
+    elif time_ns < 1_000_000_000:
+        # Less than 1 second - show in milliseconds
+        return f"{time_ns / 1_000_000:.1f}ms"
+    else:
+        # 1 second or more - show in seconds
+        return f"{time_ns / 1_000_000_000:.2f}s"
