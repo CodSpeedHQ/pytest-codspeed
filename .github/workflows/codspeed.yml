@@ -36,7 +36,7 @@ jobs:
       - name: Run benchmarks
         uses: CodSpeedHQ/action@v4
         with:
-          runner-version: 4.3.2
+          runner-version: 4.3.3
           mode: ${{ matrix.mode }}
           run: uv run pytest tests/benchmarks/ --codspeed --test-group=${{ matrix.shard }} --test-group-count=${{ env.SHARDS }}
           token: ${{ secrets.CODSPEED_TOKEN }}
