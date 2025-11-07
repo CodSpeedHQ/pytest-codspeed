@@ -34,8 +34,9 @@ jobs:
           uv sync --dev
           sudo apt-get remove valgrind -y
       - name: Run benchmarks
-        uses: CodSpeedHQ/action@main
+        uses: CodSpeedHQ/action@v4
         with:
+          runner-version: 4.3.2
           mode: ${{ matrix.mode }}
           run: uv run pytest tests/benchmarks/ --codspeed --test-group=${{ matrix.shard }} --test-group-count=${{ env.SHARDS }}
           token: ${{ secrets.CODSPEED_TOKEN }}
