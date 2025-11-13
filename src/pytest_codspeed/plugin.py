@@ -300,6 +300,9 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus):
         if plugin.profile_folder:
             result_path = plugin.profile_folder / "results" / f"{os.getpid()}.json"
         else:
+            # Default to a .codspeed folder in the root of the project.
+            # Storing the results will be later used for features such as
+            # local comparison between runs.
             result_path = (
                 session.config.rootpath / f".codspeed/results_{time() * 1000:.0f}.json"
             )
