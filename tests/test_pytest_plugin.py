@@ -34,7 +34,7 @@ def test_bench_enabled_header_without_perf(
     with codspeed_env():
         result = pytester.runpytest()
     result.stdout.fnmatch_lines(
-        ["codspeed: * (enabled, mode: instrumentation, callgraph: not supported)"]
+        ["codspeed: * (enabled, mode: simulation, callgraph: not supported)"]
     )
 
 

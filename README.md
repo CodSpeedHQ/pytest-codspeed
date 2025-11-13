@@ -113,7 +113,7 @@ jobs:
       - name: Run benchmarks
         uses: CodSpeedHQ/action@v4
         with:
-          mode: instrumentation # or `walltime`
+          mode: simulation # or `walltime`
           token: ${{ secrets.CODSPEED_TOKEN }}
           run: pytest tests/ --codspeed
 ```

@@ -78,5 +78,5 @@ class InstrumentHooks:
             warnings.warn("Failed to set integration name and version", RuntimeWarning)
 
     def is_instrumented(self) -> bool:
-        """Check if instrumentation is active."""
+        """Check if simulation is active."""
         return self.lib.instrument_hooks_is_instrumented(self.instance)

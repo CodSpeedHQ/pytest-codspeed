@@ -115,7 +115,7 @@ def pytest_configure(config: pytest.Config):
         if os.environ.get("CODSPEED_RUNNER_MODE") == "walltime":
             default_mode = MeasurementMode.WallTime.value
         else:
-            default_mode = MeasurementMode.Instrumentation.value
+            default_mode = MeasurementMode.Simulation.value
     else:
         default_mode = MeasurementMode.WallTime.value
 

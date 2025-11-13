@@ -39,7 +39,7 @@ class ValgrindInstrument(Instrument):
 
     def get_instrument_config_str_and_warns(self) -> tuple[str, list[str]]:
         config = (
-            f"mode: instrumentation, "
+            f"mode: simulation, "
             f"callgraph: {'enabled' if SUPPORTS_PERF_TRAMPOLINE else 'not supported'}"
         )
         warnings = []

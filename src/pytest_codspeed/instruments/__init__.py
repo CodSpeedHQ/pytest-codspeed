@@ -56,8 +56,15 @@ class Instrument(metaclass=ABCMeta):
 
 
 class MeasurementMode(str, Enum):
-    Instrumentation = "instrumentation"
+    Simulation = "simulation"
     WallTime = "walltime"
+
+    @classmethod
+    def _missing_(cls, value: object):
+        # Accept "instrumentation" as deprecated alias for "simulation"
+        if value == "instrumentation":
+            return cls.Simulation
+        return None
 
 
 def get_instrument_from_mode(mode: MeasurementMode) -> type[Instrument]:
@@ -66,7 +73,7 @@ def get_instrument_from_mode(mode: MeasurementMode) -> type[Instrument]:
     )
     from pytest_codspeed.instruments.walltime import WallTimeInstrument
 
-    if mode == MeasurementMode.Instrumentation:
+    if mode == MeasurementMode.Simulation:
         return ValgrindInstrument
     else:
         return WallTimeInstrument
