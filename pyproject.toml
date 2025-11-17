@@ -45,6 +45,8 @@ compat = [
 ]
 
 [tool.uv]
+# Python builds change with uv versions, and we are quite susceptible to that.
+# We pin uv to to make sure reproducibility is maintained for any contributor.
 required-version = "0.9.5"
 
 [tool.uv.sources]
