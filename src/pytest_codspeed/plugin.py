@@ -237,7 +237,6 @@ def pytest_collection_modifyitems(
 
 @contextmanager
 def _measure_context(node: pytest.Item) -> AsyncIterator[None]:
-    marker_options = BenchmarkMarkerOptions.from_pytest_item(node)
     random.seed(0)
     is_gc_enabled = gc.isenabled()
     if is_gc_enabled:
@@ -255,6 +254,7 @@ def _measure_context(node: pytest.Item) -> AsyncIterator[None]:
 async def _async_measure(
     plugin: CodSpeedPlugin,
     node: pytest.Item,
+    marker_options: BenchmarkMarkerOptions,
     pedantic_options: PedanticOptions | None,
     fn: Awaitable[T],
     args: tuple[Any, ...],
@@ -302,9 +302,10 @@ def _measure(
     args: tuple[Any, ...],
     kwargs: dict[str, Any],
 ) -> T | Awaitable[T]:
+    marker_options = BenchmarkMarkerOptions.from_pytest_item(node)
     uri, name = get_git_relative_uri_and_name(node.nodeid, config.rootpath)
     if isawaitable(fn):
-        return _async_measure(plugin, node, pedantic_options, fn, args, kwargs)
+        return _async_measure(plugin, node, marker_options, pedantic_options, fn, args, kwargs)
     else:
         with _measure_context(node):
             if pedantic_options is None:
