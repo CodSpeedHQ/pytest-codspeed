@@ -306,7 +306,7 @@ def _measure(
     if isawaitable(fn):
         return _async_measure(plugin, marker_options, pedantic_options, fn, args, kwargs)
     else:
-        with _measure_context(node):
+        with _measure_context():
             if pedantic_options is None:
                 return plugin.instrument.measure(
                     marker_options, name, uri, fn, *args, **kwargs
