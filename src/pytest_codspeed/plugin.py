@@ -236,7 +236,7 @@ def pytest_collection_modifyitems(
 
 
 @contextmanager
-def _measure_context(node: pytest.Item) -> AsyncIterator[None]
+def _measure_context(node: pytest.Item) -> AsyncIterator[None]:
     marker_options = BenchmarkMarkerOptions.from_pytest_item(node)
     random.seed(0)
     is_gc_enabled = gc.isenabled()
