@@ -244,11 +244,12 @@ def _measure_context(node: pytest.Item) -> AsyncIterator[None]
         gc.collect()
         gc.disable()
 
-    yield
-
-    # Ensure GC is re-enabled even if the test failed
-    if is_gc_enabled:
-        gc.enable()
+    try:
+        yield
+    finally:
+        # Ensure GC is re-enabled even if the test failed
+        if is_gc_enabled:
+            gc.enable()
 
 
 async def _async_measure(
