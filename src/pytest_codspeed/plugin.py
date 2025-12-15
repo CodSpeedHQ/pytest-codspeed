@@ -5,10 +5,13 @@ import gc
 import json
 import os
 import random
+from collections.abc import AsyncIterator
+from contextlib import contextmanager
 from dataclasses import dataclass, field
+from inspect import isawaitable
 from pathlib import Path
 from time import time
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, cast, overload
 
 import pytest
 from _pytest.fixtures import FixtureManager
@@ -232,6 +235,53 @@ def pytest_collection_modifyitems(
         items[:] = selected
 
 
+@contextmanager
+def _measure_context(node: pytest.Item) -> AsyncIterator[None]
+    marker_options = BenchmarkMarkerOptions.from_pytest_item(node)
+    random.seed(0)
+    is_gc_enabled = gc.isenabled()
+    if is_gc_enabled:
+        gc.collect()
+        gc.disable()
+
+    yield
+
+    # Ensure GC is re-enabled even if the test failed
+    if is_gc_enabled:
+        gc.enable()
+
+
+async def _async_measure(
+    plugin: CodSpeedPlugin,
+    node: pytest.Item,
+    pedantic_options: PedanticOptions | None,
+    fn: Awaitable[T],
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+) -> T:
+    with _measure_context(node):
+        if pedantic_options is None:
+            return await plugin.instrument.measure_async(
+                marker_options, name, uri, fn, *args, **kwargs
+            )
+        else:
+            return await plugin.instrument.measure_pedantic_async(
+                marker_options, pedantic_options, name, uri
+            )
+
+
+@overload
+def _measure(
+    plugin: CodSpeedPlugin,
+    node: pytest.Item,
+    config: pytest.Config,
+    pedantic_options: PedanticOptions | None,
+    fn: Awaitable[T],
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+) -> Awaitable[T]:
+    ...
+@overload
 def _measure(
     plugin: CodSpeedPlugin,
     node: pytest.Item,
@@ -241,26 +291,29 @@ def _measure(
     args: tuple[Any, ...],
     kwargs: dict[str, Any],
 ) -> T:
-    marker_options = BenchmarkMarkerOptions.from_pytest_item(node)
-    random.seed(0)
-    is_gc_enabled = gc.isenabled()
-    if is_gc_enabled:
-        gc.collect()
-        gc.disable()
-    try:
-        uri, name = get_git_relative_uri_and_name(node.nodeid, config.rootpath)
-        if pedantic_options is None:
-            return plugin.instrument.measure(
-                marker_options, name, uri, fn, *args, **kwargs
-            )
-        else:
-            return plugin.instrument.measure_pedantic(
-                marker_options, pedantic_options, name, uri
-            )
-    finally:
-        # Ensure GC is re-enabled even if the test failed
-        if is_gc_enabled:
-            gc.enable()
+    ...
+def _measure(
+    plugin: CodSpeedPlugin,
+    node: pytest.Item,
+    config: pytest.Config,
+    pedantic_options: PedanticOptions | None,
+    fn: Callable[..., T] | Awaitable[T],
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+) -> T | Awaitable[T]:
+    uri, name = get_git_relative_uri_and_name(node.nodeid, config.rootpath)
+    if isawaitable(fn):
+        return _async_measure(plugin, node, pedantic_options, fn, args, kwargs)
+    else:
+        with _measure_context(node):
+            if pedantic_options is None:
+                return plugin.instrument.measure(
+                    marker_options, name, uri, fn, *args, **kwargs
+                )
+            else:
+                return plugin.instrument.measure_pedantic(
+                    marker_options, pedantic_options, name, uri
+                )
 
 
 def wrap_runtest(
