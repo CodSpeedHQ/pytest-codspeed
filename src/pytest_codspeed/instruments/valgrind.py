@@ -113,7 +113,7 @@ class ValgrindInstrument(Instrument):
     @contextmanager
     def _measure_pedantic_context(
         self,
-        pedantic_options: PedanticOptions[object],
+        pedantic_options: PedanticOptions[Any],
         uri: str,
     ) -> Iterator[None]:
         if pedantic_options.rounds != 1 or pedantic_options.iterations != 1:
