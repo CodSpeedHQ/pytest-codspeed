@@ -11,7 +11,7 @@ from pytest_codspeed.instruments.hooks import InstrumentHooks
 from pytest_codspeed.utils import SUPPORTS_PERF_TRAMPOLINE
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable
+    from collections.abc import Awaitable, Iterator
     from typing import Any, Callable
 
     from pytest import Session
@@ -113,9 +113,9 @@ class ValgrindInstrument(Instrument):
     @contextmanager
     def _measure_pedantic_context(
         self,
-        pedantic_options: PedanticOptions[T],
+        pedantic_options: PedanticOptions[object],
         uri: str,
-    ) -> T:
+    ) -> Iterator[None]:
         if pedantic_options.rounds != 1 or pedantic_options.iterations != 1:
             warnings.warn(
                 "Valgrind instrument ignores rounds and iterations settings "
@@ -165,7 +165,7 @@ class ValgrindInstrument(Instrument):
     async def measure_pedantic_async(
         self,
         marker_options: BenchmarkMarkerOptions,
-        pedantic_options: PedanticOptions[T],
+        pedantic_options: PedanticOptions[Awaitable[T]],
         name: str,
         uri: str,
     ) -> T:
