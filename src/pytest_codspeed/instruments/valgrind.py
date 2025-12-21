@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 import warnings
-from collections.abc import Awaitable
 from contextlib import contextmanager
 from typing import TYPE_CHECKING
 
@@ -12,6 +11,7 @@ from pytest_codspeed.instruments.hooks import InstrumentHooks
 from pytest_codspeed.utils import SUPPORTS_PERF_TRAMPOLINE
 
 if TYPE_CHECKING:
+    from collections.abc import Awaitable
     from typing import Any, Callable
 
     from pytest import Session
@@ -112,7 +112,9 @@ class ValgrindInstrument(Instrument):
 
     @contextmanager
     def _measure_pedantic_context(
-        self, pedantic_options: PedanticOptions[T], uri: str,
+        self,
+        pedantic_options: PedanticOptions[T],
+        uri: str,
     ) -> T:
         if pedantic_options.rounds != 1 or pedantic_options.iterations != 1:
             warnings.warn(
