@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 import warnings
-from collections.abc import Awaitable
 from dataclasses import asdict, dataclass
 from math import ceil
 from statistics import mean, quantiles, stdev
@@ -20,6 +19,7 @@ from pytest_codspeed.instruments.hooks import InstrumentHooks
 from pytest_codspeed.utils import SUPPORTS_PERF_TRAMPOLINE
 
 if TYPE_CHECKING:
+    from collections.abc import Awaitable, Iterator
     from typing import Any, Callable
 
     from pytest import Session
@@ -188,7 +188,7 @@ class WallTimeInstrument(Instrument):
         marker_options: BenchmarkMarkerOptions,
         name: str,
         uri: str,
-    ) -> T:
+    ) -> Iterator[None]:
         benchmark_config = BenchmarkConfig.from_codspeed_config_and_marker_data(
             self.config, marker_options
         )
@@ -299,7 +299,7 @@ class WallTimeInstrument(Instrument):
         pedantic_options: PedanticOptions[T],
         name: str,
         uri: str,
-    ) -> T:
+    ) -> Iterator[None]:
         benchmark_config = BenchmarkConfig.from_codspeed_config_and_marker_data(
             self.config, marker_options
         )
