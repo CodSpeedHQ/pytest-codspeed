@@ -296,10 +296,10 @@ class WallTimeInstrument(Instrument):
     def _measure_pedantic_iter(  # noqa: C901
         self,
         marker_options: BenchmarkMarkerOptions,
-        pedantic_options: PedanticOptions[object],
+        pedantic_options: PedanticOptions[Any],
         name: str,
         uri: str,
-    ) -> Iterator[int, tuple[Any], dict[str, Any]]:
+    ) -> Iterator[tuple[int, tuple[Any], dict[str, Any]]]:
         benchmark_config = BenchmarkConfig.from_codspeed_config_and_marker_data(
             self.config, marker_options
         )
