@@ -5,7 +5,7 @@ import gc
 import json
 import os
 import random
-from collections.abc import AsyncIterator
+from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from inspect import iscoroutinefunction
@@ -237,7 +237,7 @@ def pytest_collection_modifyitems(
 
 
 @contextmanager
-def _measure_context() -> AsyncIterator[None]:
+def _measure_context() -> Iterator[None]:
     random.seed(0)
     is_gc_enabled = gc.isenabled()
     if is_gc_enabled:
