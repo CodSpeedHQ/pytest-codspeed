@@ -59,7 +59,7 @@ class Instrument(metaclass=ABCMeta):
     ) -> T: ...
 
     @abstractmethod
-    async def measure_pedantic(
+    async def measure_pedantic_async(
         self,
         marker_options: BenchmarkMarkerOptions,
         pedantic_options: PedanticOptions[T],
