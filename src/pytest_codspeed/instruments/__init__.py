@@ -5,6 +5,7 @@ from enum import Enum
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from collections.abc import Awaitable
     from typing import Any, Callable, ClassVar, TypeVar
 
     import pytest
@@ -38,7 +39,27 @@ class Instrument(metaclass=ABCMeta):
     ) -> T: ...
 
     @abstractmethod
+    async def measure_async(
+        self,
+        marker_options: BenchmarkMarkerOptions,
+        name: str,
+        uri: str,
+        fn: Callable[P, Awaitable[T]],
+        *args: P.args,
+        **kwargs: P.kwargs,
+    ) -> T: ...
+
+    @abstractmethod
     def measure_pedantic(
+        self,
+        marker_options: BenchmarkMarkerOptions,
+        pedantic_options: PedanticOptions[T],
+        name: str,
+        uri: str,
+    ) -> T: ...
+
+    @abstractmethod
+    async def measure_pedantic(
         self,
         marker_options: BenchmarkMarkerOptions,
         pedantic_options: PedanticOptions[T],
