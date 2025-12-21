@@ -296,7 +296,7 @@ class WallTimeInstrument(Instrument):
     def _measure_pedantic_iter(  # noqa: C901
         self,
         marker_options: BenchmarkMarkerOptions,
-        pedantic_options: PedanticOptions[T],
+        pedantic_options: PedanticOptions[object],
         name: str,
         uri: str,
     ) -> Iterator[None]:
@@ -370,7 +370,7 @@ class WallTimeInstrument(Instrument):
     async def measure_pedantic_async(
         self,
         marker_options: BenchmarkMarkerOptions,
-        pedantic_options: PedanticOptions[T],
+        pedantic_options: PedanticOptions[Awaitable[T]],
         name: str,
         uri: str,
     ) -> T:
