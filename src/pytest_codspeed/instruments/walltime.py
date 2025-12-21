@@ -299,7 +299,7 @@ class WallTimeInstrument(Instrument):
         pedantic_options: PedanticOptions[object],
         name: str,
         uri: str,
-    ) -> Iterator[None]:
+    ) -> Iterator[int, tuple[Any], dict[str, Any]]:
         benchmark_config = BenchmarkConfig.from_codspeed_config_and_marker_data(
             self.config, marker_options
         )
