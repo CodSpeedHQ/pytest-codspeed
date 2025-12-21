@@ -8,10 +8,10 @@ import random
 from collections.abc import AsyncIterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from inspect import isawaitable
+from inspect import iscoroutinefunction
 from pathlib import Path
 from time import time
-from typing import TYPE_CHECKING, cast, overload
+from typing import TYPE_CHECKING, cast
 
 import pytest
 from _pytest.fixtures import FixtureManager
@@ -270,18 +270,6 @@ async def _async_measure(
             )
 
 
-@overload
-def _measure(
-    plugin: CodSpeedPlugin,
-    node: pytest.Item,
-    config: pytest.Config,
-    pedantic_options: PedanticOptions | None,
-    fn: Awaitable[T],
-    args: tuple[Any, ...],
-    kwargs: dict[str, Any],
-) -> Awaitable[T]:
-    ...
-@overload
 def _measure(
     plugin: CodSpeedPlugin,
     node: pytest.Item,
@@ -291,19 +279,9 @@ def _measure(
     args: tuple[Any, ...],
     kwargs: dict[str, Any],
 ) -> T:
-    ...
-def _measure(
-    plugin: CodSpeedPlugin,
-    node: pytest.Item,
-    config: pytest.Config,
-    pedantic_options: PedanticOptions | None,
-    fn: Callable[..., T] | Awaitable[T],
-    args: tuple[Any, ...],
-    kwargs: dict[str, Any],
-) -> T | Awaitable[T]:
     marker_options = BenchmarkMarkerOptions.from_pytest_item(node)
     uri, name = get_git_relative_uri_and_name(node.nodeid, config.rootpath)
-    if isawaitable(fn):
+    if iscoroutinefunction(fn):
         return _async_measure(plugin, marker_options, pedantic_options, fn, args, kwargs)
     else:
         with _measure_context():
