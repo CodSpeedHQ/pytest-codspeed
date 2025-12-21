@@ -5,7 +5,6 @@ import gc
 import json
 import os
 import random
-from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from inspect import iscoroutinefunction
@@ -33,7 +32,7 @@ from pytest_codspeed.utils import (
 from . import __version__
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable
+    from collections.abc import Awaitable, Iterator
     from typing import Any, Callable, ParamSpec, TypeVar
 
     from pytest_codspeed.instruments import Instrument
@@ -258,7 +257,7 @@ async def _async_measure(
     pedantic_options: PedanticOptions | None,
     name: str,
     uri: str,
-    fn: Awaitable[T],
+    fn: Callable[..., Awaitable[T]],
     args: tuple[Any, ...],
     kwargs: dict[str, Any],
 ) -> T:
