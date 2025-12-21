@@ -284,7 +284,7 @@ def _measure(
     marker_options = BenchmarkMarkerOptions.from_pytest_item(node)
     uri, name = get_git_relative_uri_and_name(node.nodeid, config.rootpath)
     if iscoroutinefunction(fn):
-        return _async_measure(
+        return _async_measure(  # type: ignore[return-value]
             plugin, marker_options, pedantic_options, name, uri, fn, args, kwargs
         )
     else:
