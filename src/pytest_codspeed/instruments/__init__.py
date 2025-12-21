@@ -62,7 +62,7 @@ class Instrument(metaclass=ABCMeta):
     async def measure_pedantic_async(
         self,
         marker_options: BenchmarkMarkerOptions,
-        pedantic_options: PedanticOptions[T],
+        pedantic_options: PedanticOptions[Awaitable[T]],
         name: str,
         uri: str,
     ) -> T: ...
