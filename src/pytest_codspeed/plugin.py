@@ -33,6 +33,7 @@ from pytest_codspeed.utils import (
 from . import __version__
 
 if TYPE_CHECKING:
+    from collections.abc import Awaitable
     from typing import Any, Callable, ParamSpec, TypeVar
 
     from pytest_codspeed.instruments import Instrument
@@ -255,6 +256,8 @@ async def _async_measure(
     plugin: CodSpeedPlugin,
     marker_options: BenchmarkMarkerOptions,
     pedantic_options: PedanticOptions | None,
+    name: str,
+    uri: str,
     fn: Awaitable[T],
     args: tuple[Any, ...],
     kwargs: dict[str, Any],
@@ -282,7 +285,9 @@ def _measure(
     marker_options = BenchmarkMarkerOptions.from_pytest_item(node)
     uri, name = get_git_relative_uri_and_name(node.nodeid, config.rootpath)
     if iscoroutinefunction(fn):
-        return _async_measure(plugin, marker_options, pedantic_options, fn, args, kwargs)
+        return _async_measure(
+            plugin, marker_options, pedantic_options, name, uri, fn, args, kwargs
+        )
     else:
         with _measure_context():
             if pedantic_options is None:
