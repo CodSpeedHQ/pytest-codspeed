@@ -10,6 +10,10 @@ env:
   PYTHON_VERSION: "3.14.2"
   SHARDS: 4
 
+permissions:
+  contents: read # required for actions/checkout
+  id-token: write # required for OIDC authentication with CodSpeed
+
 jobs:
   benchmarks:
     strategy:
@@ -38,7 +42,6 @@ jobs:
         with:
           mode: ${{ matrix.mode }}
           run: uv run pytest tests/benchmarks/ --codspeed --test-group=${{ matrix.shard }} --test-group-count=${{ env.SHARDS }}
-          token: ${{ secrets.CODSPEED_TOKEN }}
 
   all-checks:
     runs-on: ubuntu-latest
