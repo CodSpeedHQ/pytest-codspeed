@@ -10,6 +10,9 @@ from pytest_codspeed.utils import SUPPORTS_PERF_TRAMPOLINE
 if TYPE_CHECKING:
     from .dist_instrument_hooks import InstrumentHooksPointer, LibType
 
+# Feature flags for instrument hooks
+FEATURE_DISABLE_CALLGRIND_MARKERS = 0
+
 
 class InstrumentHooks:
     """Zig library wrapper class providing benchmark measurement functionality."""
@@ -80,3 +83,12 @@ class InstrumentHooks:
     def is_instrumented(self) -> bool:
         """Check if simulation is active."""
         return self.lib.instrument_hooks_is_instrumented(self.instance)
+
+    def set_feature(self, feature: int, enabled: bool) -> None:
+        """Set a feature flag in the instrument hooks library.
+
+        Args:
+            feature: The feature flag to set
+            enabled: Whether to enable or disable the feature
+        """
+        self.lib.instrument_hooks_set_feature(feature, enabled)

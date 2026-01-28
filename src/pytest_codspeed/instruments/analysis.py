@@ -6,7 +6,10 @@ from typing import TYPE_CHECKING
 
 from pytest_codspeed import __semver_version__
 from pytest_codspeed.instruments import Instrument
-from pytest_codspeed.instruments.hooks import InstrumentHooks
+from pytest_codspeed.instruments.hooks import (
+    FEATURE_DISABLE_CALLGRIND_MARKERS,
+    InstrumentHooks,
+)
 from pytest_codspeed.utils import SUPPORTS_PERF_TRAMPOLINE
 
 if TYPE_CHECKING:
@@ -15,15 +18,17 @@ if TYPE_CHECKING:
     from pytest import Session
 
     from pytest_codspeed.config import PedanticOptions
-    from pytest_codspeed.instruments import P, T
+    from pytest_codspeed.instruments import MeasurementMode, P, T
     from pytest_codspeed.plugin import BenchmarkMarkerOptions, CodSpeedConfig
 
 
-class ValgrindInstrument(Instrument):
-    instrument = "valgrind"
+class AnalysisInstrument(Instrument):
+    instrument = "analysis"
     instrument_hooks: InstrumentHooks | None
+    mode: MeasurementMode
 
-    def __init__(self, config: CodSpeedConfig) -> None:
+    def __init__(self, config: CodSpeedConfig, mode: MeasurementMode) -> None:
+        self.mode = mode
         self.benchmark_count = 0
         try:
             self.instrument_hooks = InstrumentHooks()
@@ -31,7 +36,7 @@ class ValgrindInstrument(Instrument):
         except RuntimeError as e:
             if os.environ.get("CODSPEED_ENV") is not None:
                 raise Exception(
-                    "Failed to initialize CPU simulation instrument hooks"
+                    f"Failed to initialize {self.mode.value} instrument hooks"
                 ) from e
             self.instrument_hooks = None
 
@@ -39,7 +44,7 @@ class ValgrindInstrument(Instrument):
 
     def get_instrument_config_str_and_warns(self) -> tuple[str, list[str]]:
         config = (
-            f"mode: simulation, "
+            f"mode: {self.mode.value}, "
             f"callgraph: {'enabled' if SUPPORTS_PERF_TRAMPOLINE else 'not supported'}"
         )
         warnings = []
@@ -73,6 +78,9 @@ class ValgrindInstrument(Instrument):
             # Warmup CPython performance map cache
             __codspeed_root_frame__()
 
+        self.instrument_hooks.set_feature(FEATURE_DISABLE_CALLGRIND_MARKERS, True)
+        self.instrument_hooks.start_benchmark()
+
         # Manually call the library function to avoid an extra stack frame. Also
         # call the callgrind markers directly to avoid extra overhead.
         self.instrument_hooks.lib.callgrind_start_instrumentation()
@@ -81,6 +89,7 @@ class ValgrindInstrument(Instrument):
         finally:
             # Ensure instrumentation is stopped even if the test failed
             self.instrument_hooks.lib.callgrind_stop_instrumentation()
+            self.instrument_hooks.stop_benchmark()
             self.instrument_hooks.set_executed_benchmark(uri)
 
     def measure_pedantic(
@@ -92,8 +101,8 @@ class ValgrindInstrument(Instrument):
     ) -> T:
         if pedantic_options.rounds != 1 or pedantic_options.iterations != 1:
             warnings.warn(
-                "Valgrind instrument ignores rounds and iterations settings "
-                "in pedantic mode"
+                f"{self.mode.value.capitalize()} instrument ignores rounds and "
+                "iterations settings in pedantic mode"
             )
         if not self.instrument_hooks:
             args, kwargs = pedantic_options.setup_and_get_args_kwargs()
@@ -117,11 +126,18 @@ class ValgrindInstrument(Instrument):
 
         # Compute the actual result of the function
         args, kwargs = pedantic_options.setup_and_get_args_kwargs()
+
+        self.instrument_hooks.set_feature(FEATURE_DISABLE_CALLGRIND_MARKERS, True)
+        self.instrument_hooks.start_benchmark()
+
+        # Manually call the library function to avoid an extra stack frame. Also
+        # call the callgrind markers directly to avoid extra overhead.
         self.instrument_hooks.lib.callgrind_start_instrumentation()
         try:
             out = __codspeed_root_frame__(*args, **kwargs)
         finally:
             self.instrument_hooks.lib.callgrind_stop_instrumentation()
+            self.instrument_hooks.stop_benchmark()
             self.instrument_hooks.set_executed_benchmark(uri)
             if pedantic_options.teardown is not None:
                 pedantic_options.teardown(*args, **kwargs)
@@ -140,5 +156,5 @@ class ValgrindInstrument(Instrument):
     def get_result_dict(self) -> dict[str, Any]:
         return {
             "instrument": {"type": self.instrument},
-            # bench results will be dumped by valgrind
+            # bench results will be dumped by the runner
         }

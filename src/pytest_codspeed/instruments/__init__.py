@@ -21,7 +21,7 @@ class Instrument(metaclass=ABCMeta):
     instrument: ClassVar[str]
 
     @abstractmethod
-    def __init__(self, config: CodSpeedConfig): ...
+    def __init__(self, config: CodSpeedConfig, mode: MeasurementMode): ...
 
     @abstractmethod
     def get_instrument_config_str_and_warns(self) -> tuple[str, list[str]]: ...
@@ -57,6 +57,7 @@ class Instrument(metaclass=ABCMeta):
 
 class MeasurementMode(str, Enum):
     Simulation = "simulation"
+    Memory = "memory"
     WallTime = "walltime"
 
     @classmethod
@@ -68,12 +69,12 @@ class MeasurementMode(str, Enum):
 
 
 def get_instrument_from_mode(mode: MeasurementMode) -> type[Instrument]:
-    from pytest_codspeed.instruments.valgrind import (
-        ValgrindInstrument,
+    from pytest_codspeed.instruments.analysis import (
+        AnalysisInstrument,
     )
     from pytest_codspeed.instruments.walltime import WallTimeInstrument
 
-    if mode == MeasurementMode.Simulation:
-        return ValgrindInstrument
+    if mode in (MeasurementMode.Simulation, MeasurementMode.Memory):
+        return AnalysisInstrument
     else:
         return WallTimeInstrument

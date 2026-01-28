@@ -112,8 +112,11 @@ def pytest_configure(config: pytest.Config):
     )
 
     if os.environ.get("CODSPEED_ENV") is not None:
-        if os.environ.get("CODSPEED_RUNNER_MODE") == "walltime":
+        runner_mode = os.environ.get("CODSPEED_RUNNER_MODE")
+        if runner_mode == "walltime":
             default_mode = MeasurementMode.WallTime.value
+        elif runner_mode == "memory":
+            default_mode = MeasurementMode.Memory.value
         else:
             default_mode = MeasurementMode.Simulation.value
     else:
@@ -142,7 +145,7 @@ def pytest_configure(config: pytest.Config):
         disabled_plugins=tuple(disabled_plugins),
         is_codspeed_enabled=is_codspeed_enabled,
         mode=mode,
-        instrument=instrument(codspeed_config),
+        instrument=instrument(codspeed_config, mode),
         config=codspeed_config,
         profile_folder=Path(profile_folder) if profile_folder else None,
     )

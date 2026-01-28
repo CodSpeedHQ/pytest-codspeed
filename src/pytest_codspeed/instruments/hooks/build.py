@@ -34,6 +34,8 @@ uint64_t instrument_hooks_current_timestamp(void);
 
 void callgrind_start_instrumentation();
 void callgrind_stop_instrumentation();
+
+void instrument_hooks_set_feature(uint64_t feature, bool enabled);
 """)
 
 ffibuilder.set_source(

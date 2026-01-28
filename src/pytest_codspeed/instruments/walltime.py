@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from pytest import Session
 
     from pytest_codspeed.config import PedanticOptions
-    from pytest_codspeed.instruments import P, T
+    from pytest_codspeed.instruments import MeasurementMode, P, T
     from pytest_codspeed.plugin import BenchmarkMarkerOptions, CodSpeedConfig
 
 DEFAULT_WARMUP_TIME_NS = 1_000_000_000
@@ -159,7 +159,7 @@ class WallTimeInstrument(Instrument):
     instrument = "walltime"
     instrument_hooks: InstrumentHooks | None
 
-    def __init__(self, config: CodSpeedConfig) -> None:
+    def __init__(self, config: CodSpeedConfig, _mode: MeasurementMode) -> None:
         try:
             self.instrument_hooks = InstrumentHooks()
             self.instrument_hooks.set_integration("pytest-codspeed", __semver_version__)

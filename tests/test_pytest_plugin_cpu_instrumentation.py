@@ -76,7 +76,7 @@ def test_perf_maps_generation(pytester: pytest.Pytester, codspeed_env) -> None:
     with open(perf_filepath) as perf_file:
         lines = perf_file.readlines()
         assert any(
-            "py::ValgrindInstrument.measure.<locals>.__codspeed_root_frame__" in line
+            "py::AnalysisInstrument.measure.<locals>.__codspeed_root_frame__" in line
             for line in lines
         ), "No root frame found in perf map"
         assert any("py::test_some_addition_marked" in line for line in lines), (
@@ -135,8 +135,8 @@ def test_valgrind_pedantic_warning(pytester: pytest.Pytester) -> None:
     result = run_pytest_codspeed_with_mode(pytester, MeasurementMode.Simulation)
     result.stdout.fnmatch_lines(
         [
-            "*UserWarning: Valgrind instrument ignores rounds and iterations settings "
-            "in pedantic mode*"
+            "*UserWarning: Simulation instrument ignores rounds and iterations settings"
+            " in pedantic mode*"
         ]
     )
     result.assert_outcomes(passed=1)
