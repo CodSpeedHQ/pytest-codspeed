@@ -19,10 +19,10 @@ jobs:
     strategy:
       matrix:
         shard: [1, 2, 3, 4]
-        mode: ["instrumentation", "walltime"]
+        mode: ["simulation", "walltime", "memory"]
 
     name: "Run ${{ matrix.mode }} benchmarks (Shard #${{ matrix.shard }})"
-    runs-on: ${{ matrix.mode == 'instrumentation' && 'ubuntu-24.04' || 'codspeed-macro' }}
+    runs-on: ${{ matrix.mode == 'walltime' && 'codspeed-macro' || 'ubuntu-24.04' }}
     steps:
       - uses: actions/checkout@v5
         with:
