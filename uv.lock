@@ -1,6 +1,27 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.9"
+
+[manifest]
+members = [
+    "asv-codspeed",
+    "pytest-codspeed",
+]
+
+[[package]]
+name = "asv-codspeed"
+version = "0.1.0"
+source = { editable = "asv-codspeed" }
+dependencies = [
+    { name = "pytest-codspeed" },
+    { name = "rich" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "pytest-codspeed", editable = "." },
+    { name = "rich", specifier = ">=13.8.1" },
+]
 
 [[package]]
 name = "cffi"
@@ -376,6 +397,7 @@ compat = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "asv-codspeed" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-codspeed" },
@@ -397,6 +419,7 @@ provides-extras = ["compat"]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "asv-codspeed", editable = "asv-codspeed" },
     { name = "mypy", specifier = "~=1.18.2" },
     { name = "pytest", specifier = "~=7.0" },
     { name = "pytest-codspeed", editable = "." },

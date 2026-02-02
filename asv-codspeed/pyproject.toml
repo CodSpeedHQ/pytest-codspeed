@@ -1,0 +1,29 @@
+[project]
+name = "asv-codspeed"
+version = "0.1.0"
+description = "Run ASV (airspeed velocity) benchmarks with CodSpeed instrumentation"
+license = "MIT"
+requires-python = ">=3.9"
+authors = [{ name = "Arthur Pastel", email = "arthur@codspeed.io" }]
+keywords = ["codspeed", "benchmark", "performance", "asv", "airspeed-velocity"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Testing",
+    "Topic :: System :: Benchmark",
+]
+dependencies = [
+    "pytest-codspeed>=4.2.0",
+    "rich>=13.8.1",
+]
+
+[project.scripts]
+asv-codspeed = "asv_codspeed.__main__:main"
+
+[build-system]
+requires = ["setuptools >= 61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]

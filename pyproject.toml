@@ -47,14 +47,19 @@ compat = [
 [tool.uv]
 # Python builds change with uv versions, and we are quite susceptible to that.
 # We pin uv to to make sure reproducibility is maintained for any contributor.
-required-version = "0.9.5"
+required-version = ">=0.9.5"
+
+[tool.uv.workspace]
+members = [".", "asv-codspeed"]
 
 [tool.uv.sources]
 pytest-codspeed = { workspace = true }
+asv-codspeed = { workspace = true }
 
 [dependency-groups]
 dev = [
     "pytest-codspeed",
+    "asv-codspeed",
     "mypy ~= 1.18.2",
     "ruff ~= 0.11.12",
     "pytest ~= 7.0",
@@ -127,7 +132,7 @@ force_grid_wrap = 0
 float_to_top = true
 
 [tool.pytest.ini_options]
-addopts = "--ignore=tests/benchmarks --ignore=tests/examples --ignore=tests/benchmarks/TheAlgorithms"
+addopts = "--ignore=tests/benchmarks --ignore=tests/examples --ignore=tests/benchmarks/TheAlgorithms --ignore=asv-codspeed"
 filterwarnings = ["ignore::DeprecationWarning:pytest_benchmark.utils.*:"]
 pythonpath = ["tests/benchmarks/TheAlgorithms", "./scripts"]
 
