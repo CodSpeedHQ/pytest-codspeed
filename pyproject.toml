@@ -25,11 +25,9 @@ dev = [
 
 [tool.mypy]
 python_version = "3.12"
-exclude = ["pytest-codspeed/tests/benchmarks/TheAlgorithms"]
 
 [tool.ruff]
 target-version = "py37"
-extend-exclude = ["pytest-codspeed/tests/benchmarks/TheAlgorithms"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "C", "TCH", "FA", "UP"]
