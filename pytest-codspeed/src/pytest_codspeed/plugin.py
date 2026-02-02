@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import dataclasses
 import functools
 import gc
 import json
@@ -13,12 +14,13 @@ from typing import TYPE_CHECKING, cast
 import pytest
 from _pytest.fixtures import FixtureManager
 
-from pytest_codspeed.config import (
+from codspeed.config import (
     BenchmarkMarkerOptions,
     CodSpeedConfig,
     PedanticOptions,
 )
-from pytest_codspeed.instruments import MeasurementMode, get_instrument_from_mode
+from codspeed.instruments import MeasurementMode, get_instrument_from_mode
+
 from pytest_codspeed.utils import (
     BEFORE_PYTEST_8_1_1,
     IS_PYTEST_BENCHMARK_INSTALLED,
@@ -27,15 +29,55 @@ from pytest_codspeed.utils import (
     get_git_relative_uri_and_name,
 )
 
-from . import __version__
+from . import __semver_version__, __version__
 
 if TYPE_CHECKING:
     from typing import Any, Callable, ParamSpec, TypeVar
 
-    from pytest_codspeed.instruments import Instrument
+    from codspeed.instruments import Instrument
 
     T = TypeVar("T")
     P = ParamSpec("P")
+
+
+def _marker_options_from_pytest_item(item: pytest.Item) -> BenchmarkMarkerOptions:
+    """Extract BenchmarkMarkerOptions from a pytest item's markers."""
+    marker = item.get_closest_marker(
+        "codspeed_benchmark"
+    ) or item.get_closest_marker("benchmark")
+    if marker is None:
+        return BenchmarkMarkerOptions()
+    if len(marker.args) > 0:
+        raise ValueError(
+            "Positional arguments are not allowed in the benchmark marker"
+        )
+    kwargs = marker.kwargs
+
+    unknown_kwargs = set(kwargs.keys()) - {
+        f.name for f in dataclasses.fields(BenchmarkMarkerOptions)
+    }
+    if unknown_kwargs:
+        raise ValueError(
+            "Unknown kwargs passed to benchmark marker: "
+            + ", ".join(sorted(unknown_kwargs))
+        )
+
+    return BenchmarkMarkerOptions(**kwargs)
+
+
+def _codspeed_config_from_pytest(config: pytest.Config) -> CodSpeedConfig:
+    """Build CodSpeedConfig from pytest command-line options."""
+    warmup_time = config.getoption("--codspeed-warmup-time", None)
+    warmup_time_ns = (
+        int(warmup_time * 1_000_000_000) if warmup_time is not None else None
+    )
+    max_time = config.getoption("--codspeed-max-time", None)
+    max_time_ns = int(max_time * 1_000_000_000) if max_time is not None else None
+    return CodSpeedConfig(
+        warmup_time_ns=warmup_time_ns,
+        max_rounds=config.getoption("--codspeed-max-rounds", None),
+        max_time_ns=max_time_ns,
+    )
 
 
 @pytest.hookimpl(trylast=True)
@@ -120,7 +162,7 @@ def pytest_configure(config: pytest.Config):
         default_mode = MeasurementMode.WallTime.value
 
     mode = MeasurementMode(config.getoption("--codspeed-mode", None) or default_mode)
-    instrument = get_instrument_from_mode(mode)
+    instrument_cls = get_instrument_from_mode(mode)
     disabled_plugins: list[str] = []
     if is_codspeed_enabled:
         if IS_PYTEST_BENCHMARK_INSTALLED:
@@ -136,13 +178,17 @@ def pytest_configure(config: pytest.Config):
 
     profile_folder = os.environ.get("CODSPEED_PROFILE_FOLDER")
 
-    codspeed_config = CodSpeedConfig.from_pytest_config(config)
+    codspeed_config = _codspeed_config_from_pytest(config)
 
     plugin = CodSpeedPlugin(
         disabled_plugins=tuple(disabled_plugins),
         is_codspeed_enabled=is_codspeed_enabled,
         mode=mode,
-        instrument=instrument(codspeed_config),
+        instrument=instrument_cls(
+            codspeed_config,
+            integration_name="pytest-codspeed",
+            integration_version=__semver_version__,
+        ),
         config=codspeed_config,
         profile_folder=Path(profile_folder) if profile_folder else None,
     )
@@ -241,7 +287,7 @@ def _measure(
     args: tuple[Any, ...],
     kwargs: dict[str, Any],
 ) -> T:
-    marker_options = BenchmarkMarkerOptions.from_pytest_item(node)
+    marker_options = _marker_options_from_pytest_item(node)
     random.seed(0)
     is_gc_enabled = gc.isenabled()
     if is_gc_enabled:
@@ -292,11 +338,36 @@ def pytest_runtest_protocol(item: pytest.Item, nextitem: pytest.Item | None):
     return None
 
 
+def _report_instrument(instrument: Instrument, session: pytest.Session) -> None:
+    """Handle instrument-specific reporting to the pytest terminal."""
+    from codspeed.instruments.valgrind import ValgrindInstrument
+    from codspeed.instruments.walltime import WallTimeInstrument
+
+    reporter = session.config.pluginmanager.get_plugin("terminalreporter")
+    assert reporter is not None, "terminalreporter not found"
+
+    if isinstance(instrument, WallTimeInstrument):
+        if instrument.benchmarks:
+            instrument.print_benchmark_table()
+        reporter.write_sep(
+            "=",
+            f"{len(instrument.benchmarks)} benchmarked",
+        )
+    elif isinstance(instrument, ValgrindInstrument):
+        count_suffix = (
+            "benchmarked" if instrument.should_measure else "benchmark tested"
+        )
+        reporter.write_sep(
+            "=",
+            f"{instrument.benchmark_count} {count_suffix}",
+        )
+
+
 @pytest.hookimpl()
 def pytest_sessionfinish(session: pytest.Session, exitstatus):
     plugin = get_plugin(session.config)
     if plugin.is_codspeed_enabled:
-        plugin.instrument.report(session)
+        _report_instrument(plugin.instrument, session)
         if plugin.profile_folder:
             result_path = plugin.profile_folder / "results" / f"{os.getpid()}.json"
         else:

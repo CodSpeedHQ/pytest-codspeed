@@ -5,7 +5,7 @@ from pathlib import Path
 
 from setuptools import setup
 
-build_path = Path(__file__).parent / "src/pytest_codspeed/instruments/hooks/build.py"
+build_path = Path(__file__).parent / "src/codspeed/instruments/hooks/build.py"
 
 spec = importlib.util.spec_from_file_location("build", build_path)
 assert spec is not None, "The spec should be initialized"
@@ -24,11 +24,13 @@ IS_EXTENSION_BUILDABLE = system == "Linux" and current_arch in [
 ]
 
 IS_EXTENSION_REQUIRED = (
-    os.environ.get("PYTEST_CODSPEED_FORCE_EXTENSION_BUILD") is not None
+    os.environ.get("CODSPEED_FORCE_EXTENSION_BUILD") is not None
+    or os.environ.get("PYTEST_CODSPEED_FORCE_EXTENSION_BUILD") is not None
 )
 
 SKIP_EXTENSION_BUILD = (
-    os.environ.get("PYTEST_CODSPEED_SKIP_EXTENSION_BUILD") is not None
+    os.environ.get("CODSPEED_SKIP_EXTENSION_BUILD") is not None
+    or os.environ.get("PYTEST_CODSPEED_SKIP_EXTENSION_BUILD") is not None
 )
 
 if SKIP_EXTENSION_BUILD and IS_EXTENSION_REQUIRED:
@@ -49,7 +51,7 @@ print(
 
 setup(
     package_data={
-        "pytest_codspeed": [
+        "codspeed": [
             "instruments/hooks/instrument-hooks/includes/*.h",
             "instruments/hooks/instrument-hooks/dist/*.c",
         ]

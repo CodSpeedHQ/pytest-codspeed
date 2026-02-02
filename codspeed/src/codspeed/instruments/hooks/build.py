@@ -37,12 +37,12 @@ void callgrind_stop_instrumentation();
 """)
 
 ffibuilder.set_source(
-    "pytest_codspeed.instruments.hooks.dist_instrument_hooks",
+    "codspeed.instruments.hooks.dist_instrument_hooks",
     """
     #include "core.h"
     """,
     sources=[
-        "src/pytest_codspeed/instruments/hooks/instrument-hooks/dist/core.c",
+        "src/codspeed/instruments/hooks/instrument-hooks/dist/core.c",
     ],
     include_dirs=[str(includes_dir)],
 )

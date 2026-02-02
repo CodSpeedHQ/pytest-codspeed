@@ -10,33 +10,13 @@ from typing import TYPE_CHECKING, Any
 
 from asv_codspeed.discovery import discover_benchmarks
 
-from pytest_codspeed import __semver_version__ as pytest_codspeed_version
-from pytest_codspeed.instruments import MeasurementMode, get_instrument_from_mode
-from pytest_codspeed.utils import get_git_relative_path
+from codspeed.config import BenchmarkMarkerOptions, CodSpeedConfig
+from codspeed.instruments import MeasurementMode, get_instrument_from_mode
+from codspeed.utils import get_environment_metadata, get_git_relative_path
 
 if TYPE_CHECKING:
     from asv_codspeed.discovery import ASVBenchmark
-    from pytest_codspeed.instruments import Instrument
-
-
-def get_environment_metadata() -> dict[str, dict]:
-    """Report as pytest-codspeed so the CodSpeed platform treats results identically."""
-    import importlib.metadata as importlib_metadata
-    import sysconfig
-
-    return {
-        "creator": {
-            "name": "pytest-codspeed",
-            "version": pytest_codspeed_version,
-            "pid": os.getpid(),
-        },
-        "python": {
-            "sysconfig": sysconfig.get_config_vars(),
-            "dependencies": {
-                d.name: d.version for d in importlib_metadata.distributions()
-            },
-        },
-    }
+    from codspeed.instruments import Instrument
 
 
 def _get_uri(benchmark_name: str, benchmark_dir: Path) -> str:
@@ -81,8 +61,6 @@ def run_benchmarks(
     )
 
     # Build CodSpeed config
-    from pytest_codspeed.config import BenchmarkMarkerOptions, CodSpeedConfig
-
     codspeed_config = CodSpeedConfig(
         warmup_time_ns=(
             int(warmup_time * 1_000_000_000) if warmup_time is not None else None
@@ -91,9 +69,16 @@ def run_benchmarks(
         max_rounds=max_rounds,
     )
 
-    # Create instrument
+    # Create instrument, reporting as "pytest-codspeed" so the CodSpeed platform
+    # treats results identically
+    from codspeed import __semver_version__ as codspeed_version
+
     instrument_cls = get_instrument_from_mode(mode)
-    instrument = instrument_cls(codspeed_config)
+    instrument = instrument_cls(
+        codspeed_config,
+        integration_name="pytest-codspeed",
+        integration_version=codspeed_version,
+    )
     config_str, warns = instrument.get_instrument_config_str_and_warns()
     console.print(f"  {config_str}")
     for w in warns:
@@ -130,7 +115,10 @@ def run_benchmarks(
     else:
         result_path = benchmark_dir / f".codspeed/results_{time() * 1000:.0f}.json"
 
-    data = {**get_environment_metadata(), **instrument.get_result_dict()}
+    data = {
+        **get_environment_metadata("pytest-codspeed", codspeed_version),
+        **instrument.get_result_dict(),
+    }
     result_path.parent.mkdir(parents=True, exist_ok=True)
     result_path.write_text(json.dumps(data, indent=2))
     console.print(f"Results saved to: {result_path}")
@@ -146,10 +134,10 @@ def _report(
     failed: int,
 ) -> None:
     """Print a summary report of benchmark results."""
-    from pytest_codspeed.instruments.walltime import WallTimeInstrument
+    from codspeed.instruments.walltime import WallTimeInstrument
 
     if isinstance(instrument, WallTimeInstrument) and instrument.benchmarks:
-        instrument._print_benchmark_table()
+        instrument.print_benchmark_table()
 
     total = passed + failed
     status = "passed" if failed == 0 else "with failures"

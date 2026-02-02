@@ -8,7 +8,7 @@ import pytest
 
 from asv_codspeed.runner import run_benchmarks
 
-from pytest_codspeed.instruments import MeasurementMode
+from codspeed.instruments import MeasurementMode
 
 
 def test_run_simple_benchmarks_walltime(tmp_benchmarks):

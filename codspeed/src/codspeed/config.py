@@ -9,33 +9,16 @@ T = TypeVar("T")
 if TYPE_CHECKING:
     from typing import Any, Callable
 
-    import pytest
-
 
 @dataclass(frozen=True)
 class CodSpeedConfig:
     """
-    The configuration for the codspeed plugin.
-    Usually created from the command line arguments.
+    The configuration for CodSpeed instrumentation.
     """
 
     warmup_time_ns: int | None = None
     max_time_ns: int | None = None
     max_rounds: int | None = None
-
-    @classmethod
-    def from_pytest_config(cls, config: pytest.Config) -> CodSpeedConfig:
-        warmup_time = config.getoption("--codspeed-warmup-time", None)
-        warmup_time_ns = (
-            int(warmup_time * 1_000_000_000) if warmup_time is not None else None
-        )
-        max_time = config.getoption("--codspeed-max-time", None)
-        max_time_ns = int(max_time * 1_000_000_000) if max_time is not None else None
-        return cls(
-            warmup_time_ns=warmup_time_ns,
-            max_rounds=config.getoption("--codspeed-max-rounds", None),
-            max_time_ns=max_time_ns,
-        )
 
 
 @dataclass(frozen=True)
@@ -57,30 +40,6 @@ class BenchmarkMarkerOptions:
     The maximum number of rounds to run the benchmark for.
     Takes precedence over max_time. Only available in walltime mode.
     """
-
-    @classmethod
-    def from_pytest_item(cls, item: pytest.Item) -> BenchmarkMarkerOptions:
-        marker = item.get_closest_marker(
-            "codspeed_benchmark"
-        ) or item.get_closest_marker("benchmark")
-        if marker is None:
-            return cls()
-        if len(marker.args) > 0:
-            raise ValueError(
-                "Positional arguments are not allowed in the benchmark marker"
-            )
-        kwargs = marker.kwargs
-
-        unknown_kwargs = set(kwargs.keys()) - {
-            field.name for field in dataclasses.fields(cls)
-        }
-        if unknown_kwargs:
-            raise ValueError(
-                "Unknown kwargs passed to benchmark marker: "
-                + ", ".join(sorted(unknown_kwargs))
-            )
-
-        return cls(**kwargs)
 
 
 @dataclass(frozen=True)

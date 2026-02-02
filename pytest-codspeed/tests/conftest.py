@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from pytest_codspeed.instruments import MeasurementMode
+from codspeed.instruments import MeasurementMode
 from pytest_codspeed.utils import IS_PYTEST_BENCHMARK_INSTALLED
 
 if TYPE_CHECKING:

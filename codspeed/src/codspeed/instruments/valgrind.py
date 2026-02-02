@@ -4,30 +4,34 @@ import os
 import warnings
 from typing import TYPE_CHECKING
 
-from pytest_codspeed import __semver_version__
-from pytest_codspeed.instruments import Instrument
-from pytest_codspeed.instruments.hooks import InstrumentHooks
-from pytest_codspeed.utils import SUPPORTS_PERF_TRAMPOLINE
+from codspeed.instruments import Instrument
+from codspeed.instruments.hooks import InstrumentHooks
+from codspeed.utils import SUPPORTS_PERF_TRAMPOLINE
 
 if TYPE_CHECKING:
     from typing import Any, Callable
 
-    from pytest import Session
-
-    from pytest_codspeed.config import PedanticOptions
-    from pytest_codspeed.instruments import P, T
-    from pytest_codspeed.plugin import BenchmarkMarkerOptions, CodSpeedConfig
+    from codspeed.config import CodSpeedConfig, PedanticOptions
+    from codspeed.instruments import P, T
+    from codspeed.config import BenchmarkMarkerOptions
 
 
 class ValgrindInstrument(Instrument):
     instrument = "valgrind"
     instrument_hooks: InstrumentHooks | None
 
-    def __init__(self, config: CodSpeedConfig) -> None:
+    def __init__(
+        self,
+        config: CodSpeedConfig,
+        integration_name: str = "pytest-codspeed",
+        integration_version: str = "0.0.0",
+    ) -> None:
         self.benchmark_count = 0
         try:
             self.instrument_hooks = InstrumentHooks()
-            self.instrument_hooks.set_integration("pytest-codspeed", __semver_version__)
+            self.instrument_hooks.set_integration(
+                integration_name, integration_version
+            )
         except RuntimeError as e:
             if os.environ.get("CODSPEED_ENV") is not None:
                 raise Exception(
@@ -127,15 +131,6 @@ class ValgrindInstrument(Instrument):
                 pedantic_options.teardown(*args, **kwargs)
 
         return out
-
-    def report(self, session: Session) -> None:
-        reporter = session.config.pluginmanager.get_plugin("terminalreporter")
-        assert reporter is not None, "terminalreporter not found"
-        count_suffix = "benchmarked" if self.should_measure else "benchmark tested"
-        reporter.write_sep(
-            "=",
-            f"{self.benchmark_count} {count_suffix}",
-        )
 
     def get_result_dict(self) -> dict[str, Any]:
         return {

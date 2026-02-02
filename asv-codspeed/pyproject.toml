@@ -14,7 +14,7 @@ classifiers = [
     "Topic :: System :: Benchmark",
 ]
 dependencies = [
-    "pytest-codspeed>=4.2.0",
+    "codspeed>=0.1.0",
     "rich>=13.8.1",
 ]
 

@@ -1,6 +1,6 @@
 [submodule "tests/benchmarks/TheAlgorithms"]
-	path = tests/benchmarks/TheAlgorithms
+	path = pytest-codspeed/tests/benchmarks/TheAlgorithms
 	url = git@github.com:TheAlgorithms/Python.git
 [submodule "src/pytest_codspeed/instruments/hooks/instrument-hooks"]
-	path = src/pytest_codspeed/instruments/hooks/instrument-hooks
+	path = codspeed/src/codspeed/instruments/hooks/instrument-hooks
 	url = https://github.com/CodSpeedHQ/instrument-hooks

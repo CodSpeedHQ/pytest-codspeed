@@ -1,39 +1,19 @@
 from __future__ import annotations
 
 import importlib.util
-import os
-import sys
-import sysconfig
 from pathlib import Path
 
 import pytest
 
-from pytest_codspeed import __semver_version__
+from codspeed.utils import get_environment_metadata as _get_environment_metadata
+from codspeed.utils import get_git_relative_path
 
-if sys.version_info < (3, 10):
-    import importlib_metadata as importlib_metadata
-else:
-    import importlib.metadata as importlib_metadata
+from pytest_codspeed import __semver_version__
 
 
 IS_PYTEST_BENCHMARK_INSTALLED = importlib.util.find_spec("pytest_benchmark") is not None
 IS_PYTEST_SPEED_INSTALLED = importlib.util.find_spec("pytest_speed") is not None
 BEFORE_PYTEST_8_1_1 = pytest.version_tuple < (8, 1, 1)
-SUPPORTS_PERF_TRAMPOLINE = sysconfig.get_config_var("PY_HAVE_PERF_TRAMPOLINE") == 1
-
-
-def get_git_relative_path(abs_path: Path) -> Path:
-    """Get the path relative to the git root directory. If the path is not
-    inside a git repository, the original path itself is returned.
-    """
-    git_path = Path(abs_path).resolve()
-    while (
-        git_path != git_path.parent
-    ):  # stops at root since parent of root is root itself
-        if (git_path / ".git").exists():
-            return abs_path.resolve().relative_to(git_path)
-        git_path = git_path.parent
-    return abs_path
 
 
 def get_git_relative_uri_and_name(nodeid: str, pytest_rootdir: Path) -> tuple[str, str]:
@@ -57,16 +37,4 @@ def get_git_relative_uri_and_name(nodeid: str, pytest_rootdir: Path) -> tuple[st
 
 
 def get_environment_metadata() -> dict[str, dict]:
-    return {
-        "creator": {
-            "name": "pytest-codspeed",
-            "version": __semver_version__,
-            "pid": os.getpid(),
-        },
-        "python": {
-            "sysconfig": sysconfig.get_config_vars(),
-            "dependencies": {
-                d.name: d.version for d in importlib_metadata.distributions()
-            },
-        },
-    }
+    return _get_environment_metadata("pytest-codspeed", __semver_version__)

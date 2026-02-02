@@ -11,13 +11,13 @@ env:
   SHARDS: 4
 
 jobs:
-  benchmarks:
+  pytest-benchmarks:
     strategy:
       matrix:
         shard: [1, 2, 3, 4]
         mode: ["instrumentation", "walltime"]
 
-    name: "Run ${{ matrix.mode }} benchmarks (Shard #${{ matrix.shard }})"
+    name: "pytest ${{ matrix.mode }} benchmarks (Shard #${{ matrix.shard }})"
     runs-on: ${{ matrix.mode == 'instrumentation' && 'ubuntu-24.04' || 'codspeed-macro' }}
     steps:
       - uses: actions/checkout@v5
@@ -37,7 +37,35 @@ jobs:
         uses: CodSpeedHQ/action@main
         with:
           mode: ${{ matrix.mode }}
-          run: uv run pytest tests/benchmarks/ --codspeed --test-group=${{ matrix.shard }} --test-group-count=${{ env.SHARDS }}
+          run: uv run pytest pytest-codspeed/tests/benchmarks/ --codspeed --test-group=${{ matrix.shard }} --test-group-count=${{ env.SHARDS }}
+          token: ${{ secrets.CODSPEED_TOKEN }}
+
+  asv-benchmarks:
+    strategy:
+      matrix:
+        mode: ["instrumentation", "walltime"]
+
+    name: "asv ${{ matrix.mode }} benchmarks"
+    runs-on: ${{ matrix.mode == 'instrumentation' && 'ubuntu-24.04' || 'codspeed-macro' }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: "recursive"
+      - uses: astral-sh/setup-uv@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install valgrind -y
+          uv sync --dev
+          sudo apt-get remove valgrind -y
+      - name: Run ASV benchmarks
+        uses: CodSpeedHQ/action@main
+        with:
+          mode: ${{ matrix.mode }}
+          run: uv run asv-codspeed run asv-codspeed/tests/sample_benchmarks
           token: ${{ secrets.CODSPEED_TOKEN }}
 
   all-checks:
@@ -45,4 +73,5 @@ jobs:
     steps:
       - run: echo "All CI checks passed."
     needs:
-      - benchmarks
+      - pytest-benchmarks
+      - asv-benchmarks

@@ -9,7 +9,7 @@ from conftest import (
     skip_without_valgrind,
 )
 
-from pytest_codspeed.instruments import MeasurementMode
+from codspeed.instruments import MeasurementMode
 
 
 @skip_without_valgrind

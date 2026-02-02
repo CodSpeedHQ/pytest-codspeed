@@ -1,0 +1,90 @@
+[project.urls]
+Homepage = "https://codspeed.io/"
+Documentation = "https://codspeed.io/docs/reference/pytest-codspeed"
+Source = "https://github.com/CodSpeedHQ/pytest-codspeed"
+
+[project]
+name = "pytest-codspeed"
+dynamic = ["version"]
+description = "Pytest plugin to create CodSpeed benchmarks"
+license = "MIT"
+requires-python = ">=3.9"
+authors = [{ name = "Arthur Pastel", email = "arthur@codspeed.io" }]
+keywords = ["codspeed", "benchmark", "performance", "pytest"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Framework :: Pytest",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development :: Testing",
+    "Topic :: System :: Benchmark",
+    "Topic :: Utilities",
+    "Typing :: Typed",
+]
+dependencies = [
+    "codspeed>=0.1.0",
+    "pytest>=3.8",
+]
+
+[project.optional-dependencies]
+compat = [
+    "pytest-benchmark ~= 5.0.0",
+    "pytest-xdist ~= 3.6.1",
+    # "pytest-speed>=0.3.5",
+]
+
+[project.entry-points]
+pytest11 = { codspeed = "pytest_codspeed.plugin" }
+
+[build-system]
+requires = ["setuptools >= 61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.dynamic]
+version = { attr = "pytest_codspeed.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.bumpver]
+current_version = "4.2.0"
+version_pattern = "MAJOR.MINOR.PATCH[-TAG[NUM]]"
+commit_message = "Release v{new_version}"
+tag_message = "Release v{new_version}"
+tag_scope = "default"
+allow_dirty = false
+pre_commit_hook = "../scripts/pre-release.sh"
+post_commit_hook = "../scripts/post-release.sh"
+commit = true
+tag = false
+push = false
+
+[tool.bumpver.file_patterns]
+"pyproject.toml" = ['current_version = "{version}"']
+"src/pytest_codspeed/__init__.py" = [
+    '__version__ = "{pep440_version}"',
+    '__semver_version__ = "{version}"',
+]
+
+[tool.cibuildwheel]
+build = "cp*manylinux*"
+test-extras = ["build", "test", "compat"]
+test-command = "pytest -v --ignore={project}/tests/benchmarks {project}/tests"
+
+[tool.cibuildwheel.linux]
+environment = { PYTEST_CODSPEED_FORCE_EXTENSION_BUILD = "1", PYTEST_CODSPEED_FORCE_VALGRIND_TESTS = "1" }
+manylinux-x86_64-image = "manylinux_2_28"
+manylinux-aarch64-image = "manylinux_2_28"
+before-all = "yum -y install valgrind-devel"
+
+[tool.pytest.ini_options]
+addopts = "--ignore=tests/benchmarks --ignore=tests/examples --ignore=tests/benchmarks/TheAlgorithms"
+filterwarnings = ["ignore::DeprecationWarning:pytest_benchmark.utils.*:"]
+pythonpath = ["tests/benchmarks/TheAlgorithms", "../scripts"]

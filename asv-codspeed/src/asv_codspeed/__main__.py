@@ -7,7 +7,7 @@ from pathlib import Path
 from asv_codspeed import __version__
 from asv_codspeed.runner import run_benchmarks
 
-from pytest_codspeed.instruments import MeasurementMode
+from codspeed.instruments import MeasurementMode
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -5,7 +5,7 @@ import sys
 import warnings
 from typing import TYPE_CHECKING
 
-from pytest_codspeed.utils import SUPPORTS_PERF_TRAMPOLINE
+from codspeed.utils import SUPPORTS_PERF_TRAMPOLINE
 
 if TYPE_CHECKING:
     from .dist_instrument_hooks import InstrumentHooksPointer, LibType

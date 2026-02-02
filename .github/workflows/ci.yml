@@ -73,8 +73,10 @@ jobs:
       - if: matrix.config == 'pytest-benchmark-5'
         name: Install pytest-benchmark 5.0.0
         run: uv pip install pytest-benchmark~=5.0.0
-      - name: Run tests
-        run: uv run --no-sync pytest -vs
+      - name: Run pytest-codspeed tests
+        run: uv run --no-sync pytest pytest-codspeed/tests/ --ignore=pytest-codspeed/tests/benchmarks --ignore=pytest-codspeed/tests/examples -vs
+      - name: Run asv-codspeed tests
+        run: uv run --no-sync pytest asv-codspeed/tests/ -vs
 
   all-checks:
     runs-on: ubuntu-latest

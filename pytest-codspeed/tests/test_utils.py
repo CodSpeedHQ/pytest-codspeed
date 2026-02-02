@@ -2,7 +2,8 @@ import tempfile
 from contextlib import contextmanager
 from pathlib import Path
 
-from pytest_codspeed.utils import get_git_relative_path, get_git_relative_uri_and_name
+from codspeed.utils import get_git_relative_path
+from pytest_codspeed.utils import get_git_relative_uri_and_name
 
 
 @contextmanager
