@@ -37,7 +37,7 @@ jobs:
         uses: CodSpeedHQ/action@main
         with:
           mode: ${{ matrix.mode }}
-          run: uv run pytest pytest-codspeed/tests/benchmarks/ --codspeed --test-group=${{ matrix.shard }} --test-group-count=${{ env.SHARDS }}
+          run: uv run pytest pytest-codspeed/tests/benchmarks/ --codspeed --ignore=pytest-codspeed/tests/benchmarks/TheAlgorithms --test-group=${{ matrix.shard }} --test-group-count=${{ env.SHARDS }}
           token: ${{ secrets.CODSPEED_TOKEN }}
 
   asv-benchmarks:
