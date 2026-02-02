@@ -1,9 +1,6 @@
 """Tests for ASV benchmark discovery."""
+
 from __future__ import annotations
-
-from pathlib import Path
-
-import pytest
 
 from asv_codspeed.discovery import discover_benchmarks
 

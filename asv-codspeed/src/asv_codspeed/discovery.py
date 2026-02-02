@@ -5,8 +5,11 @@ import importlib.util
 import re
 import sys
 from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Any, Callable
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
+    from typing import Any, Callable
 
 
 # ASV benchmark name patterns
@@ -84,9 +87,7 @@ def _import_module_from_path(module_name: str, file_path: Path):
     return module
 
 
-def _discover_from_module(
-    module, module_name: str
-) -> list[ASVBenchmark]:
+def _discover_from_module(module, module_name: str) -> list[ASVBenchmark]:
     """Discover benchmarks from a single module."""
     benchmarks = []
 
@@ -207,8 +208,6 @@ def _create_benchmark(
     timeout = getattr(func, "timeout", getattr(source, "timeout", 60.0))
 
     if params:
-        # For now, create one benchmark per param combo
-        benchmarks = []
         param_combos = _expand_params(params)
         if len(param_combos) == 1:
             return ASVBenchmark(

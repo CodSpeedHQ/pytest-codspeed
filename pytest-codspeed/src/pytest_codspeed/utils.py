@@ -7,9 +7,7 @@ import pytest
 
 from codspeed.utils import get_environment_metadata as _get_environment_metadata
 from codspeed.utils import get_git_relative_path
-
 from pytest_codspeed import __semver_version__
-
 
 IS_PYTEST_BENCHMARK_INSTALLED = importlib.util.find_spec("pytest_benchmark") is not None
 IS_PYTEST_SPEED_INSTALLED = importlib.util.find_spec("pytest_speed") is not None

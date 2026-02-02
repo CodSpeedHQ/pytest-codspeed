@@ -1,12 +1,10 @@
 """Tests for the asv-codspeed CLI."""
+
 from __future__ import annotations
 
 import json
 import subprocess
 import sys
-from pathlib import Path
-
-import pytest
 
 
 def test_cli_version():

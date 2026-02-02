@@ -6,17 +6,18 @@ import os
 import random
 from pathlib import Path
 from time import time
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from asv_codspeed.discovery import discover_benchmarks
-
 from codspeed.config import BenchmarkMarkerOptions, CodSpeedConfig
-from codspeed.instruments import MeasurementMode, get_instrument_from_mode
+from codspeed.instruments import get_instrument_from_mode
 from codspeed.utils import get_environment_metadata, get_git_relative_path
 
 if TYPE_CHECKING:
+    from typing import Any
+
     from asv_codspeed.discovery import ASVBenchmark
-    from codspeed.instruments import Instrument
+    from codspeed.instruments import Instrument, MeasurementMode
 
 
 def _get_uri(benchmark_name: str, benchmark_dir: Path) -> str:
@@ -140,8 +141,10 @@ def _report(
         instrument.print_benchmark_table()
 
     total = passed + failed
-    status = "passed" if failed == 0 else "with failures"
-    console.print(f"\n[bold]===== {total} benchmarked ({passed} passed, {failed} failed) =====[/bold]")
+    console.print(
+        f"\n[bold]===== {total} benchmarked "
+        f"({passed} passed, {failed} failed) =====[/bold]"
+    )
 
 
 def _run_single_benchmark(

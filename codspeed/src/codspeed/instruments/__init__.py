@@ -19,7 +19,12 @@ class Instrument(metaclass=ABCMeta):
     instrument: ClassVar[str]
 
     @abstractmethod
-    def __init__(self, config: CodSpeedConfig): ...
+    def __init__(
+        self,
+        config: CodSpeedConfig,
+        integration_name: str = "pytest-codspeed",
+        integration_version: str = "0.0.0",
+    ): ...
 
     @abstractmethod
     def get_instrument_config_str_and_warns(self) -> tuple[str, list[str]]: ...

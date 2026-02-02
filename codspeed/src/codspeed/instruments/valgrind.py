@@ -11,9 +11,8 @@ from codspeed.utils import SUPPORTS_PERF_TRAMPOLINE
 if TYPE_CHECKING:
     from typing import Any, Callable
 
-    from codspeed.config import CodSpeedConfig, PedanticOptions
+    from codspeed.config import BenchmarkMarkerOptions, CodSpeedConfig, PedanticOptions
     from codspeed.instruments import P, T
-    from codspeed.config import BenchmarkMarkerOptions
 
 
 class ValgrindInstrument(Instrument):
@@ -29,9 +28,7 @@ class ValgrindInstrument(Instrument):
         self.benchmark_count = 0
         try:
             self.instrument_hooks = InstrumentHooks()
-            self.instrument_hooks.set_integration(
-                integration_name, integration_version
-            )
+            self.instrument_hooks.set_integration(integration_name, integration_version)
         except RuntimeError as e:
             if os.environ.get("CODSPEED_ENV") is not None:
                 raise Exception(

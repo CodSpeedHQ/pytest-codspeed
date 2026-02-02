@@ -20,7 +20,6 @@ from codspeed.config import (
     PedanticOptions,
 )
 from codspeed.instruments import MeasurementMode, get_instrument_from_mode
-
 from pytest_codspeed.utils import (
     BEFORE_PYTEST_8_1_1,
     IS_PYTEST_BENCHMARK_INSTALLED,
@@ -42,15 +41,13 @@ if TYPE_CHECKING:
 
 def _marker_options_from_pytest_item(item: pytest.Item) -> BenchmarkMarkerOptions:
     """Extract BenchmarkMarkerOptions from a pytest item's markers."""
-    marker = item.get_closest_marker(
-        "codspeed_benchmark"
-    ) or item.get_closest_marker("benchmark")
+    marker = item.get_closest_marker("codspeed_benchmark") or item.get_closest_marker(
+        "benchmark"
+    )
     if marker is None:
         return BenchmarkMarkerOptions()
     if len(marker.args) > 0:
-        raise ValueError(
-            "Positional arguments are not allowed in the benchmark marker"
-        )
+        raise ValueError("Positional arguments are not allowed in the benchmark marker")
     kwargs = marker.kwargs
 
     unknown_kwargs = set(kwargs.keys()) - {

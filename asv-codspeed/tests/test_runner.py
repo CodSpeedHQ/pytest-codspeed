@@ -1,10 +1,8 @@
 """Tests for the ASV benchmark runner."""
+
 from __future__ import annotations
 
 import json
-from pathlib import Path
-
-import pytest
 
 from asv_codspeed.runner import run_benchmarks
 

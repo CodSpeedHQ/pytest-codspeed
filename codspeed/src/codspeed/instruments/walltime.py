@@ -163,9 +163,7 @@ class WallTimeInstrument(Instrument):
     ) -> None:
         try:
             self.instrument_hooks = InstrumentHooks()
-            self.instrument_hooks.set_integration(
-                integration_name, integration_version
-            )
+            self.instrument_hooks.set_integration(integration_name, integration_version)
         except RuntimeError as e:
             if os.environ.get("CODSPEED_ENV") is not None:
                 warnings.warn(
