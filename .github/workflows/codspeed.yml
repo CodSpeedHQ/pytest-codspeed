@@ -33,11 +33,13 @@ jobs:
           sudo apt-get install valgrind -y
           uv sync --dev
           sudo apt-get remove valgrind -y
+      - run: rustup toolchain install stable
       - name: Run benchmarks
         uses: CodSpeedHQ/action@main
         with:
           mode: ${{ matrix.mode }}
           run: uv run pytest tests/benchmarks/ --codspeed --test-group=${{ matrix.shard }} --test-group-count=${{ env.SHARDS }}
+          runner-version: branch:cod-2035-python-in-profiling-cli
           token: ${{ secrets.CODSPEED_TOKEN }}
 
   all-checks:
