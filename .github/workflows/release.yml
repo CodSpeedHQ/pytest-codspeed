@@ -11,7 +11,7 @@ permissions:
   contents: write
 
 jobs:
-  build-wheels:
+  build-codspeed-wheels:
     strategy:
       matrix:
         platform:
@@ -25,19 +25,20 @@ jobs:
       - uses: actions/checkout@v5
         with:
           submodules: true
-      - name: Build wheels
+      - name: Build codspeed wheels
         uses: pypa/cibuildwheel@v3.2.1
         env:
           CIBW_ARCHS: ${{ matrix.platform.arch }}
         with:
+          package-dir: codspeed
           output-dir: wheelhouse
 
       - uses: actions/upload-artifact@v4
         with:
-          name: wheels-${{ matrix.platform.arch }}
+          name: codspeed-wheels-${{ matrix.platform.arch }}
           path: wheelhouse/*.whl
 
-  build-py3-none-any:
+  build-codspeed-py3-none-any:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
@@ -47,17 +48,17 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.14"
-      - name: Build py3-none-any wheel
+      - name: Build codspeed py3-none-any wheel
         env:
-          PYTEST_CODSPEED_SKIP_EXTENSION_BUILD: "1"
-        run: uv build --wheel --out-dir dist/
+          CODSPEED_SKIP_EXTENSION_BUILD: "1"
+        run: uv build --wheel --out-dir dist/ --package codspeed
 
       - uses: actions/upload-artifact@v4
         with:
-          name: wheels-py3-none-any
+          name: codspeed-wheels-py3-none-any
           path: dist/*.whl
 
-  build-sdist:
+  build-pytest-codspeed:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
@@ -67,19 +68,40 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.14"
-      - name: Build the source dist
-        run: uv build --sdist --out-dir dist/
+      - name: Build pytest-codspeed wheel
+        run: uv build --wheel --out-dir dist/ --package pytest-codspeed
+      - name: Build pytest-codspeed sdist
+        run: uv build --sdist --out-dir dist/ --package pytest-codspeed
 
       - uses: actions/upload-artifact@v4
         with:
-          name: sdist
+          name: pytest-codspeed-dist
+          path: dist/*
+
+  build-codspeed-sdist:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: true
+      - uses: astral-sh/setup-uv@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+      - name: Build the codspeed source dist
+        run: uv build --sdist --out-dir dist/ --package codspeed
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: codspeed-sdist
           path: dist/*.tar.gz
 
   publish:
     needs:
-      - build-wheels
-      - build-py3-none-any
-      - build-sdist
+      - build-codspeed-wheels
+      - build-codspeed-py3-none-any
+      - build-codspeed-sdist
+      - build-pytest-codspeed
 
     runs-on: ubuntu-24.04
     steps:

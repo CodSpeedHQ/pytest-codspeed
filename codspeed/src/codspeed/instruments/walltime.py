@@ -13,19 +13,15 @@ from rich.markup import escape
 from rich.table import Table
 from rich.text import Text
 
-from pytest_codspeed import __semver_version__
-from pytest_codspeed.instruments import Instrument
-from pytest_codspeed.instruments.hooks import InstrumentHooks
-from pytest_codspeed.utils import SUPPORTS_PERF_TRAMPOLINE
+from codspeed.instruments import Instrument
+from codspeed.instruments.hooks import InstrumentHooks
+from codspeed.utils import SUPPORTS_PERF_TRAMPOLINE
 
 if TYPE_CHECKING:
     from typing import Any, Callable
 
-    from pytest import Session
-
-    from pytest_codspeed.config import PedanticOptions
-    from pytest_codspeed.instruments import P, T
-    from pytest_codspeed.plugin import BenchmarkMarkerOptions, CodSpeedConfig
+    from codspeed.config import BenchmarkMarkerOptions, CodSpeedConfig, PedanticOptions
+    from codspeed.instruments import P, T
 
 DEFAULT_WARMUP_TIME_NS = 1_000_000_000
 DEFAULT_MAX_TIME_NS = 3_000_000_000
@@ -159,10 +155,15 @@ class WallTimeInstrument(Instrument):
     instrument = "walltime"
     instrument_hooks: InstrumentHooks | None
 
-    def __init__(self, config: CodSpeedConfig) -> None:
+    def __init__(
+        self,
+        config: CodSpeedConfig,
+        integration_name: str = "pytest-codspeed",
+        integration_version: str = "0.0.0",
+    ) -> None:
         try:
             self.instrument_hooks = InstrumentHooks()
-            self.instrument_hooks.set_integration("pytest-codspeed", __semver_version__)
+            self.instrument_hooks.set_integration(integration_name, integration_version)
         except RuntimeError as e:
             if os.environ.get("CODSPEED_ENV") is not None:
                 warnings.warn(
@@ -324,23 +325,7 @@ class WallTimeInstrument(Instrument):
         )
         return out
 
-    def report(self, session: Session) -> None:
-        reporter = session.config.pluginmanager.get_plugin("terminalreporter")
-        assert reporter is not None, "terminalreporter not found"
-
-        if len(self.benchmarks) == 0:
-            reporter.write_sep(
-                "=",
-                f"{len(self.benchmarks)} benchmarked",
-            )
-            return
-        self._print_benchmark_table()
-        reporter.write_sep(
-            "=",
-            f"{len(self.benchmarks)} benchmarked",
-        )
-
-    def _print_benchmark_table(self) -> None:
+    def print_benchmark_table(self) -> None:
         table = Table(title="Benchmark Results")
 
         table.add_column("Benchmark", justify="right", style="cyan", no_wrap=True)
@@ -386,13 +371,13 @@ def format_time(time_ns: float) -> str:
         time_ns: Time in nanoseconds
 
     Returns:
-        Formatted string with appropriate unit (ns, µs, ms, or s)
+        Formatted string with appropriate unit (ns, us, ms, or s)
 
     Examples:
         >>> format_time(123)
         '123ns'
         >>> format_time(1_234)
-        '1.23µs'
+        '1.23us'
         >>> format_time(76_126_625)
         '76.1ms'
         >>> format_time(2_500_000_000)
@@ -403,7 +388,7 @@ def format_time(time_ns: float) -> str:
         return f"{time_ns:.0f}ns"
     elif time_ns < 1_000_000:
         # Less than 1 millisecond - show in microseconds
-        return f"{time_ns / 1_000:.2f}µs"
+        return f"{time_ns / 1_000:.2f}\u00b5s"
     elif time_ns < 1_000_000_000:
         # Less than 1 second - show in milliseconds
         return f"{time_ns / 1_000_000:.1f}ms"

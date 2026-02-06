@@ -2,7 +2,7 @@
 
 import pytest
 
-from pytest_codspeed.instruments.walltime import format_time
+from codspeed.instruments.walltime import format_time
 
 
 @pytest.mark.parametrize(

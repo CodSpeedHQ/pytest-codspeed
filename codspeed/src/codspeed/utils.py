@@ -1,0 +1,45 @@
+from __future__ import annotations
+
+import os
+import sysconfig
+from pathlib import Path
+
+if __import__("sys").version_info < (3, 10):
+    import importlib_metadata as importlib_metadata
+else:
+    import importlib.metadata as importlib_metadata
+
+
+SUPPORTS_PERF_TRAMPOLINE = sysconfig.get_config_var("PY_HAVE_PERF_TRAMPOLINE") == 1
+
+
+def get_git_relative_path(abs_path: Path) -> Path:
+    """Get the path relative to the git root directory. If the path is not
+    inside a git repository, the original path itself is returned.
+    """
+    git_path = Path(abs_path).resolve()
+    while (
+        git_path != git_path.parent
+    ):  # stops at root since parent of root is root itself
+        if (git_path / ".git").exists():
+            return abs_path.resolve().relative_to(git_path)
+        git_path = git_path.parent
+    return abs_path
+
+
+def get_environment_metadata(
+    creator_name: str, creator_version: str
+) -> dict[str, dict]:
+    return {
+        "creator": {
+            "name": creator_name,
+            "version": creator_version,
+            "pid": os.getpid(),
+        },
+        "python": {
+            "sysconfig": sysconfig.get_config_vars(),
+            "dependencies": {
+                d.name: d.version for d in importlib_metadata.distributions()
+            },
+        },
+    }

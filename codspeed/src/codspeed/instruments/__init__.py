@@ -7,11 +7,9 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Any, Callable, ClassVar, TypeVar
 
-    import pytest
     from typing_extensions import ParamSpec
 
-    from pytest_codspeed.config import BenchmarkMarkerOptions, PedanticOptions
-    from pytest_codspeed.plugin import CodSpeedConfig
+    from codspeed.config import BenchmarkMarkerOptions, CodSpeedConfig, PedanticOptions
 
     T = TypeVar("T")
     P = ParamSpec("P")
@@ -21,7 +19,12 @@ class Instrument(metaclass=ABCMeta):
     instrument: ClassVar[str]
 
     @abstractmethod
-    def __init__(self, config: CodSpeedConfig): ...
+    def __init__(
+        self,
+        config: CodSpeedConfig,
+        integration_name: str = "pytest-codspeed",
+        integration_version: str = "0.0.0",
+    ): ...
 
     @abstractmethod
     def get_instrument_config_str_and_warns(self) -> tuple[str, list[str]]: ...
@@ -47,9 +50,6 @@ class Instrument(metaclass=ABCMeta):
     ) -> T: ...
 
     @abstractmethod
-    def report(self, session: pytest.Session) -> None: ...
-
-    @abstractmethod
     def get_result_dict(
         self,
     ) -> dict[str, Any]: ...
@@ -68,10 +68,10 @@ class MeasurementMode(str, Enum):
 
 
 def get_instrument_from_mode(mode: MeasurementMode) -> type[Instrument]:
-    from pytest_codspeed.instruments.valgrind import (
+    from codspeed.instruments.valgrind import (
         ValgrindInstrument,
     )
-    from pytest_codspeed.instruments.walltime import WallTimeInstrument
+    from codspeed.instruments.walltime import WallTimeInstrument
 
     if mode == MeasurementMode.Simulation:
         return ValgrindInstrument

@@ -1,6 +1,40 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.9"
+
+[manifest]
+members = [
+    "asv-codspeed",
+    "codspeed",
+    "pytest-codspeed",
+]
+
+[manifest.dependency-groups]
+dev = [
+    { name = "asv-codspeed", editable = "asv-codspeed" },
+    { name = "codspeed", editable = "codspeed" },
+    { name = "mypy", specifier = "~=1.18.2" },
+    { name = "pytest", specifier = "~=7.0" },
+    { name = "pytest-codspeed", editable = "pytest-codspeed" },
+    { name = "pytest-cov", specifier = "~=4.0.0" },
+    { name = "pytest-test-groups", specifier = ">=1.1.0" },
+    { name = "ruff", specifier = "~=0.11.12" },
+]
+
+[[package]]
+name = "asv-codspeed"
+version = "0.1.0"
+source = { editable = "asv-codspeed" }
+dependencies = [
+    { name = "codspeed" },
+    { name = "rich" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "codspeed", editable = "codspeed" },
+    { name = "rich", specifier = ">=13.8.1" },
+]
 
 [[package]]
 name = "cffi"
@@ -69,6 +103,23 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/e6/c3/21cab7a6154b6a5ea330ae80de386e7665254835b9e98ecc1340b3a7de9a/cffi-1.17.1-cp39-cp39-musllinux_1_1_x86_64.whl", hash = "sha256:c03e868a0b3bc35839ba98e74211ed2b05d2119be4e8a0f224fba9384f1fe02e", size = 460632, upload-time = "2024-09-04T20:45:17.284Z" },
     { url = "https://files.pythonhosted.org/packages/cb/b5/fd9f8b5a84010ca169ee49f4e4ad6f8c05f4e3545b72ee041dbbcb159882/cffi-1.17.1-cp39-cp39-win32.whl", hash = "sha256:e31ae45bc2e29f6b2abd0de1cc3b9d5205aa847cafaecb8af1476a609a2f6eb7", size = 171820, upload-time = "2024-09-04T20:45:18.762Z" },
     { url = "https://files.pythonhosted.org/packages/8c/52/b08750ce0bce45c143e1b5d7357ee8c55341b52bdef4b0f081af1eb248c2/cffi-1.17.1-cp39-cp39-win_amd64.whl", hash = "sha256:d016c76bdd850f3c626af19b0542c9677ba156e4ee4fccfdd7848803533ef662", size = 181290, upload-time = "2024-09-04T20:45:20.226Z" },
+]
+
+[[package]]
+name = "codspeed"
+version = "0.1.0"
+source = { editable = "codspeed" }
+dependencies = [
+    { name = "cffi" },
+    { name = "importlib-metadata", marker = "python_full_version < '3.10'" },
+    { name = "rich" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "cffi", specifier = ">=1.17.1" },
+    { name = "importlib-metadata", marker = "python_full_version < '3.10'", specifier = ">=8.5.0" },
+    { name = "rich", specifier = ">=13.8.1" },
 ]
 
 [[package]]
@@ -360,12 +411,10 @@ wheels = [
 
 [[package]]
 name = "pytest-codspeed"
-source = { editable = "." }
+source = { editable = "pytest-codspeed" }
 dependencies = [
-    { name = "cffi" },
-    { name = "importlib-metadata", marker = "python_full_version < '3.10'" },
+    { name = "codspeed" },
     { name = "pytest" },
-    { name = "rich" },
 ]
 
 [package.optional-dependencies]
@@ -374,36 +423,14 @@ compat = [
     { name = "pytest-xdist" },
 ]
 
-[package.dev-dependencies]
-dev = [
-    { name = "mypy" },
-    { name = "pytest" },
-    { name = "pytest-codspeed" },
-    { name = "pytest-cov" },
-    { name = "pytest-test-groups" },
-    { name = "ruff" },
-]
-
 [package.metadata]
 requires-dist = [
-    { name = "cffi", specifier = ">=1.17.1" },
-    { name = "importlib-metadata", marker = "python_full_version < '3.10'", specifier = ">=8.5.0" },
+    { name = "codspeed", editable = "codspeed" },
     { name = "pytest", specifier = ">=3.8" },
     { name = "pytest-benchmark", marker = "extra == 'compat'", specifier = "~=5.0.0" },
     { name = "pytest-xdist", marker = "extra == 'compat'", specifier = "~=3.6.1" },
-    { name = "rich", specifier = ">=13.8.1" },
 ]
 provides-extras = ["compat"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "mypy", specifier = "~=1.18.2" },
-    { name = "pytest", specifier = "~=7.0" },
-    { name = "pytest-codspeed", editable = "." },
-    { name = "pytest-cov", specifier = "~=4.0.0" },
-    { name = "pytest-test-groups", specifier = ">=1.1.0" },
-    { name = "ruff", specifier = "~=0.11.12" },
-]
 
 [[package]]
 name = "pytest-cov"

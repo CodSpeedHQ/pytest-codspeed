@@ -1,7 +1,7 @@
 import pytest
 from conftest import run_pytest_codspeed_with_mode
 
-from pytest_codspeed.instruments import MeasurementMode
+from codspeed.instruments import MeasurementMode
 
 
 def test_bench_enabled_header_with_perf(

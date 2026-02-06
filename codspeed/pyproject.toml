@@ -1,0 +1,47 @@
+[project]
+name = "codspeed"
+version = "0.1.0"
+description = "Core CodSpeed instrumentation library with C bindings"
+license = "MIT"
+requires-python = ">=3.9"
+authors = [{ name = "Arthur Pastel", email = "arthur@codspeed.io" }]
+keywords = ["codspeed", "benchmark", "performance", "instrumentation"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development :: Testing",
+    "Topic :: System :: Benchmark",
+    "Typing :: Typed",
+]
+dependencies = [
+    "cffi >= 1.17.1",
+    "rich>=13.8.1",
+    "importlib-metadata>=8.5.0; python_version < '3.10'",
+]
+
+[build-system]
+requires = ["setuptools >= 61", "cffi >= 1.17.1"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.dynamic]
+version = { attr = "codspeed.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.cibuildwheel]
+build = "cp*manylinux*"
+test-command = "python -c \"from codspeed.instruments.hooks.dist_instrument_hooks import lib; print('OK')\""
+
+[tool.cibuildwheel.linux]
+environment = { CODSPEED_FORCE_EXTENSION_BUILD = "1" }
+manylinux-x86_64-image = "manylinux_2_28"
+manylinux-aarch64-image = "manylinux_2_28"
+before-all = "yum -y install valgrind-devel"
