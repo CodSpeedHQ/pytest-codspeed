@@ -19,6 +19,7 @@ from pytest_codspeed.instruments.hooks import InstrumentHooks
 from pytest_codspeed.utils import SUPPORTS_PERF_TRAMPOLINE
 
 if TYPE_CHECKING:
+    from collections.abc import Awaitable, Iterator
     from typing import Any, Callable
 
     from pytest import Session
@@ -182,31 +183,22 @@ class WallTimeInstrument(Instrument):
         )
         return config_str, []
 
-    def measure(
+    def _measure_iter(
         self,
         marker_options: BenchmarkMarkerOptions,
         name: str,
         uri: str,
-        fn: Callable[P, T],
-        *args: P.args,
-        **kwargs: P.kwargs,
-    ) -> T:
+    ) -> Iterator[None]:
         benchmark_config = BenchmarkConfig.from_codspeed_config_and_marker_data(
             self.config, marker_options
         )
-
-        def __codspeed_root_frame__() -> T:
-            return fn(*args, **kwargs)
-
-        # Compute the actual result of the function
-        out = __codspeed_root_frame__()
 
         # Warmup
         times_per_round_ns: list[float] = []
         warmup_start = start = perf_counter_ns()
         while True:
             start = perf_counter_ns()
-            __codspeed_root_frame__()
+            yield
             end = perf_counter_ns()
             times_per_round_ns.append(end - start)
             if end - warmup_start > benchmark_config.warmup_time_ns:
@@ -236,7 +228,7 @@ class WallTimeInstrument(Instrument):
         for _ in range(rounds):
             start = perf_counter_ns()
             for _ in iter_range:
-                __codspeed_root_frame__()
+                yield
             end = perf_counter_ns()
             times_per_round_ns.append(end - start)
 
@@ -260,29 +252,64 @@ class WallTimeInstrument(Instrument):
         self.benchmarks.append(
             Benchmark(name=name, uri=uri, config=benchmark_config, stats=stats)
         )
-        return out
 
-    def measure_pedantic(  # noqa: C901
+    def measure(
         self,
         marker_options: BenchmarkMarkerOptions,
-        pedantic_options: PedanticOptions[T],
         name: str,
         uri: str,
+        fn: Callable[P, T],
+        *args: P.args,
+        **kwargs: P.kwargs,
     ) -> T:
+        def __codspeed_root_frame__() -> T:
+            return fn(*args, **kwargs)
+
+        # Compute the actual result of the function
+        out = __codspeed_root_frame__()
+
+        for _ in self._measure_iter(marker_options, name, uri):
+            __codspeed_root_frame__()
+
+        return out
+
+    async def measure_async(
+        self,
+        marker_options: BenchmarkMarkerOptions,
+        name: str,
+        uri: str,
+        fn: Callable[P, Awaitable[T]],
+        *args: P.args,
+        **kwargs: P.kwargs,
+    ) -> T:
+        async def __codspeed_root_frame__() -> T:
+            return await fn(*args, **kwargs)
+
+        # Compute the actual result of the function
+        out = await __codspeed_root_frame__()
+
+        for _ in self._measure_iter(marker_options, name, uri):
+            await __codspeed_root_frame__()
+
+        return out
+
+    def _measure_pedantic_iter(  # noqa: C901
+        self,
+        marker_options: BenchmarkMarkerOptions,
+        pedantic_options: PedanticOptions[Any],
+        name: str,
+        uri: str,
+    ) -> Iterator[tuple[range, tuple[Any, ...], dict[str, Any]]]:
         benchmark_config = BenchmarkConfig.from_codspeed_config_and_marker_data(
             self.config, marker_options
         )
-
-        def __codspeed_root_frame__(*args, **kwargs) -> T:
-            return pedantic_options.target(*args, **kwargs)
 
         iter_range = range(pedantic_options.iterations)
 
         # Warmup
         for _ in range(pedantic_options.warmup_rounds):
             args, kwargs = pedantic_options.setup_and_get_args_kwargs()
-            for _ in iter_range:
-                __codspeed_root_frame__(*args, **kwargs)
+            yield iter_range, args, kwargs
             if pedantic_options.teardown is not None:
                 pedantic_options.teardown(*args, **kwargs)
 
@@ -294,8 +321,7 @@ class WallTimeInstrument(Instrument):
         for _ in range(pedantic_options.rounds):
             start = perf_counter_ns()
             args, kwargs = pedantic_options.setup_and_get_args_kwargs()
-            for _ in iter_range:
-                __codspeed_root_frame__(*args, **kwargs)
+            yield iter_range, args, kwargs
             end = perf_counter_ns()
             times_per_round_ns.append(end - start)
             if pedantic_options.teardown is not None:
@@ -313,15 +339,56 @@ class WallTimeInstrument(Instrument):
             warmup_iters=pedantic_options.warmup_rounds,
         )
 
+        self.benchmarks.append(
+            Benchmark(name=name, uri=uri, config=benchmark_config, stats=stats)
+        )
+
+    def measure_pedantic(
+        self,
+        marker_options: BenchmarkMarkerOptions,
+        pedantic_options: PedanticOptions[T],
+        name: str,
+        uri: str,
+    ) -> T:
+        def __codspeed_root_frame__(*args, **kwargs) -> T:
+            return pedantic_options.target(*args, **kwargs)
+
+        for i, args, kwargs in self._measure_pedantic_iter(
+            marker_options, pedantic_options, name, uri
+        ):
+            for _ in i:
+                __codspeed_root_frame__(*args, **kwargs)
+
         # Compute the actual result of the function
         args, kwargs = pedantic_options.setup_and_get_args_kwargs()
         out = __codspeed_root_frame__(*args, **kwargs)
         if pedantic_options.teardown is not None:
             pedantic_options.teardown(*args, **kwargs)
 
-        self.benchmarks.append(
-            Benchmark(name=name, uri=uri, config=benchmark_config, stats=stats)
-        )
+        return out
+
+    async def measure_pedantic_async(
+        self,
+        marker_options: BenchmarkMarkerOptions,
+        pedantic_options: PedanticOptions[Awaitable[T]],
+        name: str,
+        uri: str,
+    ) -> T:
+        async def __codspeed_root_frame__(*args, **kwargs) -> T:
+            return await pedantic_options.target(*args, **kwargs)
+
+        for i, args, kwargs in self._measure_pedantic_iter(
+            marker_options, pedantic_options, name, uri
+        ):
+            for _ in i:
+                await __codspeed_root_frame__(*args, **kwargs)
+
+        # Compute the actual result of the function
+        args, kwargs = pedantic_options.setup_and_get_args_kwargs()
+        out = await __codspeed_root_frame__(*args, **kwargs)
+        if pedantic_options.teardown is not None:
+            pedantic_options.teardown(*args, **kwargs)
+
         return out
 
     def report(self, session: Session) -> None:

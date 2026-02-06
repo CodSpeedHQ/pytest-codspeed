@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import warnings
+from contextlib import contextmanager
 from typing import TYPE_CHECKING
 
 from pytest_codspeed import __semver_version__
@@ -10,6 +11,7 @@ from pytest_codspeed.instruments.hooks import InstrumentHooks
 from pytest_codspeed.utils import SUPPORTS_PERF_TRAMPOLINE
 
 if TYPE_CHECKING:
+    from collections.abc import Awaitable, Iterator
     from typing import Any, Callable
 
     from pytest import Session
@@ -52,6 +54,24 @@ class ValgrindInstrument(Instrument):
             )
         return config, warnings
 
+    @contextmanager
+    def _measure_context(self, uri: str):
+        self.benchmark_count += 1
+
+        if not self.instrument_hooks:
+            yield
+            return
+
+        # Manually call the library function to avoid an extra stack frame. Also
+        # call the callgrind markers directly to avoid extra overhead.
+        self.instrument_hooks.lib.callgrind_start_instrumentation()
+        try:
+            yield
+        finally:
+            # Ensure instrumentation is stopped even if the test failed
+            self.instrument_hooks.lib.callgrind_stop_instrumentation()
+            self.instrument_hooks.set_executed_benchmark(uri)
+
     def measure(
         self,
         marker_options: BenchmarkMarkerOptions,
@@ -61,11 +81,6 @@ class ValgrindInstrument(Instrument):
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> T:
-        self.benchmark_count += 1
-
-        if not self.instrument_hooks:
-            return fn(*args, **kwargs)
-
         def __codspeed_root_frame__() -> T:
             return fn(*args, **kwargs)
 
@@ -73,15 +88,56 @@ class ValgrindInstrument(Instrument):
             # Warmup CPython performance map cache
             __codspeed_root_frame__()
 
-        # Manually call the library function to avoid an extra stack frame. Also
-        # call the callgrind markers directly to avoid extra overhead.
+        with self._measure_context(uri):
+            return __codspeed_root_frame__()
+
+    async def measure_async(
+        self,
+        marker_options: BenchmarkMarkerOptions,
+        name: str,
+        uri: str,
+        fn: Callable[P, Awaitable[T]],
+        *args: P.args,
+        **kwargs: P.kwargs,
+    ) -> T:
+        async def __codspeed_root_frame__() -> T:
+            return await fn(*args, **kwargs)
+
+        if SUPPORTS_PERF_TRAMPOLINE:
+            # Warmup CPython performance map cache
+            await __codspeed_root_frame__()
+
+        with self._measure_context(uri):
+            return await __codspeed_root_frame__()
+
+    @contextmanager
+    def _measure_pedantic_context(
+        self,
+        pedantic_options: PedanticOptions[Any],
+        uri: str,
+    ) -> Iterator[None]:
+        if pedantic_options.rounds != 1 or pedantic_options.iterations != 1:
+            warnings.warn(
+                "Valgrind instrument ignores rounds and iterations settings "
+                "in pedantic mode"
+            )
+        if not self.instrument_hooks:
+            args, kwargs = pedantic_options.setup_and_get_args_kwargs()
+            yield
+            if pedantic_options.teardown is not None:
+                pedantic_options.teardown(*args, **kwargs)
+            return
+
+        # Compute the actual result of the function
+        args, kwargs = pedantic_options.setup_and_get_args_kwargs()
         self.instrument_hooks.lib.callgrind_start_instrumentation()
         try:
-            return __codspeed_root_frame__()
+            yield
         finally:
-            # Ensure instrumentation is stopped even if the test failed
             self.instrument_hooks.lib.callgrind_stop_instrumentation()
             self.instrument_hooks.set_executed_benchmark(uri)
+            if pedantic_options.teardown is not None:
+                pedantic_options.teardown(*args, **kwargs)
 
     def measure_pedantic(
         self,
@@ -90,18 +146,6 @@ class ValgrindInstrument(Instrument):
         name: str,
         uri: str,
     ) -> T:
-        if pedantic_options.rounds != 1 or pedantic_options.iterations != 1:
-            warnings.warn(
-                "Valgrind instrument ignores rounds and iterations settings "
-                "in pedantic mode"
-            )
-        if not self.instrument_hooks:
-            args, kwargs = pedantic_options.setup_and_get_args_kwargs()
-            out = pedantic_options.target(*args, **kwargs)
-            if pedantic_options.teardown is not None:
-                pedantic_options.teardown(*args, **kwargs)
-            return out
-
         def __codspeed_root_frame__(*args, **kwargs) -> T:
             return pedantic_options.target(*args, **kwargs)
 
@@ -115,18 +159,31 @@ class ValgrindInstrument(Instrument):
             if pedantic_options.teardown is not None:
                 pedantic_options.teardown(*args, **kwargs)
 
-        # Compute the actual result of the function
-        args, kwargs = pedantic_options.setup_and_get_args_kwargs()
-        self.instrument_hooks.lib.callgrind_start_instrumentation()
-        try:
-            out = __codspeed_root_frame__(*args, **kwargs)
-        finally:
-            self.instrument_hooks.lib.callgrind_stop_instrumentation()
-            self.instrument_hooks.set_executed_benchmark(uri)
+        with self._measure_pedantic_context(pedantic_options, uri):
+            return __codspeed_root_frame__(*args, **kwargs)
+
+    async def measure_pedantic_async(
+        self,
+        marker_options: BenchmarkMarkerOptions,
+        pedantic_options: PedanticOptions[Awaitable[T]],
+        name: str,
+        uri: str,
+    ) -> T:
+        async def __codspeed_root_frame__(*args, **kwargs) -> T:
+            return await pedantic_options.target(*args, **kwargs)
+
+        # Warmup
+        warmup_rounds = max(
+            pedantic_options.warmup_rounds, 1 if SUPPORTS_PERF_TRAMPOLINE else 0
+        )
+        for _ in range(warmup_rounds):
+            args, kwargs = pedantic_options.setup_and_get_args_kwargs()
+            await __codspeed_root_frame__(*args, **kwargs)
             if pedantic_options.teardown is not None:
                 pedantic_options.teardown(*args, **kwargs)
 
-        return out
+        with self._measure_pedantic_context(pedantic_options, uri):
+            return await __codspeed_root_frame__(*args, **kwargs)
 
     def report(self, session: Session) -> None:
         reporter = session.config.pluginmanager.get_plugin("terminalreporter")

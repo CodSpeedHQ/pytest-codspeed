@@ -5,7 +5,9 @@ import gc
 import json
 import os
 import random
+from contextlib import contextmanager
 from dataclasses import dataclass, field
+from inspect import iscoroutinefunction
 from pathlib import Path
 from time import time
 from typing import TYPE_CHECKING, cast
@@ -30,6 +32,7 @@ from pytest_codspeed.utils import (
 from . import __version__
 
 if TYPE_CHECKING:
+    from collections.abc import Awaitable, Iterator
     from typing import Any, Callable, ParamSpec, TypeVar
 
     from pytest_codspeed.instruments import Instrument
@@ -232,6 +235,43 @@ def pytest_collection_modifyitems(
         items[:] = selected
 
 
+@contextmanager
+def _measure_context() -> Iterator[None]:
+    random.seed(0)
+    is_gc_enabled = gc.isenabled()
+    if is_gc_enabled:
+        gc.collect()
+        gc.disable()
+
+    try:
+        yield
+    finally:
+        # Ensure GC is re-enabled even if the test failed
+        if is_gc_enabled:
+            gc.enable()
+
+
+async def _async_measure(
+    plugin: CodSpeedPlugin,
+    marker_options: BenchmarkMarkerOptions,
+    pedantic_options: PedanticOptions | None,
+    name: str,
+    uri: str,
+    fn: Callable[..., Awaitable[T]],
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+) -> T:
+    with _measure_context():
+        if pedantic_options is None:
+            return await plugin.instrument.measure_async(
+                marker_options, name, uri, fn, *args, **kwargs
+            )
+        else:
+            return await plugin.instrument.measure_pedantic_async(
+                marker_options, pedantic_options, name, uri
+            )
+
+
 def _measure(
     plugin: CodSpeedPlugin,
     node: pytest.Item,
@@ -242,25 +282,21 @@ def _measure(
     kwargs: dict[str, Any],
 ) -> T:
     marker_options = BenchmarkMarkerOptions.from_pytest_item(node)
-    random.seed(0)
-    is_gc_enabled = gc.isenabled()
-    if is_gc_enabled:
-        gc.collect()
-        gc.disable()
-    try:
-        uri, name = get_git_relative_uri_and_name(node.nodeid, config.rootpath)
-        if pedantic_options is None:
-            return plugin.instrument.measure(
-                marker_options, name, uri, fn, *args, **kwargs
-            )
-        else:
-            return plugin.instrument.measure_pedantic(
-                marker_options, pedantic_options, name, uri
-            )
-    finally:
-        # Ensure GC is re-enabled even if the test failed
-        if is_gc_enabled:
-            gc.enable()
+    uri, name = get_git_relative_uri_and_name(node.nodeid, config.rootpath)
+    if iscoroutinefunction(fn):
+        return _async_measure(  # type: ignore[return-value]
+            plugin, marker_options, pedantic_options, name, uri, fn, args, kwargs
+        )
+    else:
+        with _measure_context():
+            if pedantic_options is None:
+                return plugin.instrument.measure(
+                    marker_options, name, uri, fn, *args, **kwargs
+                )
+            else:
+                return plugin.instrument.measure_pedantic(
+                    marker_options, pedantic_options, name, uri
+                )
 
 
 def wrap_runtest(
