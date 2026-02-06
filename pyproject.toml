@@ -129,7 +129,7 @@ float_to_top = true
 [tool.pytest.ini_options]
 addopts = "--ignore=tests/benchmarks --ignore=tests/examples --ignore=tests/benchmarks/TheAlgorithms"
 filterwarnings = ["ignore::DeprecationWarning:pytest_benchmark.utils.*:"]
-pythonpath = ["tests/benchmarks/TheAlgorithms", "./scripts"]
+pythonpath = ["tests/benchmarks/TheAlgorithms", "./scripts", "tests/benchmarks"]
 
 [tool.coverage.run]
 branch = true
