@@ -5,17 +5,17 @@ import sys
 import warnings
 from typing import TYPE_CHECKING
 
-from pytest_codspeed.utils import SUPPORTS_PERF_TRAMPOLINE
-
 if TYPE_CHECKING:
-    from .dist_instrument_hooks import InstrumentHooksPointer, LibType
+    from typing import Any
+
+from pytest_codspeed.utils import SUPPORTS_PERF_TRAMPOLINE
 
 
 class InstrumentHooks:
-    """Zig library wrapper class providing benchmark measurement functionality."""
+    """Native library wrapper class providing benchmark measurement functionality."""
 
-    lib: LibType
-    instance: InstrumentHooksPointer
+    _module: Any
+    _instance: Any
 
     def __init__(self) -> None:
         if os.environ.get("CODSPEED_ENV") is None:
@@ -25,31 +25,31 @@ class InstrumentHooks:
             )
 
         try:
-            from .dist_instrument_hooks import lib  # type: ignore
+            from . import dist_instrument_hooks  # type: ignore
         except ImportError as e:
             raise RuntimeError(f"Failed to load instrument hooks library: {e}") from e
-        self.lib = lib
+        self._module = dist_instrument_hooks
 
-        self.instance = self.lib.instrument_hooks_init()
-        if self.instance == 0:
+        self._instance = self._module.instrument_hooks_init()
+        if self._instance is None:
             raise RuntimeError("Failed to initialize CodSpeed instrumentation library.")
 
         if SUPPORTS_PERF_TRAMPOLINE:
             sys.activate_stack_trampoline("perf")  # type: ignore
 
     def __del__(self):
-        if hasattr(self, "lib") and hasattr(self, "instance"):
-            self.lib.instrument_hooks_deinit(self.instance)
+        # Don't manually deinit - let the capsule destructor handle it
+        pass
 
     def start_benchmark(self) -> None:
         """Start a new benchmark measurement."""
-        ret = self.lib.instrument_hooks_start_benchmark(self.instance)
+        ret = self._module.instrument_hooks_start_benchmark(self._instance)
         if ret != 0:
             warnings.warn("Failed to start benchmark measurement", RuntimeWarning)
 
     def stop_benchmark(self) -> None:
         """Stop the current benchmark measurement."""
-        ret = self.lib.instrument_hooks_stop_benchmark(self.instance)
+        ret = self._module.instrument_hooks_stop_benchmark(self._instance)
         if ret != 0:
             warnings.warn("Failed to stop benchmark measurement", RuntimeWarning)
 
@@ -63,20 +63,28 @@ class InstrumentHooks:
         if pid is None:
             pid = os.getpid()
 
-        ret = self.lib.instrument_hooks_set_executed_benchmark(
-            self.instance, pid, uri.encode("ascii")
+        ret = self._module.instrument_hooks_set_executed_benchmark(
+            self._instance, pid, uri.encode("ascii")
         )
         if ret != 0:
             warnings.warn("Failed to set executed benchmark", RuntimeWarning)
 
     def set_integration(self, name: str, version: str) -> None:
         """Set the integration name and version."""
-        ret = self.lib.instrument_hooks_set_integration(
-            self.instance, name.encode("ascii"), version.encode("ascii")
+        ret = self._module.instrument_hooks_set_integration(
+            self._instance, name.encode("ascii"), version.encode("ascii")
         )
         if ret != 0:
             warnings.warn("Failed to set integration name and version", RuntimeWarning)
 
     def is_instrumented(self) -> bool:
         """Check if simulation is active."""
-        return self.lib.instrument_hooks_is_instrumented(self.instance)
+        return self._module.instrument_hooks_is_instrumented(self._instance)
+
+    def callgrind_start_instrumentation(self) -> None:
+        """Start callgrind instrumentation."""
+        self._module.callgrind_start_instrumentation()
+
+    def callgrind_stop_instrumentation(self) -> None:
+        """Stop callgrind instrumentation."""
+        self._module.callgrind_stop_instrumentation()

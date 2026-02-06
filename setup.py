@@ -1,17 +1,7 @@
-import importlib.util
 import os
 import platform
-from pathlib import Path
 
-from setuptools import setup
-
-build_path = Path(__file__).parent / "src/pytest_codspeed/instruments/hooks/build.py"
-
-spec = importlib.util.spec_from_file_location("build", build_path)
-assert spec is not None, "The spec should be initialized"
-build = importlib.util.module_from_spec(spec)
-assert spec.loader is not None, "The loader should be initialized"
-spec.loader.exec_module(build)
+from setuptools import Extension, setup
 
 system = platform.system()
 current_arch = platform.machine()
@@ -39,8 +29,16 @@ if IS_EXTENSION_REQUIRED and not IS_EXTENSION_BUILDABLE:
         "The extension is required but the current platform is not supported"
     )
 
-ffi_extension = build.ffibuilder.distutils_extension()
-ffi_extension.optional = not IS_EXTENSION_REQUIRED
+# Build native C extension
+native_extension = Extension(
+    "pytest_codspeed.instruments.hooks.dist_instrument_hooks",
+    sources=[
+        "src/pytest_codspeed/instruments/hooks/instrument_hooks_module.c",
+        "src/pytest_codspeed/instruments/hooks/instrument-hooks/dist/core.c",
+    ],
+    include_dirs=["src/pytest_codspeed/instruments/hooks/instrument-hooks/includes"],
+    optional=not IS_EXTENSION_REQUIRED,
+)
 
 print(
     "CodSpeed native extension is "
@@ -48,13 +46,9 @@ print(
 )
 
 setup(
-    package_data={
-        "pytest_codspeed": [
-            "instruments/hooks/instrument-hooks/includes/*.h",
-            "instruments/hooks/instrument-hooks/dist/*.c",
-        ]
-    },
     ext_modules=(
-        [ffi_extension] if IS_EXTENSION_BUILDABLE and not SKIP_EXTENSION_BUILD else []
+        [native_extension]
+        if IS_EXTENSION_BUILDABLE and not SKIP_EXTENSION_BUILD
+        else []
     ),
 )

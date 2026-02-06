@@ -75,12 +75,12 @@ class ValgrindInstrument(Instrument):
 
         # Manually call the library function to avoid an extra stack frame. Also
         # call the callgrind markers directly to avoid extra overhead.
-        self.instrument_hooks.lib.callgrind_start_instrumentation()
+        self.instrument_hooks.callgrind_start_instrumentation()
         try:
             return __codspeed_root_frame__()
         finally:
             # Ensure instrumentation is stopped even if the test failed
-            self.instrument_hooks.lib.callgrind_stop_instrumentation()
+            self.instrument_hooks.callgrind_stop_instrumentation()
             self.instrument_hooks.set_executed_benchmark(uri)
 
     def measure_pedantic(
@@ -117,11 +117,11 @@ class ValgrindInstrument(Instrument):
 
         # Compute the actual result of the function
         args, kwargs = pedantic_options.setup_and_get_args_kwargs()
-        self.instrument_hooks.lib.callgrind_start_instrumentation()
+        self.instrument_hooks.callgrind_start_instrumentation()
         try:
             out = __codspeed_root_frame__(*args, **kwargs)
         finally:
-            self.instrument_hooks.lib.callgrind_stop_instrumentation()
+            self.instrument_hooks.callgrind_stop_instrumentation()
             self.instrument_hooks.set_executed_benchmark(uri)
             if pedantic_options.teardown is not None:
                 pedantic_options.teardown(*args, **kwargs)
