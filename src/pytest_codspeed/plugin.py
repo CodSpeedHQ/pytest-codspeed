@@ -310,7 +310,10 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus):
                 session.config.rootpath / f".codspeed/results_{time() * 1000:.0f}.json"
             )
         data = {**get_environment_metadata(), **plugin.instrument.get_result_dict()}
+        created = not result_path.parent.exists()
         result_path.parent.mkdir(parents=True, exist_ok=True)
+        if created:
+            (result_path.parent / ".gitignore").write_text("*\n")
         result_path.write_text(json.dumps(data, indent=2))
 
 
