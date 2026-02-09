@@ -5,6 +5,26 @@
 
 
 
+## [4.3.0] - 2026-02-09
+
+### <!-- 0 -->🚀 Features
+- Add .gitignore to .codspeed folder on creation (#107) by @art049 in [#107](https://github.com/CodSpeedHQ/pytest-codspeed/pull/107)
+- Support memory profiling by @not-matthias
+- Rename instrumentation to simulation by @GuillaumeLagrange in [#98](https://github.com/CodSpeedHQ/pytest-codspeed/pull/98)
+- Improve time unit display in local walltime by @adriencaccia
+
+### <!-- 1 -->🐛 Bug Fixes
+- Switch to OIDC token by @not-matthias
+
+### <!-- 7 -->⚙️ Internals
+- Use github runner instead of buildjet by @art049
+- Enable memory profiling by @not-matthias in [#103](https://github.com/CodSpeedHQ/pytest-codspeed/pull/103)
+- Pin python to 3.14.2 in CI to prevent walltime crashes by @GuillaumeLagrange in [#105](https://github.com/CodSpeedHQ/pytest-codspeed/pull/105)
+- Add comment about uv pinning by @GuillaumeLagrange
+- Add comment to explain results storing in .codspeed folder by @adriencaccia in [#97](https://github.com/CodSpeedHQ/pytest-codspeed/pull/97)
+- Add 3.14 to the list of supported python versions by @adriencaccia
+
+
 ## [4.2.0] - 2025-10-24
 
 ### <!-- 0 -->🚀 Features
