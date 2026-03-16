@@ -19,7 +19,7 @@ jobs:
     strategy:
       matrix:
         shard: [1, 2, 3, 4]
-        mode: ["simulation", "walltime", "memory"]
+        mode: ["simulation", "memory"]
 
     name: "Run ${{ matrix.mode }} benchmarks (Shard #${{ matrix.shard }})"
     runs-on: ${{ matrix.mode == 'walltime' && 'codspeed-macro' || 'ubuntu-24.04' }}
@@ -42,6 +42,7 @@ jobs:
         with:
           mode: ${{ matrix.mode }}
           run: uv run pytest tests/benchmarks/ --codspeed --test-group=${{ matrix.shard }} --test-group-count=${{ env.SHARDS }}
+          runner-version: branch:cod-2210-improve-exec-harnessscli-stdoutstderr-output-in-local-mode
 
   all-checks:
     runs-on: ubuntu-latest
