@@ -37,7 +37,7 @@ class InstrumentHooks:
         if self.instance == 0:
             raise RuntimeError("Failed to initialize CodSpeed instrumentation library.")
 
-        if SUPPORTS_PERF_TRAMPOLINE:
+        if SUPPORTS_PERF_TRAMPOLINE and not sys.is_stack_trampoline_active():
             sys.activate_stack_trampoline("perf")  # type: ignore
 
     def __del__(self):
