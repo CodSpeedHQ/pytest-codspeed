@@ -163,6 +163,7 @@ class WallTimeInstrument(Instrument):
         try:
             self.instrument_hooks = InstrumentHooks()
             self.instrument_hooks.set_integration("pytest-codspeed", __semver_version__)
+            self.instrument_hooks.collect_and_write_python_environment()
         except RuntimeError as e:
             if os.environ.get("CODSPEED_ENV") is not None:
                 warnings.warn(

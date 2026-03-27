@@ -1,13 +1,18 @@
 from __future__ import annotations
 
 import os
+import platform
+import shlex
 import sys
+import sysconfig
 import warnings
 from typing import TYPE_CHECKING
 
 from pytest_codspeed.utils import SUPPORTS_PERF_TRAMPOLINE
 
 if TYPE_CHECKING:
+    from cffi import FFI
+
     from .dist_instrument_hooks import InstrumentHooksPointer, LibType
 
 # Feature flags for instrument hooks
@@ -18,6 +23,7 @@ class InstrumentHooks:
     """Zig library wrapper class providing benchmark measurement functionality."""
 
     lib: LibType
+    ffi: FFI
     instance: InstrumentHooksPointer
 
     def __init__(self) -> None:
@@ -28,10 +34,11 @@ class InstrumentHooks:
             )
 
         try:
-            from .dist_instrument_hooks import lib  # type: ignore
+            from .dist_instrument_hooks import ffi, lib  # type: ignore
         except ImportError as e:
             raise RuntimeError(f"Failed to load instrument hooks library: {e}") from e
         self.lib = lib
+        self.ffi = ffi
 
         self.instance = self.lib.instrument_hooks_init()
         if self.instance == 0:
@@ -92,3 +99,99 @@ class InstrumentHooks:
             enabled: Whether to enable or disable the feature
         """
         self.lib.instrument_hooks_set_feature(feature, enabled)
+
+    def set_environment(self, section_name: str, key: str, value: str) -> None:
+        """Register a key-value pair under a named section for environment collection.
+
+        Args:
+            section_name: The section name (e.g. "Python")
+            key: The key (e.g. "version")
+            value: The value (e.g. "3.13.12")
+        """
+        ret = self.lib.instrument_hooks_set_environment(
+            self.instance,
+            section_name.encode("utf-8"),
+            key.encode("utf-8"),
+            value.encode("utf-8"),
+        )
+        if ret != 0:
+            warnings.warn("Failed to set environment data", RuntimeWarning)
+
+    def set_environment_list(
+        self, section_name: str, key: str, values: list[str]
+    ) -> None:
+        """Register a list of values under a named section for environment collection.
+
+        Args:
+            section_name: The section name (e.g. "python")
+            key: The key (e.g. "build_args")
+            values: The list of string values
+        """
+        encoded = [self.ffi.new("char[]", v.encode("utf-8")) for v in values]
+        c_values = self.ffi.new("char*[]", encoded)
+        ret = self.lib.instrument_hooks_set_environment_list(
+            self.instance,
+            section_name.encode("utf-8"),
+            key.encode("utf-8"),
+            c_values,
+            len(encoded),
+        )
+        if ret != 0:
+            warnings.warn("Failed to set environment list data", RuntimeWarning)
+
+    def write_environment(self, pid: int | None = None) -> None:
+        """Flush all registered environment sections to disk.
+
+        Writes to $CODSPEED_PROFILE_FOLDER/environment-<pid>.json.
+
+        Args:
+            pid: Optional process ID (defaults to current process)
+        """
+        if pid is None:
+            pid = os.getpid()
+        ret = self.lib.instrument_hooks_write_environment(self.instance, pid)
+        if ret != 0:
+            warnings.warn("Failed to write environment data", RuntimeWarning)
+
+    def collect_and_write_python_environment(self) -> None:
+        """Collect Python toolchain information and write it to disk."""
+        section = "python"
+        set_env = self.set_environment
+
+        # Core identity
+        set_env(section, "version", sys.version.strip())
+        set_env(section, "implementation", sys.implementation.name.strip())
+        set_env(section, "compiler", platform.python_compiler().strip())
+
+        config_vars = sysconfig.get_config_vars()
+
+        # Build arguments as a list
+        config_args = config_vars.get("CONFIG_ARGS", "")
+        if config_args:
+            build_args = [arg.strip() for arg in shlex.split(config_args)]
+            self.set_environment_list(section, "build_args", build_args)
+
+        # Performance-relevant build configuration as "KEY=value" list
+        _SYSCONFIG_KEYS = (
+            "abiflags",
+            "PY_ENABLE_SHARED",
+            "Py_GIL_DISABLED",
+            "Py_DEBUG",
+            "WITH_PYMALLOC",
+            "WITH_MIMALLOC",
+            "WITH_FREELISTS",
+            "HAVE_COMPUTED_GOTOS",
+            "Py_STATS",
+            "Py_TRACE_REFS",
+            "WITH_VALGRIND",
+            "WITH_DTRACE",
+        )
+        config_items = []
+        for key in _SYSCONFIG_KEYS:
+            value = config_vars.get(key)
+            if value is not None:
+                config_items.append(f"{key}={str(value).strip()}")
+        config_items.append(f"perf_trampoline={SUPPORTS_PERF_TRAMPOLINE}")
+        self.set_environment_list(section, "config", config_items)
+
+        self.write_environment()

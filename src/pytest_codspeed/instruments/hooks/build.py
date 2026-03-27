@@ -36,6 +36,15 @@ void callgrind_start_instrumentation();
 void callgrind_stop_instrumentation();
 
 void instrument_hooks_set_feature(uint64_t feature, bool enabled);
+
+uint8_t instrument_hooks_set_environment(InstrumentHooks *, const char *section_name,
+                                         const char *key, const char *value);
+uint8_t instrument_hooks_set_environment_list(InstrumentHooks *,
+                                              const char *section_name,
+                                              const char *key,
+                                              const char *const *values,
+                                              uint32_t count);
+uint8_t instrument_hooks_write_environment(InstrumentHooks *, uint32_t pid);
 """)
 
 ffibuilder.set_source(
@@ -47,6 +56,8 @@ ffibuilder.set_source(
         "src/pytest_codspeed/instruments/hooks/instrument-hooks/dist/core.c",
     ],
     include_dirs=[str(includes_dir)],
+    # IMPORTANT: Keep in sync with instrument-hooks/ci.yml (COMMON_CFLAGS)
+    extra_compile_args=["-Wno-format-security"],
 )
 
 if __name__ == "__main__":
