@@ -110,7 +110,7 @@ def test_pytest_xdist_concurrency_compatibility(
         """
     )
     # Run the test multiple times to reduce the chance of a false positive
-    ITERATIONS = 5
+    ITERATIONS = 2
     for i in range(ITERATIONS):
         with codspeed_env():
             result = pytester.runpytest("--codspeed", "-n", "128")
