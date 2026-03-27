@@ -31,5 +31,13 @@ class lib:
     def callgrind_stop_instrumentation() -> int: ...
     @staticmethod
     def instrument_hooks_set_feature(feature: int, enabled: bool) -> None: ...
+    @staticmethod
+    def instrument_hooks_set_environment(
+        hooks: InstrumentHooksPointer, section_name: bytes, key: bytes, value: bytes
+    ) -> int: ...
+    @staticmethod
+    def instrument_hooks_write_environment(
+        hooks: InstrumentHooksPointer, pid: int
+    ) -> int: ...
 
 LibType = type[lib]

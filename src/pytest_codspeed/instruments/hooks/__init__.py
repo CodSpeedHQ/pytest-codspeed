@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import os
+import platform
 import sys
+import sysconfig
 import warnings
 from typing import TYPE_CHECKING
 
@@ -92,3 +94,70 @@ class InstrumentHooks:
             enabled: Whether to enable or disable the feature
         """
         self.lib.instrument_hooks_set_feature(feature, enabled)
+
+    def set_environment(self, section_name: str, key: str, value: str) -> None:
+        """Register a key-value pair under a named section for environment collection.
+
+        Args:
+            section_name: The section name (e.g. "Python")
+            key: The key (e.g. "version")
+            value: The value (e.g. "3.13.12")
+        """
+        ret = self.lib.instrument_hooks_set_environment(
+            self.instance,
+            section_name.encode("utf-8"),
+            key.encode("utf-8"),
+            value.encode("utf-8"),
+        )
+        if ret != 0:
+            warnings.warn("Failed to set environment data", RuntimeWarning)
+
+    def write_environment(self, pid: int | None = None) -> None:
+        """Flush all registered environment sections to disk.
+
+        Writes to $CODSPEED_PROFILE_FOLDER/environment-<pid>.json.
+
+        Args:
+            pid: Optional process ID (defaults to current process)
+        """
+        if pid is None:
+            pid = os.getpid()
+        ret = self.lib.instrument_hooks_write_environment(self.instance, pid)
+        if ret != 0:
+            warnings.warn("Failed to write environment data", RuntimeWarning)
+
+    def collect_and_write_python_environment(self) -> None:
+        """Collect Python toolchain information and write it to disk."""
+        section = "python"
+        set_env = self.set_environment
+
+        # Core identity
+        set_env(section, "version", sys.version)
+        set_env(section, "implementation", sys.implementation.name)
+        set_env(section, "compiler", platform.python_compiler())
+
+        # Performance-relevant build configuration
+        _SYSCONFIG_KEYS = (
+            "CONFIG_ARGS",
+            "OPT",
+            "abiflags",
+            "PY_ENABLE_SHARED",
+            "Py_GIL_DISABLED",
+            "Py_DEBUG",
+            "WITH_PYMALLOC",
+            "WITH_MIMALLOC",
+            "WITH_FREELISTS",
+            "HAVE_COMPUTED_GOTOS",
+            "Py_STATS",
+            "Py_TRACE_REFS",
+            "WITH_VALGRIND",
+            "WITH_DTRACE",
+        )
+        config_vars = sysconfig.get_config_vars()
+        for key in _SYSCONFIG_KEYS:
+            value = config_vars.get(key)
+            if value is not None:
+                set_env(section, key, str(value))
+        set_env(section, "perf_trampoline", str(SUPPORTS_PERF_TRAMPOLINE))
+
+        self.write_environment()
