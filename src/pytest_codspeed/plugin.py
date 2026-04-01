@@ -80,6 +80,15 @@ def pytest_addoption(parser: pytest.Parser):
             ", only for walltime mode"
         ),
     )
+    group.addoption(
+        "--codspeed-capture-output",
+        action="store_true",
+        default=False,
+        help=(
+            "Hash the return value of each benchmark and store it in the "
+            "result file, enabling correctness checks in local comparisons"
+        ),
+    )
 
 
 @dataclass(unsafe_hash=True)

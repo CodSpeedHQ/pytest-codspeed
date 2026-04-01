@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NamedTuple
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -25,6 +25,11 @@ if TYPE_CHECKING:
 # single local run is too high to draw reliable conclusions.
 _REGRESSION_THRESHOLD = 0.05
 _IMPROVEMENT_THRESHOLD = 0.05
+
+
+class _BenchmarkData(NamedTuple):
+    mean_ns: float
+    output_hash: str | None
 
 
 # ---------------------------------------------------------------------------
@@ -53,6 +58,9 @@ class BenchmarkDiff:
     def change_pct(self) -> str:
         sign = "+" if self.change_ratio >= 0 else ""
         return f"{sign}{self.change_ratio * 100:.1f}%"
+
+    output_changed: bool | None = None
+    """None when one or both runs were collected without --codspeed-capture-output."""
 
     @property
     def is_regression(self) -> bool:
@@ -114,18 +122,21 @@ def find_baseline(results_dir: Path, current_path: Path) -> Path | None:
 # ---------------------------------------------------------------------------
 
 
-def _extract_benchmarks(data: dict[str, Any]) -> dict[str, float]:
-    """Return ``{uri: mean_ns}`` from a parsed results JSON.
+def _extract_benchmarks(data: dict[str, Any]) -> dict[str, _BenchmarkData]:
+    """Return ``{uri: _BenchmarkData}`` from a parsed results JSON.
 
     Benchmarks without a ``stats.mean_ns`` field (e.g. simulation-mode
     stubs) are silently ignored.
     """
-    result: dict[str, float] = {}
+    result: dict[str, _BenchmarkData] = {}
     for bench in data.get("benchmarks", []):
         stats = bench.get("stats") or {}
         mean_ns = stats.get("mean_ns")
         if mean_ns is not None:
-            result[bench["uri"]] = float(mean_ns)
+            result[bench["uri"]] = _BenchmarkData(
+                mean_ns=float(mean_ns),
+                output_hash=bench.get("output_hash"),
+            )
     return result
 
 
@@ -148,14 +159,25 @@ def compare_results(baseline_path: Path, current_path: Path) -> ComparisonReport
     unchanged: list[BenchmarkDiff] = []
     new_benchmarks: list[str] = []
 
-    for uri, current_mean in current.items():
+    for uri, current_data in current.items():
         if uri not in baseline:
             new_benchmarks.append(uri)
             continue
+        baseline_data = baseline[uri]
+        if (
+            baseline_data.output_hash is not None
+            and current_data.output_hash is not None
+        ):
+            output_changed: bool | None = (
+                baseline_data.output_hash != current_data.output_hash
+            )
+        else:
+            output_changed = None
         diff = BenchmarkDiff(
             name=uri,
-            baseline_mean_ns=baseline[uri],
-            current_mean_ns=current_mean,
+            baseline_mean_ns=baseline_data.mean_ns,
+            current_mean_ns=current_data.mean_ns,
+            output_changed=output_changed,
         )
         if diff.is_regression:
             regressions.append(diff)
@@ -199,6 +221,35 @@ def _short_name(uri: str) -> str:
     return uri.split("::")[-1] if "::" in uri else uri
 
 
+def _fmt_diff(diff: BenchmarkDiff) -> str:
+    line = (
+        f"     {_short_name(diff.name):<42}"
+        f"  {_format_ns(diff.baseline_mean_ns):>8}"
+        f" → {_format_ns(diff.current_mean_ns):>8}"
+        f"  {diff.change_pct}"
+    )
+    if diff.output_changed is True:
+        line += "  ! output changed"
+    return line
+
+
+def _print_footer(report: ComparisonReport) -> None:
+    correctness_warnings = sum(
+        1
+        for d in (*report.regressions, *report.improvements, *report.unchanged)
+        if d.output_changed is True
+    )
+    footer = (
+        f"\n  {report.total_compared} compared"
+        f"  ·  {len(report.regressions)} regression(s)"
+        f"  ·  {len(report.improvements)} improvement(s)"
+    )
+    if correctness_warnings:
+        footer += f"  ·  {correctness_warnings} correctness warning(s)"
+    print(footer)
+    print()
+
+
 def print_comparison_report(report: ComparisonReport, baseline_path: Path) -> None:
     """Print a human-readable comparison report to stdout.
 
@@ -214,22 +265,12 @@ def print_comparison_report(report: ComparisonReport, baseline_path: Path) -> No
     if report.regressions:
         print(f"\n  ✗  Regressions ({len(report.regressions)})")
         for diff in report.regressions:
-            print(
-                f"     {_short_name(diff.name):<42}"
-                f"  {_format_ns(diff.baseline_mean_ns):>8}"
-                f" → {_format_ns(diff.current_mean_ns):>8}"
-                f"  {diff.change_pct}"
-            )
+            print(_fmt_diff(diff))
 
     if report.improvements:
         print(f"\n  ✓  Improvements ({len(report.improvements)})")
         for diff in report.improvements:
-            print(
-                f"     {_short_name(diff.name):<42}"
-                f"  {_format_ns(diff.baseline_mean_ns):>8}"
-                f" → {_format_ns(diff.current_mean_ns):>8}"
-                f"  {diff.change_pct}"
-            )
+            print(_fmt_diff(diff))
 
     if report.new_benchmarks:
         print(f"\n  +  New ({len(report.new_benchmarks)})")
@@ -241,9 +282,4 @@ def print_comparison_report(report: ComparisonReport, baseline_path: Path) -> No
         for uri in report.removed_benchmarks:
             print(f"     {_short_name(uri)}")
 
-    print(
-        f"\n  {report.total_compared} compared"
-        f"  ·  {len(report.regressions)} regression(s)"
-        f"  ·  {len(report.improvements)} improvement(s)"
-    )
-    print()
+    _print_footer(report)
