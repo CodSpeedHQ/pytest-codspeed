@@ -1,34 +1,13 @@
 """Unit tests for pytest_codspeed.eval_harness and output_changed in comparison."""
 
-import json
 import math
 from pathlib import Path
 
 import pytest
+from conftest import _bench, _make_result
 
 from pytest_codspeed.comparison import BenchmarkDiff, ComparisonReport, compare_results
 from pytest_codspeed.eval_harness import EvalReport, compute_score
-
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-
-def _make_result(tmp_path: Path, filename: str, benchmarks: list) -> Path:
-    path = tmp_path / filename
-    path.write_text(
-        json.dumps({"instrument": {"type": "walltime"}, "benchmarks": benchmarks})
-    )
-    return path
-
-
-def _bench(uri: str, mean_ns: float, output_hash=None) -> dict:
-    entry: dict = {"uri": uri, "stats": {"mean_ns": mean_ns}}
-    if output_hash is not None:
-        entry["output_hash"] = output_hash
-    return entry
-
 
 # ---------------------------------------------------------------------------
 # compute_score

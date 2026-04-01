@@ -36,6 +36,7 @@ class TestOutputHashIntegration:
             pytester, MeasurementMode.WallTime, "--codspeed-capture-output"
         )
 
+        result.assert_outcomes(passed=1)
         result.stdout.no_fnmatch_line("*output changed*")
 
     def test_warning_when_output_changes(
@@ -51,6 +52,7 @@ class TestOutputHashIntegration:
             pytester, MeasurementMode.WallTime, "--codspeed-capture-output"
         )
 
+        result.assert_outcomes(passed=1)
         result.stdout.fnmatch_lines(["*output changed*"])
 
     def test_no_warning_without_flag(self, pytester: pytest.Pytester) -> None:
@@ -60,6 +62,7 @@ class TestOutputHashIntegration:
         pytester.makepyfile(_BROKEN_BENCH)
         result = run_pytest_codspeed_with_mode(pytester, MeasurementMode.WallTime)
 
+        result.assert_outcomes(passed=1)
         result.stdout.no_fnmatch_line("*output changed*")
 
     def test_correctness_warning_in_footer(
@@ -75,4 +78,5 @@ class TestOutputHashIntegration:
             pytester, MeasurementMode.WallTime, "--codspeed-capture-output"
         )
 
+        result.assert_outcomes(passed=1)
         result.stdout.fnmatch_lines(["*1 correctness warning(s)*"])

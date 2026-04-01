@@ -32,6 +32,7 @@ class TestLocalComparison:
 
         result = run_pytest_codspeed_with_mode(pytester, MeasurementMode.WallTime)
 
+        result.assert_outcomes(passed=1)
         result.stdout.no_fnmatch_line("*CodSpeed local comparison*")
 
     def test_comparison_appears_on_second_run(self, pytester: pytest.Pytester) -> None:
@@ -44,6 +45,7 @@ class TestLocalComparison:
         # Second run — finds the first JSON as baseline
         result = run_pytest_codspeed_with_mode(pytester, MeasurementMode.WallTime)
 
+        result.assert_outcomes(passed=1)
         result.stdout.fnmatch_lines(["*CodSpeed local comparison*"])
 
     def test_comparison_shows_benchmark_count(self, pytester: pytest.Pytester) -> None:
@@ -53,33 +55,31 @@ class TestLocalComparison:
         run_pytest_codspeed_with_mode(pytester, MeasurementMode.WallTime)
         result = run_pytest_codspeed_with_mode(pytester, MeasurementMode.WallTime)
 
-        # "1 compared" is the footer line produced by print_comparison_report
+        result.assert_outcomes(passed=1)
         result.stdout.fnmatch_lines(["*1 compared*"])
 
-    def test_no_comparison_with_profile_folder(self, pytester: pytest.Pytester) -> None:
-        """When --codspeed-profile-folder is set, comparison is skipped.
+    def test_no_comparison_with_profile_folder(
+        self, pytester: pytest.Pytester, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """When CODSPEED_PROFILE_FOLDER is set, comparison is skipped.
 
-        The profile folder path is used by the CodSpeed runner in CI; in
+        The profile folder env var is used by the CodSpeed runner in CI; in
         that context the result file is written to a custom location and
         the local comparison loop makes no sense.
         """
         pytester.makepyfile(_BENCH_FILE)
         profile_dir = pytester.path / "profile"
         profile_dir.mkdir()
+        (profile_dir / "results").mkdir()
+
+        monkeypatch.setenv("CODSPEED_PROFILE_FOLDER", str(profile_dir))
 
         # First run with profile folder
-        run_pytest_codspeed_with_mode(
-            pytester,
-            MeasurementMode.WallTime,
-            f"--codspeed-profile-folder={profile_dir}",
-        )
+        run_pytest_codspeed_with_mode(pytester, MeasurementMode.WallTime)
         # Second run with profile folder — still no comparison
-        result = run_pytest_codspeed_with_mode(
-            pytester,
-            MeasurementMode.WallTime,
-            f"--codspeed-profile-folder={profile_dir}",
-        )
+        result = run_pytest_codspeed_with_mode(pytester, MeasurementMode.WallTime)
 
+        result.assert_outcomes(passed=1)
         result.stdout.no_fnmatch_line("*CodSpeed local comparison*")
 
     def test_no_comparison_in_simulation_mode(self, pytester: pytest.Pytester) -> None:
@@ -91,4 +91,5 @@ class TestLocalComparison:
         # Second run in simulation mode — no benchmarks to compare
         result = run_pytest_codspeed_with_mode(pytester, MeasurementMode.Simulation)
 
+        result.assert_outcomes(passed=1)
         result.stdout.no_fnmatch_line("*CodSpeed local comparison*")

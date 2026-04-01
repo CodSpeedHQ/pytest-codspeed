@@ -12,6 +12,7 @@ import time
 from pathlib import Path
 
 import pytest
+from conftest import _bench, _make_result
 
 from pytest_codspeed.comparison import (
     BenchmarkDiff,
@@ -20,32 +21,6 @@ from pytest_codspeed.comparison import (
     find_baseline,
     print_comparison_report,
 )
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-def _make_result(tmp_path: Path, filename: str, benchmarks: list) -> Path:
-    """Write a minimal CodSpeed result JSON and return its path."""
-    path = tmp_path / filename
-    path.write_text(
-        json.dumps(
-            {
-                "instrument": {"type": "walltime"},
-                "benchmarks": benchmarks,
-            }
-        )
-    )
-    return path
-
-
-def _bench(uri: str, mean_ns: float) -> dict:
-    """Return a minimal benchmark entry."""
-    return {
-        "uri": uri,
-        "stats": {"mean_ns": mean_ns},
-    }
-
 
 # ---------------------------------------------------------------------------
 # find_baseline
