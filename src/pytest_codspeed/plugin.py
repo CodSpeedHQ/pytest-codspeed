@@ -89,6 +89,16 @@ def pytest_addoption(parser: pytest.Parser):
             "result file, enabling correctness checks in local comparisons"
         ),
     )
+    group.addoption(
+        "--codspeed-eval-report",
+        action="store",
+        default=None,
+        metavar="PATH",
+        help=(
+            "Write a machine-readable JSON eval report to PATH after comparison. "
+            "Requires --codspeed-capture-output and a prior baseline run."
+        ),
+    )
 
 
 @dataclass(unsafe_hash=True)
@@ -332,6 +342,16 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus):
                 try:
                     report = compare_results(baseline_path, result_path)
                     print_comparison_report(report, baseline_path)
+                    if plugin.config.eval_report_path is not None:
+                        from pytest_codspeed.eval_harness import EvalReport
+
+                        eval_data = EvalReport.from_comparison(report).to_dict()
+                        plugin.config.eval_report_path.parent.mkdir(
+                            parents=True, exist_ok=True
+                        )
+                        plugin.config.eval_report_path.write_text(
+                            json.dumps(eval_data, indent=2)
+                        )
                 except Exception:
                     # Never let comparison errors break a test run.
                     pass

@@ -139,6 +139,63 @@ class TestEvalReport:
         assert len(eval_report.correctness_unknown) == 1
         assert math.isnan(eval_report.entries[0].score)
 
+    def test_aggregate_score_all_acceptable(self) -> None:
+        report = self._report(output_changed=False, change_ratio=-0.30)
+        eval_report = EvalReport.from_comparison(report)
+        assert eval_report.aggregate_score == pytest.approx(0.30)
+        assert eval_report.is_acceptable is True
+
+    def test_aggregate_score_correctness_broken_returns_zero(self) -> None:
+        report = self._report(output_changed=True, change_ratio=-0.30)
+        eval_report = EvalReport.from_comparison(report)
+        assert eval_report.aggregate_score == 0.0
+        assert eval_report.is_acceptable is False
+
+    def test_aggregate_score_unknown_returns_nan(self) -> None:
+        report = self._report(output_changed=None, change_ratio=-0.30)
+        eval_report = EvalReport.from_comparison(report)
+        assert math.isnan(eval_report.aggregate_score)
+        assert eval_report.is_acceptable is False
+
+    def test_aggregate_score_uses_min_across_benchmarks(
+        self, tmp_path: Path
+    ) -> None:
+        baseline = _make_result(
+            tmp_path,
+            "b.json",
+            [
+                _bench("mod::fast", 1_000_000, "h1"),
+                _bench("mod::slow", 1_000_000, "h2"),
+            ],
+        )
+        current = _make_result(
+            tmp_path,
+            "c.json",
+            [_bench("mod::fast", 500_000, "h1"), _bench("mod::slow", 900_000, "h2")],
+        )
+        comparison = compare_results(baseline, current)
+        eval_report = EvalReport.from_comparison(comparison)
+        # fast: +50% gain, slow: +10% gain -- min is 0.10
+        assert eval_report.aggregate_score == pytest.approx(0.10)
+
+    def test_to_dict_structure(self) -> None:
+        report = self._report(output_changed=False, change_ratio=-0.30)
+        d = EvalReport.from_comparison(report).to_dict()
+        assert "aggregate_score" in d
+        assert "is_acceptable" in d
+        assert "benchmarks" in d
+        bench = d["benchmarks"][0]  # type: ignore[index]
+        assert "name" in bench
+        assert "perf_gain" in bench
+        assert "output_changed" in bench
+        assert "score" in bench
+
+    def test_to_dict_nan_becomes_null(self) -> None:
+        report = self._report(output_changed=None, change_ratio=-0.30)
+        d = EvalReport.from_comparison(report).to_dict()
+        assert d["aggregate_score"] is None
+        assert d["benchmarks"][0]["score"] is None  # type: ignore[index]
+
     def test_from_comparison_covers_all_buckets(self, tmp_path: Path) -> None:
         baseline = _make_result(
             tmp_path,

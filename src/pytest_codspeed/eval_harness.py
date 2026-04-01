@@ -113,3 +113,47 @@ class EvalReport:
     @property
     def correctness_unknown(self) -> tuple[EvalEntry, ...]:
         return tuple(e for e in self.entries if e.correctness_unknown)
+
+    @property
+    def aggregate_score(self) -> float:
+        """Conservative scalar verdict across all benchmarks.
+
+        Returns:
+            * ``0.0``        when any benchmark broke correctness.
+            * ``float('nan')`` when correctness of any benchmark is unknown.
+            * ``min(scores)``  otherwise -- the worst benchmark determines the
+              verdict so a single slow-down cannot be hidden by other gains.
+        """
+        if not self.entries:
+            return float("nan")
+        if any(e.output_changed is True for e in self.entries):
+            return 0.0
+        if any(math.isnan(e.score) for e in self.entries):
+            return float("nan")
+        return min(e.score for e in self.entries)
+
+    @property
+    def is_acceptable(self) -> bool:
+        """True when every benchmark improved and none broke correctness."""
+        score = self.aggregate_score
+        return not math.isnan(score) and score > 0.0
+
+    def to_dict(self) -> dict[str, object]:
+        """Serialise to a JSON-compatible dict.
+
+        ``nan`` values become ``null`` -- JSON has no NaN literal.
+        """
+        agg = self.aggregate_score
+        return {
+            "aggregate_score": None if math.isnan(agg) else agg,
+            "is_acceptable": self.is_acceptable,
+            "benchmarks": [
+                {
+                    "name": e.name,
+                    "perf_gain": e.perf_gain,
+                    "output_changed": e.output_changed,
+                    "score": None if math.isnan(e.score) else e.score,
+                }
+                for e in self.entries
+            ],
+        }
