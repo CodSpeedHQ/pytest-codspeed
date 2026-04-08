@@ -1,13 +1,19 @@
-import pytest
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from conftest import run_pytest_codspeed_with_mode
+
+if TYPE_CHECKING:
+    import pytest
 
 from pytest_codspeed.config import (
     BenchmarkMarkerOptions,
     CodSpeedConfig,
     PedanticOptions,
 )
-from pytest_codspeed.instruments.walltime import WallTimeInstrument
 from pytest_codspeed.instruments import MeasurementMode
+from pytest_codspeed.instruments.walltime import WallTimeInstrument
 
 
 def test_bench_enabled_header_with_perf(
@@ -95,7 +101,8 @@ def test_benchmark_pedantic_walltime(
 
 
 def test_benchmark_pedantic_walltime_setup_not_timed(monkeypatch: pytest.MonkeyPatch):
-    """Verify that the setup time is not included in the measurement when using pedantic mode with walltime."""
+    """Verify that the setup time is not included in the measurement
+    when using pedantic mode with walltime."""
     current_time_ns = 0
 
     def fake_perf_counter_ns() -> int:
