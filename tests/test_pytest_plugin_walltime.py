@@ -1,7 +1,19 @@
-import pytest
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from conftest import run_pytest_codspeed_with_mode
 
+if TYPE_CHECKING:
+    import pytest
+
+from pytest_codspeed.config import (
+    BenchmarkMarkerOptions,
+    CodSpeedConfig,
+    PedanticOptions,
+)
 from pytest_codspeed.instruments import MeasurementMode
+from pytest_codspeed.instruments.walltime import WallTimeInstrument
 
 
 def test_bench_enabled_header_with_perf(
@@ -86,3 +98,46 @@ def test_benchmark_pedantic_walltime(
     result = run_pytest_codspeed_with_mode(pytester, MeasurementMode.WallTime)
     assert result.ret == 0, "the run should have succeeded"
     result.assert_outcomes(passed=1)
+
+
+def test_benchmark_pedantic_walltime_setup_not_timed(monkeypatch: pytest.MonkeyPatch):
+    """Verify that the setup time is not included in the measurement
+    when using pedantic mode with walltime."""
+    current_time_ns = 0
+
+    def fake_perf_counter_ns() -> int:
+        return current_time_ns
+
+    monkeypatch.setattr(
+        "pytest_codspeed.instruments.walltime.perf_counter_ns", fake_perf_counter_ns
+    )
+
+    def setup() -> tuple[tuple[int], dict[str, int]]:
+        nonlocal current_time_ns
+        current_time_ns += 200
+        return (1,), {"c": 2}
+
+    def target(a: int, c: int) -> int:
+        nonlocal current_time_ns
+        current_time_ns += 400
+        return a + c
+
+    instrument = WallTimeInstrument(CodSpeedConfig(), MeasurementMode.WallTime)
+    result = instrument.measure_pedantic(
+        BenchmarkMarkerOptions(),
+        PedanticOptions(
+            target=target,
+            setup=setup,
+            teardown=None,
+            rounds=2,
+            warmup_rounds=0,
+            iterations=1,
+        ),
+        name="test_pedantic_setup_not_timed",
+        uri="tests/test_benchmark.py::test_pedantic_setup_not_timed",
+    )
+
+    assert result == 3
+    assert len(instrument.benchmarks) == 1
+    # Two rounds should each measure target-only time (400ns), excluding setup (200ns).
+    assert instrument.benchmarks[0].stats.min_ns == 400
