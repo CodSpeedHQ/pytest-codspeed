@@ -28,6 +28,7 @@ from pytest_codspeed.utils import (
 )
 
 from . import __version__
+from .comparison import compare_results, find_baseline, print_comparison_report
 
 if TYPE_CHECKING:
     from typing import Any, Callable, ParamSpec, TypeVar
@@ -304,8 +305,6 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus):
             result_path = plugin.profile_folder / "results" / f"{os.getpid()}.json"
         else:
             # Default to a .codspeed folder in the root of the project.
-            # Storing the results will be later used for features such as
-            # local comparison between runs.
             result_path = (
                 session.config.rootpath / f".codspeed/results_{time() * 1000:.0f}.json"
             )
@@ -315,6 +314,18 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus):
         if created:
             (result_path.parent / ".gitignore").write_text("*\n")
         result_path.write_text(json.dumps(data, indent=2))
+
+        # Local baseline comparison — only walltime runs carry per-benchmark
+        # statistics (mean_ns).  Simulation / memory runs skip this silently.
+        if not plugin.profile_folder and plugin.mode == MeasurementMode.WallTime:
+            baseline_path = find_baseline(result_path.parent, result_path)
+            if baseline_path is not None:
+                try:
+                    report = compare_results(baseline_path, result_path)
+                    print_comparison_report(report, baseline_path)
+                except Exception:
+                    # Never let comparison errors break a test run.
+                    pass
 
 
 class BenchmarkFixture:
