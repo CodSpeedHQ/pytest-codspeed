@@ -76,6 +76,28 @@ jobs:
       - name: Run tests
         run: uv run --no-sync pytest -vs
 
+  walltime-macos-test:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: true
+      - uses: astral-sh/setup-uv@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+      - name: Install dependencies
+        run: uv sync --all-extras --dev --locked
+      - name: Run the benchmarks
+        uses: CodSpeedHQ/action@main
+        env:
+          CODSPEED_SKIP_UPLOAD: "true"
+        with:
+          run: uv run pytest tests/benchmarks/test_bench_fibo.py --codspeed
+          mode: walltime
+          # TODO: Remove this once the runner has been released with macos support
+          runner-version: branch:main
+
   all-checks:
     runs-on: ubuntu-latest
     steps:
@@ -83,3 +105,4 @@ jobs:
     needs:
       - static-analysis
       - tests
+      - walltime-macos-test
