@@ -5,6 +5,20 @@
 
 
 
+## [4.4.0] - 2026-04-14
+
+### <!-- 0 -->🚀 Features
+- Collect Python toolchain information via instrument hooks environment API by @GuillaumeLagrange in [#108](https://github.com/CodSpeedHQ/pytest-codspeed/pull/108)
+
+### <!-- 1 -->🐛 Bug Fixes
+- Exclude setup time from benchmark in walltime mode (#114) by @toby-coleman in [#114](https://github.com/CodSpeedHQ/pytest-codspeed/pull/114)
+- Fix segfault caused by multiple activate_stack_trampoline by @GuillaumeLagrange
+
+### <!-- 7 -->⚙️ Internals
+- Bump the python pinned python version by @GuillaumeLagrange in [#109](https://github.com/CodSpeedHQ/pytest-codspeed/pull/109)
+- Add CONTRIBUTING.md by @adriencaccia
+
+
 ## [4.3.0] - 2026-02-09
 
 ### <!-- 0 -->🚀 Features
