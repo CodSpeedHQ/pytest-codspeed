@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import hashlib
 import os
+import pickle
 import warnings
 from dataclasses import asdict, dataclass
 from math import ceil
@@ -146,13 +148,25 @@ class BenchmarkStats:
         )
 
 
+def _hash_output(value: object) -> str | None:
+    """Return a short hex digest of *value*, or ``None`` if un-serialisable."""
+    try:
+        raw = pickle.dumps(value, protocol=pickle.HIGHEST_PROTOCOL)
+    except Exception:
+        try:
+            raw = repr(value).encode()
+        except Exception:
+            return None
+    return hashlib.sha256(raw).hexdigest()[:16]
+
+
 @dataclass
 class Benchmark:
     name: str
     uri: str
-
     config: BenchmarkConfig
     stats: BenchmarkStats
+    output_hash: str | None = None
 
 
 class WallTimeInstrument(Instrument):
@@ -201,6 +215,9 @@ class WallTimeInstrument(Instrument):
 
         # Compute the actual result of the function
         out = __codspeed_root_frame__()
+        output_hash = (
+            _hash_output(out) if self.config.capture_output else None
+        )
 
         # Warmup
         times_per_round_ns: list[float] = []
@@ -259,7 +276,13 @@ class WallTimeInstrument(Instrument):
         )
 
         self.benchmarks.append(
-            Benchmark(name=name, uri=uri, config=benchmark_config, stats=stats)
+            Benchmark(
+                name=name,
+                uri=uri,
+                config=benchmark_config,
+                stats=stats,
+                output_hash=output_hash,
+            )
         )
         return out
 
@@ -317,11 +340,20 @@ class WallTimeInstrument(Instrument):
         # Compute the actual result of the function
         args, kwargs = pedantic_options.setup_and_get_args_kwargs()
         out = __codspeed_root_frame__(*args, **kwargs)
+        output_hash = (
+            _hash_output(out) if self.config.capture_output else None
+        )
         if pedantic_options.teardown is not None:
             pedantic_options.teardown(*args, **kwargs)
 
         self.benchmarks.append(
-            Benchmark(name=name, uri=uri, config=benchmark_config, stats=stats)
+            Benchmark(
+                name=name,
+                uri=uri,
+                config=benchmark_config,
+                stats=stats,
+                output_hash=output_hash,
+            )
         )
         return out
 
