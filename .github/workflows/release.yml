@@ -19,6 +19,8 @@ jobs:
             arch: x86_64
           - runs-on: codspeedhq-arm64-ubuntu-24.04
             arch: aarch64
+          - runs-on: macos-latest
+            arch: arm64
 
     runs-on: ${{ matrix.platform.runs-on }}
     steps:
@@ -34,7 +36,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: wheels-${{ matrix.platform.arch }}
+          name: wheels-${{ matrix.platform.runs-on }}-${{ matrix.platform.arch }}
           path: wheelhouse/*.whl
 
   build-py3-none-any:

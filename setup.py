@@ -18,10 +18,9 @@ current_arch = platform.machine()
 
 print(f"System: {system} ({current_arch})")
 
-IS_EXTENSION_BUILDABLE = system == "Linux" and current_arch in [
-    "x86_64",
-    "aarch64",
-]
+IS_EXTENSION_BUILDABLE = (
+    system == "Linux" and current_arch in ["x86_64", "aarch64"]
+) or (system == "Darwin" and current_arch == "arm64")
 
 IS_EXTENSION_REQUIRED = (
     os.environ.get("PYTEST_CODSPEED_FORCE_EXTENSION_BUILD") is not None

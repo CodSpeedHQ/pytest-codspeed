@@ -98,7 +98,7 @@ push = false
 ]
 
 [tool.cibuildwheel]
-build = "cp*manylinux*"
+build = "cp*{manylinux,macosx}*"
 test-extras = ["build", "test", "compat"]
 test-command = "pytest -v --ignore={project}/tests/benchmarks {project}/tests"
 
@@ -107,6 +107,9 @@ environment = { PYTEST_CODSPEED_FORCE_EXTENSION_BUILD = "1", PYTEST_CODSPEED_FOR
 manylinux-x86_64-image = "manylinux_2_28"
 manylinux-aarch64-image = "manylinux_2_28"
 before-all = "yum -y install valgrind-devel"
+
+[tool.cibuildwheel.macos]
+environment = { PYTEST_CODSPEED_FORCE_EXTENSION_BUILD = "1" }
 
 [tool.mypy]
 python_version = "3.12"
