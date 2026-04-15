@@ -10,7 +10,7 @@ header_text = (includes_dir / "core.h").read_text()
 
 # Manually copied from `instrument-hooks/includes/core.h` to avoid parsing issues
 ffibuilder.cdef("""
-typedef uint64_t *InstrumentHooks;
+typedef struct InstrumentHooks InstrumentHooks;
 
 InstrumentHooks *instrument_hooks_init(void);
 void instrument_hooks_deinit(InstrumentHooks *);
@@ -28,7 +28,7 @@ uint8_t instrument_hooks_set_integration(InstrumentHooks *, const char *name,
 #define MARKER_TYPE_BENCHMARK_START 2
 #define MARKER_TYPE_BENCHMARK_END 3
 
-uint8_t instrument_hooks_add_marker(InstrumentHooks *, uint32_t pid,
+uint8_t instrument_hooks_add_marker(InstrumentHooks *, int32_t pid,
                                    uint8_t marker_type, uint64_t timestamp);
 uint64_t instrument_hooks_current_timestamp(void);
 
@@ -44,7 +44,7 @@ uint8_t instrument_hooks_set_environment_list(InstrumentHooks *,
                                               const char *key,
                                               const char *const *values,
                                               uint32_t count);
-uint8_t instrument_hooks_write_environment(InstrumentHooks *, uint32_t pid);
+uint8_t instrument_hooks_write_environment(InstrumentHooks *, int32_t pid);
 """)
 
 ffibuilder.set_source(
