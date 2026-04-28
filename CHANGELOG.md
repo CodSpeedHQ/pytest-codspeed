@@ -5,6 +5,14 @@
 
 
 
+## [4.5.0] - 2026-04-28
+
+### <!-- 7 -->⚙️ Internals
+- Pre-build macos binary by @GuillaumeLagrange in [#117](https://github.com/CodSpeedHQ/pytest-codspeed/pull/117)
+- Bump instrument-hooks submodule to use int32_t as pid by @GuillaumeLagrange
+- Add macos integration test by @GuillaumeLagrange
+
+
 ## [4.4.0] - 2026-04-14
 
 ### <!-- 0 -->🚀 Features
