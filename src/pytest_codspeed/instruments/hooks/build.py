@@ -35,6 +35,10 @@ uint64_t instrument_hooks_current_timestamp(void);
 void callgrind_start_instrumentation();
 void callgrind_stop_instrumentation();
 
+typedef enum {
+  FEATURE_DISABLE_CALLGRIND_MARKERS = 0,
+} instrument_hooks_feature_t;
+
 void instrument_hooks_set_feature(uint64_t feature, bool enabled);
 
 uint8_t instrument_hooks_set_environment(InstrumentHooks *, const char *section_name,
