@@ -15,8 +15,19 @@ if TYPE_CHECKING:
 
     from .dist_instrument_hooks import InstrumentHooksPointer, LibType
 
-# Feature flags for instrument hooks
-FEATURE_DISABLE_CALLGRIND_MARKERS = 0
+
+def _load_lib_constant(name: str) -> int:
+    from .dist_instrument_hooks import lib  # type: ignore
+
+    return getattr(lib, name)
+
+
+# Constants are defined in instrument-hooks/includes/core.h and exposed via cffi.
+FEATURE_DISABLE_CALLGRIND_MARKERS = _load_lib_constant("FEATURE_DISABLE_CALLGRIND_MARKERS")
+MARKER_TYPE_SAMPLE_START = _load_lib_constant("MARKER_TYPE_SAMPLE_START")
+MARKER_TYPE_SAMPLE_END = _load_lib_constant("MARKER_TYPE_SAMPLE_END")
+MARKER_TYPE_BENCHMARK_START = _load_lib_constant("MARKER_TYPE_BENCHMARK_START")
+MARKER_TYPE_BENCHMARK_END = _load_lib_constant("MARKER_TYPE_BENCHMARK_END")
 
 
 class InstrumentHooks:
@@ -78,6 +89,30 @@ class InstrumentHooks:
         )
         if ret != 0:
             warnings.warn("Failed to set executed benchmark", RuntimeWarning)
+
+    @staticmethod
+    def current_timestamp() -> int:
+        """Return a monotonic timestamp in nanoseconds from the native library."""
+        from .dist_instrument_hooks import lib  # type: ignore
+
+        return lib.instrument_hooks_current_timestamp()
+
+    def add_marker(
+        self, marker_type: int, timestamp: int, pid: int | None = None
+    ) -> None:
+        """Emit a single marker at the given timestamp."""
+        if pid is None:
+            pid = os.getpid()
+        ret = self.lib.instrument_hooks_add_marker(
+            self.instance, pid, marker_type, timestamp
+        )
+        if ret != 0:
+            warnings.warn("Failed to add marker", RuntimeWarning)
+
+    def add_benchmark_timestamps(self, start: int, end: int) -> None:
+        """Emit a BenchmarkStart/BenchmarkEnd marker pair around a captured window."""
+        self.add_marker(MARKER_TYPE_BENCHMARK_START, start)
+        self.add_marker(MARKER_TYPE_BENCHMARK_END, end)
 
     def set_integration(self, name: str, version: str) -> None:
         """Set the integration name and version."""
