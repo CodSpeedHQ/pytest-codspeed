@@ -183,7 +183,7 @@ class WallTimeInstrument(Instrument):
         )
         return config_str, []
 
-    def measure(
+    def measure(  # noqa: C901
         self,
         marker_options: BenchmarkMarkerOptions,
         name: str,
@@ -232,21 +232,31 @@ class WallTimeInstrument(Instrument):
         # Benchmark
         iter_range = range(iter_per_round)
         run_start = perf_counter_ns()
-        if self.instrument_hooks:
-            self.instrument_hooks.start_benchmark()
+        hooks = self.instrument_hooks
+        if hooks:
+            hooks.start_benchmark()
         for _ in range(rounds):
+            instrument_hooks_start = hooks.current_timestamp() if hooks else None
             start = perf_counter_ns()
+
             for _ in iter_range:
                 __codspeed_root_frame__()
+
             end = perf_counter_ns()
+            if hooks and instrument_hooks_start is not None:
+                instrument_hooks_end = hooks.current_timestamp()
+                hooks.add_benchmark_timestamps(
+                    instrument_hooks_start, instrument_hooks_end
+                )
+
             times_per_round_ns.append(end - start)
 
             if end - run_start > benchmark_config.max_time_ns:
                 # TODO: log something
                 break
-        if self.instrument_hooks:
-            self.instrument_hooks.stop_benchmark()
-            self.instrument_hooks.set_executed_benchmark(uri)
+        if hooks:
+            hooks.stop_benchmark()
+            hooks.set_executed_benchmark(uri)
         benchmark_end = perf_counter_ns()
         total_time = (benchmark_end - run_start) / 1e9
 
@@ -290,20 +300,30 @@ class WallTimeInstrument(Instrument):
         # Benchmark
         times_per_round_ns: list[float] = []
         benchmark_start = perf_counter_ns()
-        if self.instrument_hooks:
-            self.instrument_hooks.start_benchmark()
+        hooks = self.instrument_hooks
+        if hooks:
+            hooks.start_benchmark()
         for _ in range(pedantic_options.rounds):
             args, kwargs = pedantic_options.setup_and_get_args_kwargs()
+            instrument_hooks_start = hooks.current_timestamp() if hooks else None
             start = perf_counter_ns()
+
             for _ in iter_range:
                 __codspeed_root_frame__(*args, **kwargs)
+
             end = perf_counter_ns()
+            if hooks and instrument_hooks_start is not None:
+                instrument_hooks_end = hooks.current_timestamp()
+                hooks.add_benchmark_timestamps(
+                    instrument_hooks_start, instrument_hooks_end
+                )
+
             times_per_round_ns.append(end - start)
             if pedantic_options.teardown is not None:
                 pedantic_options.teardown(*args, **kwargs)
-        if self.instrument_hooks:
-            self.instrument_hooks.stop_benchmark()
-            self.instrument_hooks.set_executed_benchmark(uri)
+        if hooks:
+            hooks.stop_benchmark()
+            hooks.set_executed_benchmark(uri)
         benchmark_end = perf_counter_ns()
         total_time = (benchmark_end - benchmark_start) / 1e9
         stats = BenchmarkStats.from_list(
