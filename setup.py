@@ -36,6 +36,18 @@ native_extension = Extension(
         "src/pytest_codspeed/instruments/hooks/instrument-hooks/dist/core.c",
     ],
     include_dirs=["src/pytest_codspeed/instruments/hooks/instrument-hooks/includes"],
+    # IMPORTANT: Keep in sync with instrument-hooks/.github/workflows/ci.yml
+    # (COMMON_CFLAGS). The Zig-generated core.c emits many warnings that
+    # upstream silences; in particular distros like Nix/Debian/Fedora inject
+    # -Werror=format-security, which would otherwise fail the build.
+    extra_compile_args=[
+        "-Wno-format",
+        "-Wno-format-security",
+        "-Wno-unused-but-set-variable",
+        "-Wno-unused-const-variable",
+        "-Wno-type-limits",
+        "-Wno-uninitialized",
+    ],
     optional=not IS_EXTENSION_REQUIRED,
 )
 
