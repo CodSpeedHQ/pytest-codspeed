@@ -97,6 +97,7 @@ jobs:
         uses: CodSpeedHQ/action@main
         env:
           CODSPEED_SKIP_UPLOAD: "true"
+          CODSPEED_PROFILER_ENABLED: "false"
         with:
           run: uv run pytest tests/benchmarks/test_bench_fibo.py --codspeed
           mode: walltime
