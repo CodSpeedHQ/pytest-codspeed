@@ -296,6 +296,7 @@ PyMODINIT_FUNC PyInit_dist_instrument_hooks(void) {
     PyModule_AddIntConstant(module, "MARKER_TYPE_SAMPLE_END", MARKER_TYPE_SAMPLE_END);
     PyModule_AddIntConstant(module, "MARKER_TYPE_BENCHMARK_START", MARKER_TYPE_BENCHMARK_START);
     PyModule_AddIntConstant(module, "MARKER_TYPE_BENCHMARK_END", MARKER_TYPE_BENCHMARK_END);
+    PyModule_AddIntConstant(module, "FEATURE_DISABLE_CALLGRIND_MARKERS", FEATURE_DISABLE_CALLGRIND_MARKERS);
 
 #ifdef Py_GIL_DISABLED
     PyUnstable_Module_SetGIL(module, Py_MOD_GIL_NOT_USED);
