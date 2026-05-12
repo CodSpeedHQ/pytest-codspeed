@@ -93,6 +93,8 @@ jobs:
           python-version: "3.14"
       - name: Install dependencies
         run: uv sync --all-extras --dev --locked
+      # Samply cannot profile signed binaries, this is a temporary workaround
+      - run: brew install bash
       - name: Run the benchmarks
         uses: CodSpeedHQ/action@main
         env:

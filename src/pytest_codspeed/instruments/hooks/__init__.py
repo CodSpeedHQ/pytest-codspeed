@@ -118,7 +118,7 @@ class InstrumentHooks:
         """Check if simulation is active."""
         return self._module.instrument_hooks_is_instrumented(self._instance)
 
-    def set_feature(self, feature: int, enabled: bool) -> None:
+    def _set_feature(self, feature: int, enabled: bool) -> None:
         """Set a feature flag in the instrument hooks library.
 
         Args:
@@ -126,6 +126,10 @@ class InstrumentHooks:
             enabled: Whether to enable or disable the feature
         """
         self._module.instrument_hooks_set_feature(feature, enabled)
+
+    def disable_callgrind_markers(self, disabled: bool = True) -> None:
+        """Disable automatic callgrind markers around benchmark start/stop."""
+        self._set_feature(self._module.FEATURE_DISABLE_CALLGRIND_MARKERS, disabled)
 
     def set_environment(self, section_name: str, key: str, value: str) -> None:
         """Register a key-value pair under a named section for environment collection.

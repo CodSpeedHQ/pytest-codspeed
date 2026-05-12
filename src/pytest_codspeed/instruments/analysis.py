@@ -6,10 +6,7 @@ from typing import TYPE_CHECKING
 
 from pytest_codspeed import __semver_version__
 from pytest_codspeed.instruments import Instrument
-from pytest_codspeed.instruments.hooks import (
-    FEATURE_DISABLE_CALLGRIND_MARKERS,
-    InstrumentHooks,
-)
+from pytest_codspeed.instruments.hooks import InstrumentHooks
 from pytest_codspeed.utils import SUPPORTS_PERF_TRAMPOLINE
 
 if TYPE_CHECKING:
@@ -79,7 +76,7 @@ class AnalysisInstrument(Instrument):
             # Warmup CPython performance map cache
             __codspeed_root_frame__()
 
-        self.instrument_hooks.set_feature(FEATURE_DISABLE_CALLGRIND_MARKERS, True)
+        self.instrument_hooks.disable_callgrind_markers()
         self.instrument_hooks.start_benchmark()
 
         # Manually call the library function to avoid an extra stack frame. Also
@@ -128,7 +125,7 @@ class AnalysisInstrument(Instrument):
         # Compute the actual result of the function
         args, kwargs = pedantic_options.setup_and_get_args_kwargs()
 
-        self.instrument_hooks.set_feature(FEATURE_DISABLE_CALLGRIND_MARKERS, True)
+        self.instrument_hooks.disable_callgrind_markers()
         self.instrument_hooks.start_benchmark()
 
         # Manually call the library function to avoid an extra stack frame. Also
