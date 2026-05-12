@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 from pytest_codspeed.utils import SUPPORTS_PERF_TRAMPOLINE
 
 if TYPE_CHECKING:
-    from typing import Any
+    from typing import Any, Callable
 
 # Feature flags for instrument hooks
 FEATURE_DISABLE_CALLGRIND_MARKERS = 0
@@ -22,6 +22,10 @@ class InstrumentHooks:
 
     _module: Any
     _instance: Any
+    # Bound directly to the C functions in __init__ to avoid an extra Python
+    # stack frame when starting/stopping callgrind instrumentation.
+    callgrind_start_instrumentation: Callable[[], None]
+    callgrind_stop_instrumentation: Callable[[], None]
 
     def __init__(self) -> None:
         if os.environ.get("CODSPEED_ENV") is None:
@@ -35,6 +39,12 @@ class InstrumentHooks:
         except ImportError as e:
             raise RuntimeError(f"Failed to load instrument hooks library: {e}") from e
         self._module = dist_instrument_hooks
+        self.callgrind_start_instrumentation = (
+            dist_instrument_hooks.callgrind_start_instrumentation
+        )
+        self.callgrind_stop_instrumentation = (
+            dist_instrument_hooks.callgrind_stop_instrumentation
+        )
 
         self._instance = self._module.instrument_hooks_init()
         if self._instance is None:
@@ -86,14 +96,6 @@ class InstrumentHooks:
     def is_instrumented(self) -> bool:
         """Check if simulation is active."""
         return self._module.instrument_hooks_is_instrumented(self._instance)
-
-    def callgrind_start_instrumentation(self) -> None:
-        """Start callgrind instrumentation."""
-        self._module.callgrind_start_instrumentation()
-
-    def callgrind_stop_instrumentation(self) -> None:
-        """Stop callgrind instrumentation."""
-        self._module.callgrind_stop_instrumentation()
 
     def set_feature(self, feature: int, enabled: bool) -> None:
         """Set a feature flag in the instrument hooks library.
