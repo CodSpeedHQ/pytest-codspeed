@@ -104,7 +104,7 @@ push = false
 
 [tool.cibuildwheel]
 build = "cp*{manylinux,macosx}*"
-enable = ["cpython-freethreading", "cpython-prerelease"]
+enable = ["cpython-prerelease"]
 test-extras = ["build", "test", "compat"]
 test-command = "pytest -v --ignore={project}/tests/benchmarks {project}/tests"
 
