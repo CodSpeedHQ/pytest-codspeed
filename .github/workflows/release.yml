@@ -28,7 +28,9 @@ jobs:
         with:
           submodules: true
       - name: Build wheels
-        uses: pypa/cibuildwheel@v3.4.1
+        # Pinned to main past v3.4.1 for CPython 3.15 beta support (PR #2833).
+        # Revisit once the next tagged release ships 3.15 metadata.
+        uses: pypa/cibuildwheel@ec0977e5f64e2ec8c1276eea62083c103613b756
         env:
           CIBW_ARCHS: ${{ matrix.platform.arch }}
         with:
