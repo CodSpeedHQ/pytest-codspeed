@@ -28,7 +28,7 @@ jobs:
         with:
           submodules: true
       - name: Build wheels
-        uses: pypa/cibuildwheel@v3.2.1
+        uses: pypa/cibuildwheel@v3.4.1
         env:
           CIBW_ARCHS: ${{ matrix.platform.arch }}
         with:
