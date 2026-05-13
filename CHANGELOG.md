@@ -5,6 +5,12 @@
 
 
 
+## [5.0.1] - 2026-05-13
+
+### <!-- 10 -->💼 Other
+- Enable free-threaded wheels in cibuildwheel (#121) by @art049 in [#121](https://github.com/CodSpeedHQ/pytest-codspeed/pull/121)
+
+
 ## [5.0.0] - 2026-05-13
 
 ### <!-- 0 -->🚀 Features
