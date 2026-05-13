@@ -25,6 +25,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "Topic :: Software Development :: Testing",
     "Topic :: System :: Benchmark",
     "Topic :: Utilities",
@@ -103,6 +104,7 @@ push = false
 
 [tool.cibuildwheel]
 build = "cp*{manylinux,macosx}*"
+enable = ["cpython-prerelease"]
 test-extras = ["build", "test", "compat"]
 test-command = "pytest -v --ignore={project}/tests/benchmarks {project}/tests"
 
