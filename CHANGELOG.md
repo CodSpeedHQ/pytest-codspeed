@@ -5,6 +5,25 @@
 
 
 
+## [5.0.0] - 2026-05-13
+
+### <!-- 0 -->🚀 Features
+- Use instrument_hooks markers in walltime by @GuillaumeLagrange
+- Declare native extension free-thread safe (#120) by @art049 in [#120](https://github.com/CodSpeedHQ/pytest-codspeed/pull/120)
+- Remove cffi in favor of native extension by @adriencaccia
+
+### <!-- 4 -->⚡ Performance
+- Bind callgrind start/stop directly to avoid extra frame by @art049 in [#96](https://github.com/CodSpeedHQ/pytest-codspeed/pull/96)
+
+### <!-- 7 -->⚙️ Internals
+- Ignore common compilation warnings for instrument-hooks by @GuillaumeLagrange in [#118](https://github.com/CodSpeedHQ/pytest-codspeed/pull/118)
+- Use unsigned bash in the macos test by @GuillaumeLagrange
+- Bump pinned uv version to 0.11.14 by @art049
+- Add python 3.15 and 3.15t to test matrix by @art049
+- Add 3.14.t in test suite by @adriencaccia
+- Bump instrument-hooks (#119) by @not-matthias in [#119](https://github.com/CodSpeedHQ/pytest-codspeed/pull/119)
+
+
 ## [4.5.0] - 2026-04-28
 
 ### <!-- 7 -->⚙️ Internals
