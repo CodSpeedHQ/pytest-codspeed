@@ -5,6 +5,12 @@
 
 
 
+## [5.0.2] - 2026-05-14
+
+### <!-- 0 -->🚀 Features
+- Skip Python runtime objects in callgrind by @not-matthias in [#122](https://github.com/CodSpeedHQ/pytest-codspeed/pull/122)
+
+
 ## [5.0.1] - 2026-05-13
 
 ### <!-- 10 -->💼 Other
