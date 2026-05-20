@@ -1,12 +1,6 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 #include "core.h"
-#include "valgrind.h"
-
-/* CodSpeed-specific Valgrind client request: tell callgrind to skip an
- * object file by path. Not present in upstream callgrind.h. */
-// TODO(COD-2654): Move this to instrument-hooks and just call it here
-#define VG_USERREQ__ADD_OBJ_SKIP 0x43540006
 
 /* Capsule destructor for InstrumentHooks pointer */
 static void instrument_hooks_capsule_destructor(PyObject *capsule) {
@@ -248,15 +242,14 @@ static PyObject *py_instrument_hooks_write_environment(PyObject *self, PyObject 
     return PyLong_FromLong(result);
 }
 
-/* callgrind_add_obj_skip(path: bytes) -> None
- * Outside Valgrind this expands to a nop, so it's safe on bare metal. */
+/* callgrind_add_obj_skip(path: bytes) -> int */
 static PyObject *py_callgrind_add_obj_skip(PyObject *self, PyObject *args) {
     const char *path;
     if (!PyArg_ParseTuple(args, "y", &path)) {
         return NULL;
     }
-    VALGRIND_DO_CLIENT_REQUEST_STMT(VG_USERREQ__ADD_OBJ_SKIP, path, 0, 0, 0, 0);
-    Py_RETURN_NONE;
+    uint8_t result = instrument_hooks_callgrind_add_obj_skip(path);
+    return PyLong_FromLong(result);
 }
 
 /* Method definitions */

@@ -52,7 +52,7 @@ class InstrumentHooks:
 
         # Ignore libpython and python executable frames in callgrind so they
         # don't obfuscate the flamegraph.
-        callgrind_skip_python_runtime()
+        self._callgrind_skip_python_runtime()
 
     def __del__(self):
         # Don't manually deinit - let the capsule destructor handle it
@@ -228,46 +228,21 @@ class InstrumentHooks:
 
         self.write_environment()
 
-
-def callgrind_add_obj_skip(path: str) -> None:
-    """Tell callgrind to skip the given object file (and its realpath).
-
-    The actual Valgrind client-request trapdoor lives in the C extension; this
-    just resolves the realpath so callgrind's strcmp matches either form.
-    """
-    if not path or not os.path.exists(path):
-        return
-    try:
-        from . import dist_instrument_hooks  # type: ignore
-    except ImportError:
-        return
-
-    dist_instrument_hooks.callgrind_add_obj_skip(path.encode())
-
-    # The dynamic loader maps the realpath (e.g. libpython3.12.so.1.0), and
-    # callgrind stores that in obj_node->name. Skip both so the exact strcmp
-    # matches regardless of which path callgrind sees.
-    real = os.path.realpath(path)
-    if real != path:
-        dist_instrument_hooks.callgrind_add_obj_skip(real.encode())
-
-
-def callgrind_skip_python_runtime() -> None:
-    """Skip libpython and the python executable from callgrind measurement."""
-    ldlibrary = sysconfig.get_config_var("LDLIBRARY")
-    libdir = sysconfig.get_config_var("LIBDIR")
-    libpython = next(
-        (
-            p
-            for p in (
-                os.path.join(libdir, ldlibrary) if ldlibrary and libdir else None,
-                os.path.join(sys.prefix, "lib", ldlibrary) if ldlibrary else None,
-            )
-            if p and os.path.exists(p)
-        ),
-        None,
-    )
-    if libpython:
-        callgrind_add_obj_skip(libpython)
-
-    callgrind_add_obj_skip(sys.executable)
+    def _callgrind_skip_python_runtime(self) -> None:
+        """Skip libpython and the python executable from callgrind measurement."""
+        ldlibrary = sysconfig.get_config_var("LDLIBRARY")
+        libdir = sysconfig.get_config_var("LIBDIR")
+        libpython = next(
+            (
+                p
+                for p in (
+                    os.path.join(libdir, ldlibrary) if ldlibrary and libdir else None,
+                    os.path.join(sys.prefix, "lib", ldlibrary) if ldlibrary else None,
+                )
+                if p and os.path.exists(p)
+            ),
+            None,
+        )
+        if libpython:
+            self._module.callgrind_add_obj_skip(libpython.encode())
+        self._module.callgrind_add_obj_skip(sys.executable.encode())
