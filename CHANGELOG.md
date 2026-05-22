@@ -5,6 +5,12 @@
 
 
 
+## [5.0.3] - 2026-05-22
+
+### <!-- 2 -->🏗️ Refactor
+- Use instrument_hooks_callgrind_add_obj_skip from C API by @not-matthias in [#123](https://github.com/CodSpeedHQ/pytest-codspeed/pull/123)
+
+
 ## [5.0.2] - 2026-05-14
 
 ### <!-- 0 -->🚀 Features
