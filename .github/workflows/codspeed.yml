@@ -28,9 +28,6 @@ jobs:
         with:
           submodules: "recursive"
       - uses: astral-sh/setup-uv@v7
-      - uses: actions/setup-python@v6
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
       - name: Install local version of pytest-codspeed
         run: |
           sudo apt-get update
@@ -42,6 +39,7 @@ jobs:
         with:
           mode: ${{ matrix.mode }}
           run: uv run pytest tests/benchmarks/ --codspeed --test-group=${{ matrix.shard }} --test-group-count=${{ env.SHARDS }}
+          runner-version: v4.16.2
 
   all-checks:
     runs-on: ubuntu-latest
