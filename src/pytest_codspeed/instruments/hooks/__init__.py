@@ -243,8 +243,10 @@ class InstrumentHooks:
             ),
             None,
         )
-        print(f"Identified libpython for callgrind skipping: {libpython}")
         if libpython:
+            libpython = os.path.realpath(libpython)
+            print(f"Identified libpython for callgrind skipping: {libpython}")
             self._module.callgrind_add_obj_skip(libpython.encode())
-        print(f"Skipping Python executable in callgrind: {sys.executable}")
-        self._module.callgrind_add_obj_skip(sys.executable.encode())
+        executable = os.path.realpath(sys.executable)
+        print(f"Skipping Python executable in callgrind: {executable}")
+        self._module.callgrind_add_obj_skip(executable.encode())
