@@ -243,6 +243,8 @@ class InstrumentHooks:
             ),
             None,
         )
+        print(f"Identified libpython for callgrind skipping: {libpython}")
         if libpython:
             self._module.callgrind_add_obj_skip(libpython.encode())
+        print(f"Skipping Python executable in callgrind: {sys.executable}")
         self._module.callgrind_add_obj_skip(sys.executable.encode())
