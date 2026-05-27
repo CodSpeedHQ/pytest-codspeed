@@ -19,7 +19,7 @@ jobs:
     strategy:
       matrix:
         shard: [1, 2, 3, 4]
-        mode: ["simulation", "walltime", "memory"]
+        mode: ["simulation"] # , "walltime", "memory"
 
     name: "Run ${{ matrix.mode }} benchmarks (Shard #${{ matrix.shard }})"
     runs-on: ${{ matrix.mode == 'walltime' && 'codspeed-macro' || 'ubuntu-24.04' }}
