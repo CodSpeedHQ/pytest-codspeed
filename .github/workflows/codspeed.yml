@@ -43,6 +43,7 @@ jobs:
           mode: ${{ matrix.mode }}
           run: uv run pytest tests/benchmarks/ --codspeed --test-group=${{ matrix.shard }} --test-group-count=${{ env.SHARDS }}
           cache-instruments: false
+          runner-version: latest
 
   all-checks:
     runs-on: ubuntu-latest
