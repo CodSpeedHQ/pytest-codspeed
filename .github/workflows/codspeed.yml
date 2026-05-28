@@ -37,6 +37,16 @@ jobs:
           sudo apt-get install valgrind -y
           uv sync --dev
           sudo apt-get remove valgrind -y
+
+      - name: Install valgrind-codspeed
+        if: inputs.language == 'python'
+        shell: bash
+        run: |
+          git clone https://github.com/CodSpeedHQ/valgrind-codspeed
+          cd valgrind-codspeed
+          git checkout cod-2714-investigate-pytest-flamegraph-regression
+          ./autogen.sh && ./configure && make -j$(nproc) && sudo make install
+
       - name: Run benchmarks
         uses: CodSpeedHQ/action@main
         with:
