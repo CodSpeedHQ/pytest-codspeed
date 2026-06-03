@@ -44,7 +44,7 @@ jobs:
         run: |
           git clone https://github.com/CodSpeedHQ/valgrind-codspeed
           cd valgrind-codspeed
-          git checkout cod-2714-investigate-pytest-flamegraph-regression
+          git checkout master
           ./autogen.sh && ./configure && make -j$(nproc) && sudo make install
 
       - name: Run benchmarks
