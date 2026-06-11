@@ -380,7 +380,7 @@ class WallTimeInstrument(Instrument):
                 rsd_text.stylize("red bold")
             table.add_row(
                 escape(bench.name),
-                format_time(bench.stats.min_ns / bench.stats.iter_per_round),
+                format_time(bench.stats.min_ns),
                 rsd_text,
                 f"{bench.stats.total_time:,.2f}s",
                 f"{bench.stats.iter_per_round * bench.stats.rounds:,}",
