@@ -41,6 +41,7 @@ native_extension = Extension(
     # upstream silences; in particular distros like Nix/Debian/Fedora inject
     # -Werror=format-security, which would otherwise fail the build.
     extra_compile_args=[
+        "-std=c11",
         "-Wno-format",
         "-Wno-format-security",
         "-Wno-unused-but-set-variable",
