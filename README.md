@@ -111,7 +111,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run benchmarks
-        uses: CodSpeedHQ/action@v4
+        uses: CodSpeedHQ/action@v5
         with:
           mode: simulation # or `walltime`
           token: ${{ secrets.CODSPEED_TOKEN }}
