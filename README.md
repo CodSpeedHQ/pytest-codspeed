@@ -117,3 +117,5 @@ jobs:
           token: ${{ secrets.CODSPEED_TOKEN }}
           run: pytest tests/ --codspeed
 ```
+
+<!-- ab-test: verify walltime shard hang reproduces on master code -->
