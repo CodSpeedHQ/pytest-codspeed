@@ -5,6 +5,8 @@ import gc
 import json
 import os
 import random
+import sys
+import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 from time import time
@@ -36,6 +38,32 @@ if TYPE_CHECKING:
 
     T = TypeVar("T")
     P = ParamSpec("P")
+
+# Keep these bounds in sync with `requires-python`, the Python classifiers in
+# pyproject.toml, and the CI test matrix.
+MIN_SUPPORTED_PYTHON_VERSION = (3, 9)
+MAX_SUPPORTED_PYTHON_VERSION = (3, 15)
+
+
+def warn_if_unsupported_python_version() -> None:
+    version = sys.version_info[:2]
+    if MIN_SUPPORTED_PYTHON_VERSION <= version <= MAX_SUPPORTED_PYTHON_VERSION:
+        return
+
+    supported = " to ".join(
+        f"{major}.{minor}"
+        for major, minor in (
+            MIN_SUPPORTED_PYTHON_VERSION,
+            MAX_SUPPORTED_PYTHON_VERSION,
+        )
+    )
+    warnings.warn(
+        f"Python {version[0]}.{version[1]} is not officially supported by "
+        f"pytest-codspeed (supported: {supported}). Support is experimental and "
+        "untested, measurements may be unreliable.",
+        RuntimeWarning,
+        stacklevel=2,
+    )
 
 
 @pytest.hookimpl(trylast=True)
@@ -101,6 +129,7 @@ def get_plugin(config: pytest.Config) -> CodSpeedPlugin:
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_configure(config: pytest.Config):
+    warn_if_unsupported_python_version()
     config.addinivalue_line(
         "markers", "codspeed_benchmark: mark an entire test for codspeed benchmarking"
     )
