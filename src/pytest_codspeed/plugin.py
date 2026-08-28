@@ -28,6 +28,7 @@ from pytest_codspeed.utils import (
 )
 
 from . import __version__
+from .comparison import compare_results, find_baseline, print_comparison_report
 
 if TYPE_CHECKING:
     from typing import Any, Callable, ParamSpec, TypeVar
@@ -77,6 +78,25 @@ def pytest_addoption(parser: pytest.Parser):
         help=(
             "The maximum number of rounds to run a benchmark for"
             ", only for walltime mode"
+        ),
+    )
+    group.addoption(
+        "--codspeed-capture-output",
+        action="store_true",
+        default=False,
+        help=(
+            "Hash the return value of each benchmark and store it in the "
+            "result file, enabling correctness checks in local comparisons"
+        ),
+    )
+    group.addoption(
+        "--codspeed-eval-report",
+        action="store",
+        default=None,
+        metavar="PATH",
+        help=(
+            "Write a machine-readable JSON eval report to PATH after comparison. "
+            "Requires --codspeed-capture-output and a prior baseline run."
         ),
     )
 
@@ -304,8 +324,6 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus):
             result_path = plugin.profile_folder / "results" / f"{os.getpid()}.json"
         else:
             # Default to a .codspeed folder in the root of the project.
-            # Storing the results will be later used for features such as
-            # local comparison between runs.
             result_path = (
                 session.config.rootpath / f".codspeed/results_{time() * 1000:.0f}.json"
             )
@@ -315,6 +333,28 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus):
         if created:
             (result_path.parent / ".gitignore").write_text("*\n")
         result_path.write_text(json.dumps(data, indent=2))
+
+        # Local baseline comparison — only walltime runs carry per-benchmark
+        # statistics (mean_ns).  Simulation / memory runs skip this silently.
+        if not plugin.profile_folder and plugin.mode == MeasurementMode.WallTime:
+            baseline_path = find_baseline(result_path.parent, result_path)
+            if baseline_path is not None:
+                try:
+                    report = compare_results(baseline_path, result_path)
+                    print_comparison_report(report, baseline_path)
+                    if plugin.config.eval_report_path is not None:
+                        from pytest_codspeed.eval_harness import EvalReport
+
+                        eval_data = EvalReport.from_comparison(report).to_dict()
+                        plugin.config.eval_report_path.parent.mkdir(
+                            parents=True, exist_ok=True
+                        )
+                        plugin.config.eval_report_path.write_text(
+                            json.dumps(eval_data, indent=2)
+                        )
+                except Exception:
+                    # Never let comparison errors break a test run.
+                    pass
 
 
 class BenchmarkFixture:
