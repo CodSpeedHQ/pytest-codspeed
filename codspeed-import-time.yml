@@ -1,0 +1,25 @@
+$schema: https://raw.githubusercontent.com/CodSpeedHQ/codspeed/refs/heads/main/schemas/codspeed.schema.json
+
+options:
+  warmup-time: 0s
+  min-rounds: 30
+  max-rounds: 100
+
+benchmarks:
+  - name: python startup
+    exec: .venv/bin/python -c "pass"
+
+  - name: import pytest
+    exec: .venv/bin/python -c "import pytest"
+
+  - name: import pluggy
+    exec: .venv/bin/python -c "import pluggy"
+
+  - name: import rich
+    exec: .venv/bin/python -c "import rich"
+
+  - name: import pytest_codspeed
+    exec: .venv/bin/python -c "import pytest_codspeed"
+
+  - name: import pytest_codspeed.plugin
+    exec: .venv/bin/python -c "import pytest_codspeed.plugin"
