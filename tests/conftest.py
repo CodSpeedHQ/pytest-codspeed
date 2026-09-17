@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import os
 import shutil
 import sys
@@ -13,6 +14,8 @@ from pytest_codspeed.instruments import MeasurementMode
 from pytest_codspeed.utils import IS_PYTEST_BENCHMARK_INSTALLED
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from _pytest.pytester import RunResult
 
 pytest_plugins = ["pytester"]
@@ -69,6 +72,28 @@ def codspeed_env(monkeypatch):
             monkeypatch.delenv("CODSPEED_ENV", raising=False)
 
     return ctx_manager
+
+
+# ---------------------------------------------------------------------------
+# Shared test helpers
+# ---------------------------------------------------------------------------
+
+
+def _make_result(tmp_path: Path, filename: str, benchmarks: list) -> Path:
+    """Write a minimal CodSpeed result JSON and return its path."""
+    path = tmp_path / filename
+    path.write_text(
+        json.dumps({"instrument": {"type": "walltime"}, "benchmarks": benchmarks})
+    )
+    return path
+
+
+def _bench(uri: str, mean_ns: float, output_hash=None) -> dict:
+    """Return a minimal benchmark entry, optionally with an output hash."""
+    entry: dict = {"uri": uri, "stats": {"mean_ns": mean_ns}}
+    if output_hash is not None:
+        entry["output_hash"] = output_hash
+    return entry
 
 
 def run_pytest_codspeed_with_mode(

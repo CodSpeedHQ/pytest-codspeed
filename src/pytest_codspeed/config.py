@@ -22,6 +22,7 @@ class CodSpeedConfig:
     warmup_time_ns: int | None = None
     max_time_ns: int | None = None
     max_rounds: int | None = None
+    capture_output: bool = False
 
     @classmethod
     def from_pytest_config(cls, config: pytest.Config) -> CodSpeedConfig:
@@ -35,6 +36,9 @@ class CodSpeedConfig:
             warmup_time_ns=warmup_time_ns,
             max_rounds=config.getoption("--codspeed-max-rounds", None),
             max_time_ns=max_time_ns,
+            capture_output=bool(
+                config.getoption("--codspeed-capture-output", False)
+            ),
         )
 
 
