@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import TYPE_CHECKING, Generic, TypeVar
 
 T = TypeVar("T")
@@ -22,6 +23,8 @@ class CodSpeedConfig:
     warmup_time_ns: int | None = None
     max_time_ns: int | None = None
     max_rounds: int | None = None
+    capture_output: bool = False
+    eval_report_path: Path | None = None
 
     @classmethod
     def from_pytest_config(cls, config: pytest.Config) -> CodSpeedConfig:
@@ -31,10 +34,15 @@ class CodSpeedConfig:
         )
         max_time = config.getoption("--codspeed-max-time", None)
         max_time_ns = int(max_time * 1_000_000_000) if max_time is not None else None
+        eval_report_raw = config.getoption("--codspeed-eval-report", None)
         return cls(
             warmup_time_ns=warmup_time_ns,
             max_rounds=config.getoption("--codspeed-max-rounds", None),
             max_time_ns=max_time_ns,
+            capture_output=bool(
+                config.getoption("--codspeed-capture-output", False)
+            ),
+            eval_report_path=Path(eval_report_raw) if eval_report_raw else None,
         )
 
 
