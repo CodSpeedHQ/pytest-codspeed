@@ -15,9 +15,9 @@ jobs:
     strategy:
       matrix:
         platform:
-          - runs-on: ubuntu-24.04
+          - runs-on: ubuntu-latest
             arch: x86_64
-          - runs-on: codspeedhq-arm64-ubuntu-24.04
+          - runs-on: ubuntu-latest-arm
             arch: aarch64
           - runs-on: macos-latest
             arch: arm64
