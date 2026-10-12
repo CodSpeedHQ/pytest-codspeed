@@ -15,9 +15,9 @@ jobs:
     strategy:
       matrix:
         platform:
-          - runs-on: ubuntu-latest
+          - runs-on: ubuntu-26.04
             arch: x86_64
-          - runs-on: ubuntu-latest-arm
+          - runs-on: ubuntu-26.04-arm
             arch: aarch64
           - runs-on: macos-latest
             arch: arm64
