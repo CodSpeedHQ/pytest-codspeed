@@ -3,7 +3,7 @@
 
 [![CI](https://github.com/CodSpeedHQ/pytest-codspeed/actions/workflows/ci.yml/badge.svg)](https://github.com/CodSpeedHQ/pytest-codspeed/actions/workflows/ci.yml)
 [![PyPi Version](https://img.shields.io/pypi/v/pytest-codspeed?color=%2334D058&label=pypi)](https://pypi.org/project/pytest-codspeed)
-![Python Version](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-informational.svg)
+![Python Version](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12%20%7C%203.13%20%7C%203.14%20%7C%203.15-informational.svg)
 [![Discord](https://img.shields.io/badge/chat%20on-discord-7289da.svg)](https://discord.com/invite/MxpaCfKSqF)
 [![CodSpeed Badge](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://codspeed.io/CodSpeedHQ/pytest-codspeed)
 
