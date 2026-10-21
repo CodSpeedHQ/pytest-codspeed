@@ -21,6 +21,12 @@ from pytest_codspeed.config import (
     PedanticOptions,
 )
 from pytest_codspeed.instruments import MeasurementMode, get_instrument_from_mode
+from pytest_codspeed.instruments.analysis import AnalysisInstrument
+from pytest_codspeed.isolation import (
+    Isolation,
+    IsolationKind,
+    run_in_child_process,
+)
 from pytest_codspeed.utils import (
     BEFORE_PYTEST_8_1_1,
     IS_PYTEST_BENCHMARK_INSTALLED,
@@ -117,7 +123,22 @@ class CodSpeedPlugin:
     config: CodSpeedConfig
     disabled_plugins: tuple[str, ...]
     profile_folder: Path | None
+    isolation: Isolation
     benchmark_count: int = field(default=0, hash=False, compare=False)
+
+
+def get_isolation(is_codspeed_enabled: bool, instrument: Instrument) -> Isolation:
+    """Only the instrumented modes are isolated, and only when the hooks measure.
+    Walltime and unmeasured runs keep sharing one process."""
+    shared = Isolation(IsolationKind.SHARED_PROCESS)
+    if not is_codspeed_enabled or not isinstance(instrument, AnalysisInstrument):
+        return shared
+    if not instrument.should_measure:
+        return shared
+    try:
+        return Isolation.current()
+    except ValueError as error:
+        raise pytest.UsageError(str(error)) from error
 
 
 PLUGIN_NAME = "codspeed_plugin"
@@ -170,13 +191,15 @@ def pytest_configure(config: pytest.Config):
 
     codspeed_config = CodSpeedConfig.from_pytest_config(config)
 
+    instrument_obj = instrument(codspeed_config, mode)
     plugin = CodSpeedPlugin(
         disabled_plugins=tuple(disabled_plugins),
         is_codspeed_enabled=is_codspeed_enabled,
         mode=mode,
-        instrument=instrument(codspeed_config, mode),
+        instrument=instrument_obj,
         config=codspeed_config,
         profile_folder=Path(profile_folder) if profile_folder else None,
+        isolation=get_isolation(is_codspeed_enabled, instrument_obj),
     )
     config.pluginmanager.register(plugin, PLUGIN_NAME)
 
@@ -263,6 +286,22 @@ def pytest_collection_modifyitems(
         config.hook.pytest_deselected(items=deselected)
         items[:] = selected
 
+    only = plugin.isolation.only_benchmark()
+    if only is None:
+        return
+    # The parent already applied the user's filters, so an exact URI match is
+    # all a child needs.
+    other: list[pytest.Item] = []
+    kept: list[pytest.Item] = []
+    for item in items:
+        uri, _ = get_git_relative_uri_and_name(item.nodeid, config.rootpath)
+        if uri == only:
+            kept.append(item)
+        else:
+            other.append(item)
+    config.hook.pytest_deselected(items=other)
+    items[:] = kept
+
 
 def _measure(
     plugin: CodSpeedPlugin,
@@ -295,6 +334,31 @@ def _measure(
             gc.enable()
 
 
+@pytest.hookimpl(tryfirst=True)
+def pytest_pyfunc_call(pyfuncitem: pytest.Function):
+    """Runs the benchmark in a child process instead of calling the test function
+    here, so the parent never executes the test body."""
+    plugin = get_plugin(pyfuncitem.config)
+    if plugin.isolation.kind is not IsolationKind.PROCESS_PER_BENCHMARK:
+        return None
+    if not should_benchmark_item(pyfuncitem):
+        return None
+
+    assert isinstance(plugin.instrument, AnalysisInstrument)
+    config = pyfuncitem.config
+    uri, _ = get_git_relative_uri_and_name(pyfuncitem.nodeid, config.rootpath)
+    exit_code = run_in_child_process(
+        uri, config.invocation_params.args, config.invocation_params.dir
+    )
+    if exit_code != 0:
+        pytest.fail(
+            f"benchmark {uri} failed in its isolated process (exit code {exit_code})",
+            pytrace=False,
+        )
+    plugin.instrument.benchmark_count += 1
+    return True
+
+
 def wrap_runtest(
     plugin: CodSpeedPlugin,
     node: pytest.Item,
@@ -313,6 +377,10 @@ def pytest_runtest_protocol(item: pytest.Item, nextitem: pytest.Item | None):
     plugin = get_plugin(item.config)
     if not plugin.is_codspeed_enabled or not should_benchmark_item(item):
         # Defer to the default test protocol since no benchmarking is needed
+        return None
+
+    if plugin.isolation.kind is IsolationKind.PROCESS_PER_BENCHMARK:
+        # The child measures it, `pytest_pyfunc_call` only spawns the child.
         return None
 
     if has_benchmark_fixture(item):
