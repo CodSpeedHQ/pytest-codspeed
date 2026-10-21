@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 from conftest import (
     IS_PERF_TRAMPOLINE_SUPPORTED,
@@ -437,4 +439,115 @@ def test_benchmark_fixture_used_normal_pedantic(
     assert result.ret == 1, "the run should have failed"
     result.stdout.fnmatch_lines(
         ["*RuntimeError: The benchmark fixture can only be used once per test*"]
+    )
+
+
+ISOLATION_BENCH_COUNT = 3
+
+ISOLATION_PID_FIXTURE = """
+import os
+
+import pytest
+
+
+@pytest.mark.parametrize("index", range(3))
+def test_bench(benchmark, index):
+    benchmark(lambda: open("pids.txt", "a").write(f"{os.getpid()}\\n"))
+"""
+
+
+def run_isolation_subprocess(
+    pytester: pytest.Pytester,
+    monkeypatch: pytest.MonkeyPatch,
+    isolation: str | None = None,
+) -> pytest.RunResult:
+    # Children are real processes, so the parent must be one too.
+    monkeypatch.setenv("CODSPEED_ENV", "1")
+    monkeypatch.setenv("CODSPEED_RUNNER_MODE", "simulation")
+    if isolation is None:
+        monkeypatch.delenv("CODSPEED_PROCESS_ISOLATION", raising=False)
+    else:
+        monkeypatch.setenv("CODSPEED_PROCESS_ISOLATION", isolation)
+    return pytester.runpytest_subprocess("--codspeed", "-p", "no:cacheprovider")
+
+
+def read_pids(pytester: pytest.Pytester):
+    return (pytester.path / "pids.txt").read_text().split()
+
+
+def test_isolation_runs_each_benchmark_in_its_own_process(
+    pytester: pytest.Pytester, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    pytester.makepyfile(ISOLATION_PID_FIXTURE)
+    result = run_isolation_subprocess(pytester, monkeypatch)
+    assert result.ret == 0
+    assert f"{ISOLATION_BENCH_COUNT} benchmarked" in result.stdout.str()
+    pids = read_pids(pytester)
+    # The body runs more than once per benchmark (warmup), so compare PIDs only.
+    assert len(set(pids)) == ISOLATION_BENCH_COUNT
+
+
+@pytest.mark.parametrize("value", ["0", "false"])
+def test_isolation_disabled_shares_one_process(
+    pytester: pytest.Pytester, monkeypatch: pytest.MonkeyPatch, value: str
+) -> None:
+    pytester.makepyfile(ISOLATION_PID_FIXTURE)
+    result = run_isolation_subprocess(pytester, monkeypatch, value)
+    assert result.ret == 0
+    pids = read_pids(pytester)
+    assert len(set(pids)) == 1
+
+
+def test_isolation_parent_does_not_run_the_body(
+    pytester: pytest.Pytester, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    pytester.makepyfile(
+        """
+        def test_result(benchmark):
+            result = benchmark(lambda: 42)
+            assert result == 42
+        """
+    )
+    result = run_isolation_subprocess(pytester, monkeypatch)
+    assert result.ret == 0
+    result.assert_outcomes(passed=1)
+
+
+def test_isolation_failing_benchmark_fails_only_that_test(
+    pytester: pytest.Pytester, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    pytester.makepyfile(
+        """
+        def mark(name):
+            with open("ran.txt", "a") as f:
+                f.write(name + "\\n")
+
+        def test_before(benchmark):
+            benchmark(mark, "before")
+
+        def test_raises(benchmark):
+            def fn():
+                raise ValueError("boom")
+            benchmark(fn)
+
+        def test_after(benchmark):
+            benchmark(mark, "after")
+        """
+    )
+    result = run_isolation_subprocess(pytester, monkeypatch)
+    assert result.ret == pytest.ExitCode.TESTS_FAILED
+    result.assert_outcomes(passed=2, failed=1)
+    result.stdout.fnmatch_lines(["*failed in its isolated process (exit code 1)*"])
+    ran = set((pytester.path / "ran.txt").read_text().split())
+    assert ran == {"before", "after"}
+
+
+def test_isolation_invalid_env_value_errors(
+    pytester: pytest.Pytester, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    pytester.makepyfile(ISOLATION_PID_FIXTURE)
+    result = run_isolation_subprocess(pytester, monkeypatch, "garbage")
+    assert result.ret != 0
+    result.stderr.fnmatch_lines(
+        ["*CODSPEED_PROCESS_ISOLATION must be `true` or `false`, got `garbage`*"]
     )
