@@ -17,12 +17,15 @@ permissions:
 jobs:
   benchmarks:
     strategy:
+      fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
-        mode: ["simulation", "walltime", "memory"]
+        shard: [2]
+        mode: ["walltime"]
+        attempt: [1, 2]
 
-    name: "Run ${{ matrix.mode }} benchmarks (Shard #${{ matrix.shard }})"
+    name: "Run ${{ matrix.mode }} benchmarks (Shard #${{ matrix.shard }}, attempt ${{ matrix.attempt }})"
     runs-on: ${{ matrix.mode == 'walltime' && 'codspeed-macro' || 'ubuntu-24.04' }}
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
         with:
@@ -37,11 +40,36 @@ jobs:
           sudo apt-get install valgrind -y
           uv sync --dev
           sudo apt-get remove valgrind -y
+      - name: Arm hang watcher
+        run: |
+          sudo apt-get install -y gdb >/dev/null
+          cat > /tmp/watch.sh <<'EOF'
+          sleep 480
+          {
+            date -u
+            ps -ef --forest
+            systemd-cgls --no-pager -u codspeed.slice || true
+            for p in $(pgrep -x codspeed); do
+              echo "===== codspeed pid $p: $(tr '\0' ' ' < /proc/$p/cmdline)"
+              ps -L -o tid,pcpu,stat,wchan:32,comm -p "$p"
+              for t in /proc/$p/task/*; do echo "$t $(awk '{print $14, $15}' $t/stat)"; done
+              sleep 10
+              for t in /proc/$p/task/*; do echo "$t $(awk '{print $14, $15}' $t/stat)"; done
+              sudo gdb -p "$p" -batch -ex "thread apply all bt 40" 2>&1 | grep -E "^(#|Thread)"
+            done
+          } > /tmp/hang-dump.txt 2>&1
+          EOF
+          setsid nohup bash /tmp/watch.sh >/dev/null 2>&1 &
       - name: Run benchmarks
         uses: CodSpeedHQ/action@main
+        env:
+          CODSPEED_LOG: debug
         with:
           mode: ${{ matrix.mode }}
           run: uv run pytest tests/benchmarks/ --codspeed --test-group=${{ matrix.shard }} --test-group-count=${{ env.SHARDS }}
+      - name: Print hang dump
+        if: always()
+        run: cat /tmp/hang-dump.txt || echo "no dump (no hang at 8 min)"
 
   all-checks:
     runs-on: ubuntu-latest
