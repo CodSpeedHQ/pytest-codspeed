@@ -23,15 +23,11 @@ jobs:
         mode: ["walltime"]
         variant:
           - pr-code
-          - pr-code-skip-upload
-          - pr-code-verbose-faulthandler
           - master-src
-          - master-plugin-py
-          - master-tests
 
     name: "Shard #${{ matrix.shard }} ${{ matrix.variant }}"
     runs-on: ${{ matrix.mode == 'walltime' && 'codspeed-macro' || 'ubuntu-24.04' }}
-    timeout-minutes: 14
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v5
         with:
@@ -39,14 +35,10 @@ jobs:
       - name: Apply variant
         run: |
           git fetch -q --depth=1 origin master
-          case "${{ matrix.variant }}" in
-            master-src) git checkout FETCH_HEAD -- src/pytest_codspeed/plugin.py src/pytest_codspeed/utils.py ;;
-            master-plugin-py) git checkout FETCH_HEAD -- src/pytest_codspeed/plugin.py ;;
-            master-tests) git checkout FETCH_HEAD -- tests/conftest.py tests/test_pytest_plugin.py ;;
-          esac
+          if [ "${{ matrix.variant }}" = master-src ]; then
+            git checkout FETCH_HEAD -- src/pytest_codspeed/plugin.py src/pytest_codspeed/utils.py
+          fi
           git status --short
-          if [ "${{ matrix.variant }}" = pr-code-skip-upload ]; then echo "CODSPEED_SKIP_UPLOAD=true" >> "$GITHUB_ENV"; fi
-          if [ "${{ matrix.variant }}" = pr-code-verbose-faulthandler ]; then echo "EXTRA_ARGS=-v -o faulthandler_timeout=300" >> "$GITHUB_ENV"; fi
       - uses: astral-sh/setup-uv@v7
       - uses: actions/setup-python@v6
         with:
@@ -57,11 +49,40 @@ jobs:
           sudo apt-get install valgrind -y
           uv sync --dev
           sudo apt-get remove valgrind -y
+      - name: Arm drain probe
+        run: |
+          sudo apt-get install -y strace >/dev/null
+          cat > /tmp/probe.sh <<'EOF'
+          until pgrep -f "pytest tests/benchmarks" >/dev/null; do sleep 0.5; done
+          while pgrep -f "pytest tests/benchmarks" >/dev/null; do sleep 0.2; done
+          p=$(pgrep -f "codspeed samply record" | head -n1)
+          {
+            echo "pytest exited at $(date -u +%T.%N), samply pid $p"
+            [ -n "$p" ] || exit 0
+            echo "fds: $(sudo ls /proc/$p/fd | wc -l), perf fds: $(sudo ls -l /proc/$p/fd | grep -c perf_event)"
+            t=$(ps -L -o tid=,pcpu= -p "$p" | sort -k2 -nr | head -n1 | awk '{print $1}')
+            echo "busiest tid $t"
+            for i in $(seq 20); do
+              echo "-- $(date -u +%T.%N) syscall: $(sudo cat /proc/$p/task/$t/syscall 2>&1)"
+              sudo cat /proc/$p/task/$t/stack 2>&1 | head -n 8
+              sleep 0.2
+            done
+            echo "== strace -c 10s"
+            sudo timeout -s INT 10 strace -f -c -p "$p" 2>&1 | head -n 30
+            echo "== raw strace 3s on tid $t"
+            sudo timeout -s INT 3 strace -tt -p "$t" 2>&1 | head -n 200
+            echo "== still alive at $(date -u +%T.%N)? $(pgrep -f 'codspeed samply record' || echo no)"
+          } > /tmp/drain-probe.txt 2>&1
+          EOF
+          setsid nohup bash /tmp/probe.sh >/dev/null 2>&1 &
       - name: Run benchmarks
         uses: CodSpeedHQ/action@main
         with:
           mode: ${{ matrix.mode }}
-          run: uv run pytest tests/benchmarks/ --codspeed ${{ env.EXTRA_ARGS }} --test-group=${{ matrix.shard }} --test-group-count=${{ env.SHARDS }}
+          run: uv run pytest tests/benchmarks/ --codspeed --test-group=${{ matrix.shard }} --test-group-count=${{ env.SHARDS }}
+      - name: Print drain probe
+        if: always()
+        run: cat /tmp/drain-probe.txt || echo "no probe output"
 
   all-checks:
     runs-on: ubuntu-latest
