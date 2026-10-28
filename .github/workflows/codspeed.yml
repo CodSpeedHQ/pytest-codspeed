@@ -17,11 +17,13 @@ permissions:
 jobs:
   benchmarks:
     strategy:
+      fail-fast: false
       matrix:
         shard: [2]
         mode: ["walltime"]
+        attempt: [1, 2, 3, 4]
 
-    name: "Run ${{ matrix.mode }} benchmarks (Shard #${{ matrix.shard }})"
+    name: "Run ${{ matrix.mode }} benchmarks (Shard #${{ matrix.shard }}, attempt ${{ matrix.attempt }})"
     runs-on: ${{ matrix.mode == 'walltime' && 'codspeed-macro' || 'ubuntu-24.04' }}
     timeout-minutes: 20
     steps:
