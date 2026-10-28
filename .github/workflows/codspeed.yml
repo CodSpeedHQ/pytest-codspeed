@@ -60,6 +60,13 @@ jobs:
           } > /tmp/hang-dump.txt 2>&1
           EOF
           setsid nohup bash /tmp/watch.sh >/dev/null 2>&1 &
+      - name: Update Rust toolchain for the runner build
+        run: |
+          source $HOME/.cargo/env
+          cargo --version
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+          cargo --version
       - name: Run benchmarks
         uses: CodSpeedHQ/action@main
         env:
