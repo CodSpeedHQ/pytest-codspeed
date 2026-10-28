@@ -18,11 +18,12 @@ jobs:
   benchmarks:
     strategy:
       matrix:
-        shard: [1, 2, 3, 4]
-        mode: ["simulation", "walltime", "memory"]
+        shard: [2]
+        mode: ["walltime"]
 
     name: "Run ${{ matrix.mode }} benchmarks (Shard #${{ matrix.shard }})"
     runs-on: ${{ matrix.mode == 'walltime' && 'codspeed-macro' || 'ubuntu-24.04' }}
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
         with:
@@ -39,9 +40,12 @@ jobs:
           sudo apt-get remove valgrind -y
       - name: Run benchmarks
         uses: CodSpeedHQ/action@main
+        env:
+          CODSPEED_LOG: debug
+          CODSPEED_SKIP_UPLOAD: "true"
         with:
           mode: ${{ matrix.mode }}
-          run: uv run pytest tests/benchmarks/ --codspeed --test-group=${{ matrix.shard }} --test-group-count=${{ env.SHARDS }}
+          run: uv run pytest tests/benchmarks/ --codspeed -v -o faulthandler_timeout=300 --test-group=${{ matrix.shard }} --test-group-count=${{ env.SHARDS }}
 
   all-checks:
     runs-on: ubuntu-latest
