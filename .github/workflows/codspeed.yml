@@ -44,10 +44,9 @@ jobs:
         uses: CodSpeedHQ/action@main
         env:
           CODSPEED_LOG: debug
-          CODSPEED_SKIP_UPLOAD: "true"
         with:
           mode: ${{ matrix.mode }}
-          run: uv run pytest tests/benchmarks/ --codspeed -v -o faulthandler_timeout=300 --test-group=${{ matrix.shard }} --test-group-count=${{ env.SHARDS }}
+          run: uv run pytest tests/benchmarks/ --codspeed --test-group=${{ matrix.shard }} --test-group-count=${{ env.SHARDS }}
 
   all-checks:
     runs-on: ubuntu-latest
