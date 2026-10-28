@@ -72,7 +72,7 @@ jobs:
         env:
           CODSPEED_LOG: debug
         with:
-          runner-version: branch:fix/samply-system-wide-drain-livelock
+          runner-version: branch:main
           mode: ${{ matrix.mode }}
           run: uv run pytest tests/benchmarks/ --codspeed --test-group=${{ matrix.shard }} --test-group-count=${{ env.SHARDS }}
       - name: Print hang dump
