@@ -25,7 +25,7 @@ jobs:
 
     name: "Run ${{ matrix.mode }} benchmarks (Shard #${{ matrix.shard }}, attempt ${{ matrix.attempt }})"
     runs-on: ${{ matrix.mode == 'walltime' && 'codspeed-macro' || 'ubuntu-24.04' }}
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
         with:
@@ -65,6 +65,7 @@ jobs:
         env:
           CODSPEED_LOG: debug
         with:
+          runner-version: branch:fix/samply-system-wide-drain-livelock
           mode: ${{ matrix.mode }}
           run: uv run pytest tests/benchmarks/ --codspeed --test-group=${{ matrix.shard }} --test-group-count=${{ env.SHARDS }}
       - name: Print hang dump
