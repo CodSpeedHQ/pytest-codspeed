@@ -47,6 +47,22 @@ jobs:
           - version: "3.15t"
         pytest-version:
           - ">=8.1.1"
+        # Older pytest versions only on the latest Python
+        include:
+          # Before pytest.register_fixture (private _arg2fixturedefs override)
+          - config: headless
+            python: { version: "3.15" }
+            pytest-version: "~=9.0.0"
+          - config: pytest-benchmark-5
+            python: { version: "3.15" }
+            pytest-version: "~=9.0.0"
+          # Before 8.1.1 (getfixturedefs takes a nodeid)
+          - config: headless
+            python: { version: "3.15" }
+            pytest-version: "~=8.0.0"
+          - config: pytest-benchmark-4
+            python: { version: "3.15" }
+            pytest-version: "~=8.0.0"
 
     steps:
       - uses: actions/checkout@v5
@@ -57,7 +73,7 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "${{ matrix.python.version }}"
-      - if: matrix.config == 'valgrind' || matrix.config == 'pytest-benchmark'
+      - if: matrix.config == 'valgrind' || startsWith(matrix.config, 'pytest-benchmark')
         name: Install valgrind
         run: |
           sudo apt-get update
