@@ -21,9 +21,12 @@ jobs:
       matrix:
         shard: [2]
         mode: ["walltime"]
-        variant:
-          - pr-code
-          - master-src
+        variant: [pr-code-no-mp, pr-code-only-mp]
+        include:
+          - variant: pr-code-no-mp
+            kexpr: "not test_multiprocessing_map"
+          - variant: pr-code-only-mp
+            kexpr: "test_multiprocessing_map"
 
     name: "Shard #${{ matrix.shard }} ${{ matrix.variant }}"
     runs-on: ${{ matrix.mode == 'walltime' && 'codspeed-macro' || 'ubuntu-24.04' }}
@@ -79,7 +82,7 @@ jobs:
         uses: CodSpeedHQ/action@main
         with:
           mode: ${{ matrix.mode }}
-          run: uv run pytest tests/benchmarks/ --codspeed --test-group=${{ matrix.shard }} --test-group-count=${{ env.SHARDS }}
+          run: uv run pytest tests/benchmarks/ --codspeed --test-group=${{ matrix.shard }} --test-group-count=${{ env.SHARDS }} -k "${{ matrix.kexpr }}"
       - name: Print drain probe
         if: always()
         run: cat /tmp/drain-probe.txt || echo "no probe output"
