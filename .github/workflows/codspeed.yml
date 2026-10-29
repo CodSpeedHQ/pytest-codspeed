@@ -18,8 +18,8 @@ jobs:
   benchmarks:
     strategy:
       matrix:
-        shard: [1, 2, 3, 4]
-        mode: ["simulation", "walltime", "memory"]
+        shard: [2]
+        mode: ["walltime"]
 
     name: "Run ${{ matrix.mode }} benchmarks (Shard #${{ matrix.shard }})"
     runs-on: ${{ matrix.mode == 'walltime' && 'codspeed-macro' || 'ubuntu-24.04' }}
@@ -31,6 +31,11 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+      - name: Setup upterm session
+        uses: owenthereal/action-upterm@v2
+        with:
+          detached: true
+          limit-access-to-actor: true
       - name: Install local version of pytest-codspeed
         run: |
           sudo apt-get update
