@@ -5,6 +5,29 @@
 
 
 
+## [5.0.4] - 2026-10-30
+
+### <!-- 0 -->🚀 Features
+- Warn when running on an unsupported python version by @not-matthias in [#133](https://github.com/CodSpeedHQ/pytest-codspeed/pull/133)
+
+### <!-- 1 -->🐛 Bug Fixes
+- Support pytest 9.2 fixture manager changes by @GuillaumeLagrange
+
+### <!-- 10 -->💼 Other
+- Pin -std=c11 for instrument-hooks core.c by @not-matthias in [#128](https://github.com/CodSpeedHQ/pytest-codspeed/pull/128)
+
+### <!-- 3 -->📚 Documentation
+- Add Python 3.15 to README version badge (#139) by @not-matthias in [#139](https://github.com/CodSpeedHQ/pytest-codspeed/pull/139)
+- Bump action version to v5 (#130) by @adriencaccia in [#130](https://github.com/CodSpeedHQ/pytest-codspeed/pull/130)
+
+### <!-- 7 -->⚙️ Internals
+- Remove the runner main branch usage for macos test by @GuillaumeLagrange in [#141](https://github.com/CodSpeedHQ/pytest-codspeed/pull/141)
+- Use ubuntu-24 for python 3.9 test by @GuillaumeLagrange
+- Test against stable python 3.15 and 3.15t (#137) by @not-matthias in [#137](https://github.com/CodSpeedHQ/pytest-codspeed/pull/137)
+- Use 26.04 image instead of latest (#138) by @lvaroqui in [#138](https://github.com/CodSpeedHQ/pytest-codspeed/pull/138)
+- Migrate to github default arm runners (#136) by @lvaroqui in [#136](https://github.com/CodSpeedHQ/pytest-codspeed/pull/136)
+
+
 ## [5.0.3] - 2026-05-22
 
 ### <!-- 2 -->🏗️ Refactor
