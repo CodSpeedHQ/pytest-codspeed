@@ -106,7 +106,7 @@ push = false
 build = "cp*{manylinux,macosx}*"
 enable = ["cpython-prerelease"]
 test-extras = ["build", "test", "compat"]
-test-command = "pytest -v --ignore={project}/tests/benchmarks {project}/tests"
+test-command = "pytest -v --ignore={project}/tests/benchmarks --ignore={project}/tests/examples {project}/tests"
 
 [tool.cibuildwheel.linux]
 environment = { PYTEST_CODSPEED_FORCE_EXTENSION_BUILD = "1", PYTEST_CODSPEED_FORCE_VALGRIND_TESTS = "1" }
