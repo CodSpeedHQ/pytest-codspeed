@@ -2,6 +2,7 @@ import os
 
 import pytest
 from conftest import (
+    ADDITION_BENCHMARK,
     run_pytest_codspeed_with_mode,
     skip_with_pytest_benchmark,
     skip_without_perf_trampoline,
@@ -17,7 +18,7 @@ from pytest_codspeed.instruments import MeasurementMode
 def test_bench_enabled_header_with_perf(
     pytester: pytest.Pytester, codspeed_env
 ) -> None:
-    pytester.copy_example("tests/examples/test_addition_fixture.py")
+    pytester.makepyfile(ADDITION_BENCHMARK)
     with codspeed_env():
         result = pytester.runpytest()
     result.stdout.fnmatch_lines(

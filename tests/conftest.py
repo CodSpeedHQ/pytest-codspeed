@@ -62,6 +62,13 @@ skip_without_pytest_xdist = pytest.mark.skipif(
     reason="pytest_xdist not installed",
 )
 
+ADDITION_BENCHMARK = """
+def test_some_addition_performance(benchmark):
+    @benchmark
+    def _():
+        return 1 + 1
+"""
+
 
 @pytest.fixture(scope="function")
 def codspeed_env(monkeypatch):

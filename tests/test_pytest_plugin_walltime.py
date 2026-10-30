@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from conftest import run_pytest_codspeed_with_mode
+from conftest import ADDITION_BENCHMARK, run_pytest_codspeed_with_mode
 
 if TYPE_CHECKING:
     import pytest
@@ -19,7 +19,7 @@ from pytest_codspeed.instruments.walltime import WallTimeInstrument
 def test_bench_enabled_header_with_perf(
     pytester: pytest.Pytester,
 ) -> None:
-    pytester.copy_example("tests/examples/test_addition_fixture.py")
+    pytester.makepyfile(ADDITION_BENCHMARK)
     result = run_pytest_codspeed_with_mode(pytester, MeasurementMode.WallTime)
     result.stdout.fnmatch_lines(["*test_some_addition_performance*", "*1 benchmarked*"])
 
