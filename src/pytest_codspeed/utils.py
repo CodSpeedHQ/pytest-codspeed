@@ -19,6 +19,8 @@ else:
 IS_PYTEST_BENCHMARK_INSTALLED = importlib.util.find_spec("pytest_benchmark") is not None
 IS_PYTEST_SPEED_INSTALLED = importlib.util.find_spec("pytest_speed") is not None
 BEFORE_PYTEST_8_1_1 = pytest.version_tuple < (8, 1, 1)
+# Public API since pytest 9.1, required since 9.2 removed `_arg2fixturedefs`
+HAS_PYTEST_REGISTER_FIXTURE = hasattr(pytest, "register_fixture")
 SUPPORTS_PERF_TRAMPOLINE = sysconfig.get_config_var("PY_HAVE_PERF_TRAMPOLINE") == 1
 
 

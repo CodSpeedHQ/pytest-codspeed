@@ -23,6 +23,7 @@ from pytest_codspeed.config import (
 from pytest_codspeed.instruments import MeasurementMode, get_instrument_from_mode
 from pytest_codspeed.utils import (
     BEFORE_PYTEST_8_1_1,
+    HAS_PYTEST_REGISTER_FIXTURE,
     IS_PYTEST_BENCHMARK_INSTALLED,
     IS_PYTEST_SPEED_INSTALLED,
     get_environment_metadata,
@@ -187,6 +188,8 @@ def pytest_plugin_registered(plugin, manager: pytest.PytestPluginManager):
     Patch the benchmark fixture to use the codspeed one if codspeed is enabled and an
     alternative benchmark fixture is available
     """
+    if HAS_PYTEST_REGISTER_FIXTURE:
+        return  # handled in pytest_sessionstart
     if (IS_PYTEST_BENCHMARK_INSTALLED or IS_PYTEST_SPEED_INSTALLED) and isinstance(
         plugin, FixtureManager
     ):
@@ -208,6 +211,26 @@ def pytest_plugin_registered(plugin, manager: pytest.PytestPluginManager):
             )
             # Replace the alternative fixture with the codspeed one
             fixture_manager._arg2fixturedefs["benchmark"] = codspeed_benchmark_fixtures
+
+
+def _benchmark_compat(codspeed_benchmark, request: pytest.FixtureRequest):
+    return codspeed_benchmark
+
+
+@pytest.hookimpl(trylast=True)
+def pytest_sessionstart(session: pytest.Session):
+    """
+    Override the benchmark fixture of pytest-benchmark/pytest-speed with the codspeed
+    one, using the public API available since pytest 9.1
+    """
+    if HAS_PYTEST_REGISTER_FIXTURE and (
+        IS_PYTEST_BENCHMARK_INSTALLED or IS_PYTEST_SPEED_INSTALLED
+    ):
+        codspeed_plugin = session.config.pluginmanager.get_plugin(PLUGIN_NAME)
+        if codspeed_plugin is not None and codspeed_plugin.is_codspeed_enabled:
+            pytest.register_fixture(
+                name="benchmark", func=_benchmark_compat, node=session
+            )
 
 
 @pytest.hookimpl(trylast=True)

@@ -6,6 +6,7 @@ from conftest import (
     skip_with_perf_trampoline,
     skip_without_pytest_benchmark,
     skip_without_valgrind,
+    xfail_pytest_benchmark_on_pytest_9_2,
 )
 
 
@@ -119,6 +120,7 @@ def test_plugin_enabled_and_env_bench_hierachy_called(
     )
 
 
+@xfail_pytest_benchmark_on_pytest_9_2
 def test_plugin_disabled(pytester: pytest.Pytester) -> None:
     pytester.copy_example("tests/examples/test_addition_fixture.py")
     result = pytester.runpytest()
@@ -191,6 +193,7 @@ def test_plugin_only_benchmark_collection(
     )
 
 
+@xfail_pytest_benchmark_on_pytest_9_2
 @skip_without_pytest_benchmark
 def test_pytest_benchmark_compatibility(pytester: pytest.Pytester) -> None:
     pytester.makepyfile(

@@ -23,6 +23,11 @@ skip_without_pytest_benchmark = pytest.mark.skipif(
 skip_with_pytest_benchmark = pytest.mark.skipif(
     IS_PYTEST_BENCHMARK_INSTALLED, reason="pytest_benchmark installed"
 )
+xfail_pytest_benchmark_on_pytest_9_2 = pytest.mark.xfail(
+    IS_PYTEST_BENCHMARK_INSTALLED and pytest.version_tuple >= (9, 2),
+    reason="pytest-benchmark is incompatible with pytest 9.2 (Node._nodeid removal)",
+    strict=False,
+)
 if IS_PYTEST_BENCHMARK_INSTALLED:
     pytest_plugins.append("pytest_benchmark")
     print(
