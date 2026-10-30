@@ -117,8 +117,6 @@ jobs:
         with:
           run: uv run pytest tests/benchmarks/test_bench_fibo.py --codspeed
           mode: walltime
-          # TODO: Remove this once the runner has been released with macos support
-          runner-version: branch:main
 
   all-checks:
     runs-on: ubuntu-latest
