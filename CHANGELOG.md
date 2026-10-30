@@ -5,6 +5,12 @@
 
 
 
+## [Unreleased]
+
+### Refactor
+- Consolidate benchmark fixture overrides in `pytest_sessionstart`, retaining the legacy fallback for pytest versions before 9.1.
+
+
 ## [5.0.4] - 2026-10-30
 
 ### <!-- 0 -->🚀 Features
