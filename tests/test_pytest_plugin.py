@@ -1,5 +1,6 @@
 import pytest
 from conftest import (
+    ADDITION_BENCHMARK,
     IS_PERF_TRAMPOLINE_SUPPORTED,
     MeasurementMode,
     run_pytest_codspeed_with_mode,
@@ -31,7 +32,7 @@ def test_plugin_enabled_with_kwargs(
 def test_bench_enabled_header_without_perf(
     pytester: pytest.Pytester, codspeed_env
 ) -> None:
-    pytester.copy_example("tests/examples/test_addition_fixture.py")
+    pytester.makepyfile(ADDITION_BENCHMARK)
     with codspeed_env():
         result = pytester.runpytest()
     result.stdout.fnmatch_lines(
@@ -41,7 +42,7 @@ def test_bench_enabled_header_without_perf(
 
 @skip_without_valgrind
 def test_plugin_enabled_by_env(pytester: pytest.Pytester, codspeed_env) -> None:
-    pytester.copy_example("tests/examples/test_addition_fixture.py")
+    pytester.makepyfile(ADDITION_BENCHMARK)
     with codspeed_env():
         result = pytester.runpytest()
     result.stdout.fnmatch_lines(["*1 benchmarked*", "*1 passed*"])
@@ -49,7 +50,7 @@ def test_plugin_enabled_by_env(pytester: pytest.Pytester, codspeed_env) -> None:
 
 @skip_without_valgrind
 def test_plugin_enabled_and_env(pytester: pytest.Pytester, codspeed_env) -> None:
-    pytester.copy_example("tests/examples/test_addition_fixture.py")
+    pytester.makepyfile(ADDITION_BENCHMARK)
     with codspeed_env():
         result = pytester.runpytest("--codspeed")
     result.stdout.fnmatch_lines(["*1 benchmarked*", "*1 passed*"])
@@ -122,7 +123,7 @@ def test_plugin_enabled_and_env_bench_hierachy_called(
 
 @xfail_pytest_benchmark_on_pytest_9_2
 def test_plugin_disabled(pytester: pytest.Pytester) -> None:
-    pytester.copy_example("tests/examples/test_addition_fixture.py")
+    pytester.makepyfile(ADDITION_BENCHMARK)
     result = pytester.runpytest()
     result.stdout.fnmatch_lines(["*1 passed*"])
 
