@@ -63,6 +63,13 @@ skip_without_pytest_xdist = pytest.mark.skipif(
 )
 
 
+@pytest.fixture(autouse=True)
+def disable_process_isolation(monkeypatch):
+    # Most tests run the benchmark body in the test process (`pytester.runpytest`),
+    # which process isolation would move into a child. Isolation tests opt in.
+    monkeypatch.setenv("CODSPEED_PROCESS_ISOLATION", "false")
+
+
 @pytest.fixture(scope="function")
 def codspeed_env(monkeypatch):
     @contextmanager
