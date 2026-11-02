@@ -41,6 +41,8 @@ if TYPE_CHECKING:
 
 # Keep these bounds in sync with `requires-python`, the Python classifiers in
 # pyproject.toml, and the CI test matrix.
+#
+# IMPORTANT: Keep in sync with the support matrix on the backend!
 MIN_SUPPORTED_PYTHON_VERSION = (3, 9)
 MAX_SUPPORTED_PYTHON_VERSION = (3, 15)
 
