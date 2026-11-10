@@ -350,6 +350,9 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus):
     if plugin.is_codspeed_enabled:
         plugin.instrument.report(session)
         if plugin.profile_folder:
+            # CodSpeed uses this file only in walltime mode.
+            if plugin.mode != MeasurementMode.WallTime:
+                return
             result_path = plugin.profile_folder / "results" / f"{os.getpid()}.json"
         else:
             # Default to a .codspeed folder in the root of the project.
