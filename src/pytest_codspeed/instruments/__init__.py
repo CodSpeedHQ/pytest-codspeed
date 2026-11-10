@@ -59,6 +59,7 @@ class MeasurementMode(str, Enum):
     Simulation = "simulation"
     Memory = "memory"
     WallTime = "walltime"
+    Telemetry = "telemetry"
 
     @classmethod
     def _missing_(cls, value: object):
@@ -74,7 +75,11 @@ def get_instrument_from_mode(mode: MeasurementMode) -> type[Instrument]:
     )
     from pytest_codspeed.instruments.walltime import WallTimeInstrument
 
-    if mode in (MeasurementMode.Simulation, MeasurementMode.Memory):
+    if mode in (
+        MeasurementMode.Simulation,
+        MeasurementMode.Memory,
+        MeasurementMode.Telemetry,
+    ):
         return AnalysisInstrument
     else:
         return WallTimeInstrument

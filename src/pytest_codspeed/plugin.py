@@ -20,6 +20,7 @@ from pytest_codspeed.config import (
     PedanticOptions,
 )
 from pytest_codspeed.instruments import MeasurementMode, get_instrument_from_mode
+from pytest_codspeed.telemetry import start_telemetry
 from pytest_codspeed.utils import (
     BEFORE_PYTEST_8_1_1,
     HAS_PYTEST_REGISTER_FIXTURE,
@@ -35,6 +36,7 @@ if TYPE_CHECKING:
     from typing import Any, Callable, ParamSpec, TypeVar
 
     from pytest_codspeed.instruments import Instrument
+    from pytest_codspeed.telemetry import Telemetry
 
     T = TypeVar("T")
     P = ParamSpec("P")
@@ -118,6 +120,7 @@ class CodSpeedPlugin:
     disabled_plugins: tuple[str, ...]
     profile_folder: Path | None
     benchmark_count: int = field(default=0, hash=False, compare=False)
+    telemetry: Telemetry | None = field(default=None, hash=False, compare=False)
 
 
 PLUGIN_NAME = "codspeed_plugin"
@@ -146,6 +149,8 @@ def pytest_configure(config: pytest.Config):
             default_mode = MeasurementMode.WallTime.value
         elif runner_mode == "memory":
             default_mode = MeasurementMode.Memory.value
+        elif runner_mode == "telemetry":
+            default_mode = MeasurementMode.Telemetry.value
         else:
             default_mode = MeasurementMode.Simulation.value
     else:
@@ -178,7 +183,17 @@ def pytest_configure(config: pytest.Config):
         config=codspeed_config,
         profile_folder=Path(profile_folder) if profile_folder else None,
     )
+    if is_codspeed_enabled and mode == MeasurementMode.Telemetry:
+        plugin.telemetry = start_telemetry(service_name=config.rootpath.name)
     config.pluginmanager.register(plugin, PLUGIN_NAME)
+
+
+@pytest.hookimpl(trylast=True)
+def pytest_unconfigure(config: pytest.Config):
+    plugin = get_plugin(config)
+    if plugin is not None and plugin.telemetry is not None:
+        plugin.telemetry.shutdown()
+        plugin.telemetry = None
 
 
 def _benchmark_compat(codspeed_benchmark, request: pytest.FixtureRequest):

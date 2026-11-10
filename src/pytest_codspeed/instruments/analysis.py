@@ -5,7 +5,7 @@ import warnings
 from typing import TYPE_CHECKING
 
 from pytest_codspeed import __semver_version__
-from pytest_codspeed.instruments import Instrument
+from pytest_codspeed.instruments import Instrument, MeasurementMode
 from pytest_codspeed.instruments.hooks import InstrumentHooks
 from pytest_codspeed.utils import SUPPORTS_PERF_TRAMPOLINE
 
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from pytest import Session
 
     from pytest_codspeed.config import PedanticOptions
-    from pytest_codspeed.instruments import MeasurementMode, P, T
+    from pytest_codspeed.instruments import P, T
     from pytest_codspeed.plugin import BenchmarkMarkerOptions, CodSpeedConfig
 
 
@@ -39,12 +39,25 @@ class AnalysisInstrument(Instrument):
             self.instrument_hooks = None
 
         self.should_measure = self.instrument_hooks is not None
+        # The runner times a benchmark when it gets the start and stop commands,
+        # tens of microseconds before and after the benchmarked code. In
+        # telemetry mode, the plugin also sends the start and end of each round,
+        # read in this process. The runner uses these tighter times to find the
+        # benchmark of each span and log.
+        self.sends_round_markers = mode == MeasurementMode.Telemetry
+        # Telemetry mode doesn't profile, so it doesn't need the perf map
+        # warm-up. The warm-up would also send telemetry outside the round.
+        self.warms_up_perf_maps = (
+            SUPPORTS_PERF_TRAMPOLINE and mode != MeasurementMode.Telemetry
+        )
 
     def get_instrument_config_str_and_warns(self) -> tuple[str, list[str]]:
-        config = (
-            f"mode: {self.mode.value}, "
-            f"callgraph: {'enabled' if SUPPORTS_PERF_TRAMPOLINE else 'not supported'}"
-        )
+        config = f"mode: {self.mode.value}"
+        if self.mode != MeasurementMode.Telemetry:
+            config += (
+                ", callgraph: "
+                f"{'enabled' if SUPPORTS_PERF_TRAMPOLINE else 'not supported'}"
+            )
         warnings = []
         if not self.should_measure:
             warnings.append(
@@ -72,12 +85,13 @@ class AnalysisInstrument(Instrument):
         def __codspeed_root_frame__() -> T:
             return fn(*args, **kwargs)
 
-        if SUPPORTS_PERF_TRAMPOLINE:
+        if self.warms_up_perf_maps:
             # Warmup CPython performance map cache
             __codspeed_root_frame__()
 
         self.instrument_hooks.disable_callgrind_markers()
         self.instrument_hooks.start_benchmark()
+        round_start = self._round_start()
 
         # Manually call the library function to avoid an extra stack frame. Also
         # call the callgrind markers directly to avoid extra overhead.
@@ -87,6 +101,7 @@ class AnalysisInstrument(Instrument):
         finally:
             # Ensure instrumentation is stopped even if the test failed
             self.instrument_hooks.callgrind_stop_instrumentation()
+            self._end_round(round_start)
             self.instrument_hooks.stop_benchmark()
             self.instrument_hooks.set_executed_benchmark(uri)
 
@@ -114,7 +129,7 @@ class AnalysisInstrument(Instrument):
 
         # Warmup
         warmup_rounds = max(
-            pedantic_options.warmup_rounds, 1 if SUPPORTS_PERF_TRAMPOLINE else 0
+            pedantic_options.warmup_rounds, 1 if self.warms_up_perf_maps else 0
         )
         for _ in range(warmup_rounds):
             args, kwargs = pedantic_options.setup_and_get_args_kwargs()
@@ -127,6 +142,7 @@ class AnalysisInstrument(Instrument):
 
         self.instrument_hooks.disable_callgrind_markers()
         self.instrument_hooks.start_benchmark()
+        round_start = self._round_start()
 
         # Manually call the library function to avoid an extra stack frame. Also
         # call the callgrind markers directly to avoid extra overhead.
@@ -135,12 +151,25 @@ class AnalysisInstrument(Instrument):
             out = __codspeed_root_frame__(*args, **kwargs)
         finally:
             self.instrument_hooks.callgrind_stop_instrumentation()
+            self._end_round(round_start)
             self.instrument_hooks.stop_benchmark()
             self.instrument_hooks.set_executed_benchmark(uri)
             if pedantic_options.teardown is not None:
                 pedantic_options.teardown(*args, **kwargs)
 
         return out
+
+    def _round_start(self) -> int | None:
+        if not self.sends_round_markers:
+            return None
+        return InstrumentHooks.current_timestamp()
+
+    def _end_round(self, round_start: int | None) -> None:
+        if round_start is None or self.instrument_hooks is None:
+            return
+        self.instrument_hooks.add_benchmark_timestamps(
+            round_start, InstrumentHooks.current_timestamp()
+        )
 
     def report(self, session: Session) -> None:
         reporter = session.config.pluginmanager.get_plugin("terminalreporter")

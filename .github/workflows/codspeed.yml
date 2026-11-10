@@ -35,7 +35,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install valgrind -y
-          uv sync --dev
+          uv sync --dev --extra telemetry
           sudo apt-get remove valgrind -y
       - name: Run benchmarks
         uses: CodSpeedHQ/action@main
